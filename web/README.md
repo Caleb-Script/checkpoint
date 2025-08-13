@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛂 Checkpoint – Gästeverwaltung mit QR-Codes
 
-## Getting Started
+Mobile-first WebApp & App (via Capacitor) für Einladungen, RSVP, QR-Tickets und Security-Scanning – in Apple-ähnlichem Look & Feel (MUI).
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![MUI](https://img.shields.io/badge/MUI-5-007fff?logo=mui)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-2d3748?logo=prisma)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql)
+![Keycloak](https://img.shields.io/badge/Auth-Keycloak-73498C)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📖 Beschreibung
+**Checkpoint** organisiert Events mit sicheren QR-Tickets:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Einladungen** versenden (CSV oder einzeln)
+- **RSVP** (Annehmen/Ablehnen) ohne Account, leichte Auto-Registrierung (Name, optional Mail/Tel)
+- **Tickets** ohne Verfallsdatum (nur QR-Token rotiert)
+- **Security-Scan** (IN/OUT) + **Live-Status**
+- **Platzzuweisung** (Seat) im Ticket gespeichert
+- **Mobile-first** UI (MUI), ideal für iOS/Web; App via **Capacitor**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠 Tech Stack
+**Frontend**: Next.js 15 (App Router), TypeScript, MUI 5  
+**Backend**: Next.js API Routes, Node runtime  
+**Auth**: Keycloak (OIDC), eigene Login-API (Token-Austausch), Cookies  
+**DB**: PostgreSQL 15, Prisma ORM  
+**QR**: dynamische JWTs + `qrcode` (Data-URL)  
+**WS**: Live-Updates via `ws` (Ping/Pong Heartbeat)  
+**Mobile**: Capacitor (iOS/Android), WebDir `out`  
+**Dev**: Docker-Compose (Keycloak, Postgres), Postman Tests
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Ordnerstruktur
