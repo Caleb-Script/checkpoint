@@ -1,88 +1,49 @@
 // /Users/gentlebookpro/Projekte/checkpoint/web/src/app/api/admin/invitations/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/authz";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
- * POST /api/admin/invitations
- * Body:
- * {
- *   "eventId": "evt_xxx",
- *   "firstName"?: string,
- *   "lastName"?: string,
- *   "email"?: string,
- *   "phone"?: string,
- *   "canInvite"?: number
- * }
- *
- * Antwort: { invitationId, guestProfileId, status }
- *
- * Hinweis: In echt sollte hier eine Admin-Rollenprüfung erfolgen.
+ * GET /api/admin/invitations?eventId=...
+ * Role: admin
  */
-export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json().catch(() => ({}));
-        const { eventId, firstName, lastName, email, phone, canInvite } = body || {};
+export async function GET(req: NextRequest) {
+    const auth = requireRole(req, ["admin"]);
+    if (!auth.ok) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
 
-        if (!eventId) {
-            return NextResponse.json({ error: "eventId erforderlich" }, { status: 400 });
-        }
-        if (!email && !phone) {
-            return NextResponse.json({ error: "email oder phone erforderlich" }, { status: 400 });
-        }
+    const eventId = req.nextUrl.searchParams.get("eventId") || "";
+    if (!eventId) return NextResponse.json({ ok: false, error: "eventId required" }, { status: 400 });
 
-        // GuestProfile suchen/erstellen (über email bevorzugt)
-        let gp = null as any;
+    const list = await prisma.invitation.findMany({
+        where: { eventId },
+        include: { guestProfile: true, ticket: { include: { seat: true } } },
+        orderBy: { createdAt: "desc" },
+    });
 
-        if (email) {
-            gp = await prisma.guestProfile.findFirst({ where: { primaryEmail: email } });
-        }
-        if (!gp && phone) {
-            gp = await prisma.guestProfile.findFirst({ where: { phone } });
-        }
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const mapped = list.map((i) => ({
+        id: i.id,
+        status: i.status,
+        rsvpChoice: i.rsvpChoice,
+        approved: i.approved,
+        shareCode: i.shareCode,
+        inviteLink: i.shareCode ? `${base}/invite?code=${encodeURIComponent(i.shareCode)}` : null,
+        guest: {
+            email: i.guestProfile.primaryEmail,
+            phone: i.guestProfile.phone,
+            name: `${i.guestProfile.firstName ?? ""} ${i.guestProfile.lastName ?? ""}`.trim(),
+        },
+        ticket: i.ticket
+            ? {
+                id: i.ticket.id,
+                state: i.ticket.currentState,
+                seat: i.ticket.seat ? { section: i.ticket.seat.section, row: i.ticket.seat.row, number: i.ticket.seat.number } : null,
+            }
+            : null,
+    }));
 
-        if (!gp) {
-            gp = await prisma.guestProfile.create({
-                data: {
-                    primaryEmail: email || null,
-                    phone: phone || null,
-                    firstName: firstName || null,
-                    lastName: lastName || null,
-                },
-            });
-        } else {
-            // leicht updaten (keine userId hier)
-            await prisma.guestProfile.update({
-                where: { id: gp.id },
-                data: {
-                    firstName: firstName ?? gp.firstName,
-                    lastName: lastName ?? gp.lastName,
-                    primaryEmail: email ?? gp.primaryEmail,
-                    phone: phone ?? gp.phone,
-                },
-            });
-        }
-
-        // Invitation anlegen (PENDING)
-        const inv = await prisma.invitation.create({
-            data: {
-                eventId,
-                guestProfileId: gp.id,
-                status: "PENDING",
-                messageChannel: "admin-api",
-                // canInvite speichern wir in Invitation nicht direkt → Option: ShareGuard/Note
-                // Für Demo: wir codieren es in "messageChannel" als Metadata
-            },
-        });
-
-        return NextResponse.json({
-            invitationId: inv.id,
-            guestProfileId: gp.id,
-            status: inv.status,
-            message: "Invitation erstellt (PENDING)",
-            canInvite: typeof canInvite === "number" ? canInvite : undefined,
-        });
-    } catch (err) {
-        console.error("create invitation failed", err);
-        return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
-    }
+    return NextResponse.json({ ok: true, invitations: mapped });
 }

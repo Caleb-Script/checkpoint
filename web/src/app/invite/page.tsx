@@ -4,381 +4,286 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Stack,
-  TextField,
-  Button,
-  Alert,
-  ToggleButtonGroup,
-  ToggleButton,
-  Divider,
-  CircularProgress,
-  Chip,
+  Box, Button, Card, CardContent, CardHeader, Stack, TextField, Typography, Alert, CircularProgress,
+  Divider, IconButton, Table, TableHead, TableRow, TableCell, TableBody, Chip
 } from "@mui/material";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
-import EventSeatRoundedIcon from "@mui/icons-material/EventSeatRounded";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SaveIcon from "@mui/icons-material/Save";
+import CheckIcon from "@mui/icons-material/Check";
 
-type ClaimStatus =
-  | {
-      ok: true;
-      hostInvitationId: string;
-      event: { id: string; name: string; startsAt?: string | null };
-      hostName: string;
-      maxInvitees: number;
-      used: number;
-      remaining: number;
-    }
-  | { ok: false; error: string };
+type InviteResolved = {
+  ok: boolean;
+  invitation?: {
+    id: string;
+    status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELED";
+    rsvpChoice: "YES" | "NO" | null;
+    approved: boolean;
+    event: { id: string; name: string; startsAt: string; endsAt: string };
+    guest: { email?: string | null; phone?: string | null; firstName?: string | null; lastName?: string | null };
+    hasTicket: boolean;
+    invitedBy: { name: string } | null;
+    plusOne: { max: number; used: number; free: number };
+  };
+  error?: string;
+};
 
-export default function InviteClaimPage() {
+type ChildRow = {
+  id: string;
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELED";
+  rsvpChoice: "YES" | "NO" | null;
+  ticketIssued: boolean;
+  guest: { firstName: string; lastName: string; email: string; phone: string };
+};
+
+export default function InvitePage() {
   const params = useSearchParams();
   const router = useRouter();
   const code = params.get("code") || "";
 
   const [loading, setLoading] = React.useState(true);
-  const [status, setStatus] = React.useState<ClaimStatus | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const [res, setRes] = React.useState<InviteResolved | null>(null);
+  const [error, setError] = React.useState<string>("");
 
-  // Formularfelder
+  // Eigene Daten
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
-  const [decision, setDecision] = React.useState<"YES" | "NO" | null>("YES");
 
-  // Sitzwunsch (optional)
-  const [seatSection, setSeatSection] = React.useState("");
-  const [seatRow, setSeatRow] = React.useState("");
-  const [seatNumber, setSeatNumber] = React.useState("");
+  // Neue Plus-Ones (PENDING) erfassen
+  const [newRows, setNewRows] = React.useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([
+    { firstName: "", lastName: "", email: "", phone: "" },
+  ]);
 
-  const [submitting, setSubmitting] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
-  const [warn, setWarn] = React.useState<string>("");
+  // Bestehende Kinder
+  const [children, setChildren] = React.useState<ChildRow[]>([]);
+  const [saving, setSaving] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
 
-  React.useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      if (!code) {
-        setStatus({ ok: false, error: "Code fehlt." });
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(
-          `/api/invite/claim?code=${encodeURIComponent(code)}`,
-          {
-            credentials: "include",
-          }
-        );
-        const data = (await res.json()) as ClaimStatus;
-        if (!ignore) {
-          setStatus(data);
-          if (!res.ok || !data.ok) {
-            setError((data as any)?.error || "Ungültiger Link.");
-          }
-        }
-      } catch (e: any) {
-        if (!ignore) {
-          setStatus({ ok: false, error: e?.message || "Netzwerkfehler" });
-          setError(e?.message || "Netzwerkfehler");
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [code]);
-
-  const onSubmit = async () => {
-    if (!status?.ok) return;
-    if (!decision) {
-      setWarn("Bitte wähle Zusage oder Absage.");
-      return;
-    }
-    if (!email && !phone) {
-      setWarn("Bitte gib mindestens E‑Mail oder Telefon an.");
-      return;
-    }
-    setWarn("");
-    setSubmitting(true);
+  async function reloadAll() {
+    setLoading(true);
     try {
-      const res = await fetch("/api/invite/claim", {
+      const r = await fetch(`/api/public/invite/resolve?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+      const j = (await r.json()) as InviteResolved;
+      if (!j.ok || !j.invitation) throw new Error(j.error || "not found");
+      setRes(j);
+      setFirstName(j.invitation.guest.firstName || "");
+      setLastName(j.invitation.guest.lastName || "");
+      setEmail(j.invitation.guest.email || "");
+      setPhone(j.invitation.guest.phone || "");
+      await reloadChildren();
+      setError("");
+    } catch (e: any) {
+      setError(e.message || "Fehler beim Laden.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function reloadChildren() {
+    const r = await fetch(`/api/public/invite/children?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+    const j = await r.json();
+    if (j.ok) setChildren(j.children as ChildRow[]);
+  }
+
+  React.useEffect(() => { if (code) reloadAll(); else { setError("Kein Code angegeben."); setLoading(false); } }, [code]);
+
+  async function submitRsvp(choice: "YES" | "NO") {
+    try {
+      setSaving(true);
+      const r = await fetch("/api/public/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          code,
-          guest: {
-            firstName: firstName || undefined,
-            lastName: lastName || undefined,
-            email: email || undefined,
-            phone: phone || undefined,
-          },
-          rsvp: decision,
-          seatWish:
-            seatSection || seatRow || seatNumber
-              ? {
-                  section: seatSection || undefined,
-                  row: seatRow || undefined,
-                  number: seatNumber || undefined,
-                }
-              : undefined,
-        }),
+        body: JSON.stringify({ code, choice, guest: { firstName, lastName, email, phone } }),
       });
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setError(data?.error || "Fehler beim Absenden.");
-        return;
-      }
-      setSaved(true);
-      // Optional: Felder leeren
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPhone("");
-      setSeatSection("");
-      setSeatRow("");
-      setSeatNumber("");
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "RSVP fehlgeschlagen");
+      await reloadAll();
     } catch (e: any) {
-      setError(e?.message || "Unbekannter Fehler.");
+      setMsg(e.message || "Fehler beim Senden.");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
-  };
-
-  if (loading) {
-    return (
-      <Box textAlign="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
   }
 
-  if (!status?.ok) {
-    return (
-      <Card sx={{ maxWidth: 560, mx: "auto", mt: 4 }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={800} gutterBottom>
-            Einladung
-          </Typography>
-          <Alert severity="error">
-            {status?.error || error || "Ungültiger Link."}
-          </Alert>
-          <Button
-            sx={{ mt: 2 }}
-            variant="outlined"
-            startIcon={<ArrowBackRoundedIcon />}
-            onClick={() => router.push("/")}
-          >
-            Zur Startseite
-          </Button>
-        </CardContent>
-      </Card>
-    );
+  // Neue Plus-Ones anlegen (PENDING)
+  async function addNewRows() {
+    setMsg("");
+    const inv = res?.invitation;
+    if (!inv) return;
+    const cleaned = newRows
+      .map((r) => ({ firstName: r.firstName.trim(), lastName: r.lastName.trim(), email: r.email.trim(), phone: r.phone.trim() }))
+      .filter((r) => r.firstName || r.lastName || r.email || r.phone)
+      .slice(0, inv.plusOne.free);
+    if (!cleaned.length) { setMsg("Bitte mindestens eine Person (Name/Email/Telefon) angeben."); return; }
+
+    try {
+      setSaving(true);
+      const resp = await fetch("/api/public/invite/plusone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, guests: cleaned }) });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || "Hinzufügen fehlgeschlagen");
+      setNewRows([{ firstName: "", lastName: "", email: "", phone: "" }]);
+      await reloadAll();
+      setMsg(`Hinzugefügt: ${j.summary.created} (frei jetzt: ${j.summary.slots.remaining})`);
+    } catch (e: any) {
+      setMsg("Fehler: " + (e.message || "unbekannt"));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (saved) {
-    const isYes = decision === "YES";
-    return (
-      <Card sx={{ maxWidth: 560, mx: "auto", mt: 4 }}>
-        <CardContent>
-          <Stack spacing={2} alignItems="center">
-            {isYes ? (
-              <>
-                <CheckCircleRoundedIcon color="success" sx={{ fontSize: 48 }} />
-                <Typography variant="h6" fontWeight={800}>
-                  Danke – RSVP gespeichert!
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  Deine Zusage wurde erfasst. Das Team prüft und schaltet ggf.
-                  dein Ticket frei.
-                </Typography>
-              </>
-            ) : (
-              <>
-                <CancelRoundedIcon color="error" sx={{ fontSize: 48 }} />
-                <Typography variant="h6" fontWeight={800}>
-                  RSVP gespeichert
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  Deine Absage wurde erfasst.
-                </Typography>
-              </>
-            )}
-            <Button
-              startIcon={<ArrowBackRoundedIcon />}
-              variant="outlined"
-              onClick={() => router.push("/")}
-            >
-              Zur Startseite
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
-    );
+  // Bestehende Kinder bearbeiten / löschen / akzeptieren (bis Ticket)
+  async function saveChild(c: ChildRow) {
+    try {
+      setSaving(true);
+      const resp = await fetch("/api/public/invite/plusone/update", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, id: c.id, guest: c.guest }) });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || "Speichern fehlgeschlagen");
+      setMsg("Gespeichert.");
+    } catch (e: any) { setMsg("Fehler: " + (e.message || "unbekannt")); }
+    finally { setSaving(false); }
+  }
+  async function deleteChild(id: string) {
+    try {
+      setSaving(true);
+      const resp = await fetch("/api/public/invite/plusone/delete", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, ids: [id] }) });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || "Löschen fehlgeschlagen");
+      await reloadAll();
+      setMsg("Gelöscht.");
+    } catch (e: any) { setMsg("Fehler: " + (e.message || "unbekannt")); }
+    finally { setSaving(false); }
+  }
+  async function acceptChildren(ids: string[]) {
+    try {
+      setSaving(true);
+      const resp = await fetch("/api/public/invite/plusone/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, ids }) });
+      const j = await resp.json();
+      if (!resp.ok || !j.ok) throw new Error(j.error || "Akzeptieren fehlgeschlagen");
+      await reloadAll();
+      setMsg(`Akzeptiert: ${j.accepted}`);
+    } catch (e: any) { setMsg("Fehler: " + (e.message || "unbekannt")); }
+    finally { setSaving(false); }
   }
 
-  const remaining = status.remaining;
-  const full = remaining <= 0;
+  function goTicket() { router.push(`/my-qr?code=${encodeURIComponent(code)}`); }
+
+  const inv = res?.invitation;
 
   return (
-    <Card sx={{ maxWidth: 560, mx: "auto", mt: 2 }}>
-      <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="h6" fontWeight={800} textAlign="center">
-            Einladung zu „{status.event.name}“
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center">
-            Eingeladen von: <strong>{status.hostName}</strong>
-          </Typography>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1000, mx: "auto" }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>Einladung</Typography>
 
-          <Stack direction="row" spacing={1} justifyContent="center">
-            <Chip label={`Max: ${status.maxInvitees}`} size="small" />
-            <Chip label={`Belegt: ${status.used}`} size="small" />
-            <Chip
-              color={full ? "default" : "success"}
-              label={`Frei: ${remaining}`}
-              size="small"
-            />
-          </Stack>
+      {loading && <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}><CircularProgress /></Stack>}
+      {!loading && error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {full && (
-            <Alert severity="warning">
-              Das Kontingent ist leider erschöpft. Du kannst aktuell keine
-              weitere Person anmelden.
-            </Alert>
-          )}
+      {!loading && inv && (
+        <Card>
+          <CardHeader
+            title={`Einladung zu „${inv.event.name}“`}
+            subheader={<div>{new Date(inv.event.startsAt).toLocaleString()} – {new Date(inv.event.endsAt).toLocaleString()}</div>}
+          />
+          <CardContent>
+            {/* Plus-One Kontingent */}
+            {inv.plusOne.max > 0 && (
+              <Alert severity={inv.plusOne.free > 0 ? "info" : "warning"} sx={{ mb: 2 }}>
+                Max: {inv.plusOne.max} · Belegt: {inv.plusOne.used} · Frei: {inv.plusOne.free}
+                {inv.plusOne.free === 0 && <> – Kontingent erschöpft.</>}
+              </Alert>
+            )}
 
-          <Divider />
+            {/* Eigene Angaben */}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>Deine Angaben</Typography>
+            <Stack spacing={2} sx={{ mb: 2 }}>
+              <TextField label="Vorname" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <TextField label="Nachname" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              <TextField label="E-Mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <TextField label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </Stack>
 
-          <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            Deine Angaben
-          </Typography>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>Teilnahme</Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+              <Button variant="contained" disabled={saving} onClick={() => submitRsvp("YES")}>👍 ZUSAGEN</Button>
+              <Button variant="outlined" color="inherit" disabled={saving} onClick={() => submitRsvp("NO")}>👎 ABSAGEN</Button>
+            </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="Vorname"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              fullWidth
-              autoComplete="given-name"
-            />
-            <TextField
-              label="Nachname"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              fullWidth
-              autoComplete="family-name"
-            />
-          </Stack>
+            {inv.rsvpChoice === "YES" && !inv.approved && !inv.hasTicket && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Deine Zusage bedeutet noch kein Ticket. Das Team prüft & schaltet frei.
+              </Alert>
+            )}
+            {(inv.approved || inv.hasTicket) && (
+              <Stack spacing={1} sx={{ mb: 3 }}>
+                <Alert severity="success">Dein Ticket ist bereit.</Alert>
+                <Button fullWidth variant="contained" onClick={goTicket}>Ticket / QR anzeigen</Button>
+              </Stack>
+            )}
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="E‑Mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              fullWidth
-              autoComplete="email"
-            />
-            <TextField
-              label="Telefon"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              fullWidth
-              placeholder="+4917…"
-              autoComplete="tel"
-            />
-          </Stack>
+            <Divider sx={{ my: 2 }} />
 
-          <Typography variant="subtitle2">Teilnahme</Typography>
-          <ToggleButtonGroup
-            value={decision}
-            exclusive
-            onChange={(_, v) => setDecision(v)}
-            fullWidth
-          >
-            <ToggleButton value="YES">👍 Zusagen</ToggleButton>
-            <ToggleButton value="NO">👎 Absagen</ToggleButton>
-          </ToggleButtonGroup>
+            {/* Plus-Ones: Bestehende verwalten */}
+            {inv.plusOne.max > 0 && (
+              <>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>Deine zusätzlichen Gäste</Typography>
+                <Table size="small" sx={{ mb: 2 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Vorname</TableCell>
+                      <TableCell>Nachname</TableCell>
+                      <TableCell>E-Mail</TableCell>
+                      <TableCell>Telefon</TableCell>
+                      <TableCell align="right">Aktionen</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {children.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell>
+                          <Chip size="small" label={c.ticketIssued ? "TICKET" : c.status} color={c.ticketIssued ? "success" : c.status === "ACCEPTED" ? "primary" : "default"} />
+                        </TableCell>
+                        <TableCell><TextField size="small" value={c.guest.firstName} onChange={(e) => setChildren(cs => cs.map(x => x.id === c.id ? { ...x, guest: { ...x.guest, firstName: e.target.value } } : x))} disabled={c.ticketIssued} /></TableCell>
+                        <TableCell><TextField size="small" value={c.guest.lastName} onChange={(e) => setChildren(cs => cs.map(x => x.id === c.id ? { ...x, guest: { ...x.guest, lastName: e.target.value } } : x))} disabled={c.ticketIssued} /></TableCell>
+                        <TableCell><TextField size="small" value={c.guest.email} onChange={(e) => setChildren(cs => cs.map(x => x.id === c.id ? { ...x, guest: { ...x.guest, email: e.target.value } } : x))} disabled={c.ticketIssued} /></TableCell>
+                        <TableCell><TextField size="small" value={c.guest.phone} onChange={(e) => setChildren(cs => cs.map(x => x.id === c.id ? { ...x, guest: { ...x.guest, phone: e.target.value } } : x))} disabled={c.ticketIssued} /></TableCell>
+                        <TableCell align="right">
+                          <IconButton size="small" title="Speichern" onClick={() => saveChild(c)} disabled={saving || c.ticketIssued}><SaveIcon fontSize="small" /></IconButton>
+                          <IconButton size="small" title="Löschen" onClick={() => deleteChild(c.id)} disabled={saving || c.ticketIssued}><DeleteIcon fontSize="small" /></IconButton>
+                          {c.status !== "ACCEPTED" && !c.ticketIssued && (
+                            <IconButton size="small" title="Akzeptieren" onClick={() => acceptChildren([c.id])} disabled={saving}><CheckIcon fontSize="small" /></IconButton>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
-          <Divider />
+                {/* Neue hinzufügen */}
+                {inv.plusOne.free > 0 && (
+                  <>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Neue Personen hinzufügen (PENDING)</Typography>
+                    {newRows.map((row, i) => (
+                      <Stack key={i} direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 1 }}>
+                        <TextField size="small" label="Vorname" value={row.firstName} onChange={(e) => setNewRows(rs => rs.map((x, idx) => idx === i ? { ...x, firstName: e.target.value } : x))} />
+                        <TextField size="small" label="Nachname" value={row.lastName} onChange={(e) => setNewRows(rs => rs.map((x, idx) => idx === i ? { ...x, lastName: e.target.value } : x))} />
+                        <TextField size="small" label="E-Mail" value={row.email} onChange={(e) => setNewRows(rs => rs.map((x, idx) => idx === i ? { ...x, email: e.target.value } : x))} />
+                        <TextField size="small" label="Telefon" value={row.phone} onChange={(e) => setNewRows(rs => rs.map((x, idx) => idx === i ? { ...x, phone: e.target.value } : x))} />
+                      </Stack>
+                    ))}
+                    <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                      <Button variant="text" onClick={() => setNewRows(rs => [...rs, { firstName: "", lastName: "", email: "", phone: "" }])}>
+                        Zeile hinzufügen
+                      </Button>
+                      <Button variant="contained" onClick={addNewRows} disabled={saving}>Speichern</Button>
+                    </Stack>
+                  </>
+                )}
+              </>
+            )}
 
-          <Typography variant="subtitle2">Optionaler Sitzwunsch</Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="Sektion"
-              value={seatSection}
-              onChange={(e) => setSeatSection(e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Reihe"
-              value={seatRow}
-              onChange={(e) => setSeatRow(e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Platz"
-              value={seatNumber}
-              onChange={(e) => setSeatNumber(e.target.value)}
-              fullWidth
-            />
-          </Stack>
-
-          {warn && <Alert severity="warning">{warn}</Alert>}
-          {error && <Alert severity="error">{error}</Alert>}
-
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<EventSeatRoundedIcon />}
-            disabled={submitting || full}
-            onClick={onSubmit}
-          >
-            {submitting ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}
-            Antwort senden
-          </Button>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            textAlign="center"
-          >
-            Hinweis: Deine Zusage bedeutet noch kein Ticket. Das Team prüft und
-            schaltet ggf. frei.
-          </Typography>
-
-          <Box textAlign="center" mt={1}>
-            <Button
-              variant="text"
-              size="small"
-              startIcon={<ArrowBackRoundedIcon />}
-              onClick={() => router.push("/")}
-            >
-              Zur Startseite
-            </Button>
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
+            {msg && <Typography variant="body2" color="text.secondary">{msg}</Typography>}
+          </CardContent>
+        </Card>
+      )}
+    </Box>
   );
 }

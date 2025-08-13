@@ -2,7 +2,6 @@
   "realm": "checkpoint",
   "enabled": true,
   "sslRequired": "none",
-
   "roles": {
     "realm": [
       { "name": "admin" },
@@ -10,7 +9,6 @@
       { "name": "guest" }
     ]
   },
-
   "clients": [
     {
       "clientId": "checkpoint-admin",
@@ -28,11 +26,8 @@
         "http://localhost:3000",
         "http://127.0.0.1:3000"
       ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
+      "attributes": { "pkce.code.challenge.method": "S256" }
     },
-
     {
       "clientId": "checkpoint-guest",
       "name": "checkpoint-guest (Guest Web /me)",
@@ -45,33 +40,22 @@
         "http://localhost:3000/*",
         "http://127.0.0.1:3000/*"
       ],
-      "webOrigins": [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
+      "webOrigins": []
     },
-
     {
-      "clientId": "checkpoint-scanner",
-      "name": "checkpoint-scanner (Native iOS/Android)",
+      "clientId": "checkpoint-mobile",
+      "name": "checkpoint-mobile (Expo/Native)",
       "protocol": "openid-connect",
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "checkpoint://oauthredirect",
+        "exp://127.0.0.1:19000/*",
         "https://auth.expo.io/@DEIN_EXPO_USERNAME/checkpoint"
       ],
-      "webOrigins": [],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
+      "webOrigins": []
     },
-
     {
       "clientId": "checkpoint-api",
       "name": "checkpoint-api (server-to-server)",
@@ -80,13 +64,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
-      "bearerOnly": false,
+      "secret": "zomzt73VuP6LTUpPpZf5pghlv8exNCtB",
       "redirectUris": [],
       "webOrigins": [],
-      "secret": "zomzt73VuP6LTUpPpZf5pghlv8exNCtB"
+      "serviceAccountClientRoles": {
+        "realm-management": [
+          "manage-users"
+        ]
+      }
     }
   ],
-
   "users": [
     {
       "username": "admin",
@@ -96,7 +83,14 @@
       "enabled": true,
       "emailVerified": true,
       "credentials": [{ "type": "password", "value": "p" }],
-      "realmRoles": ["admin"]
+      "realmRoles": ["admin"],
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
     },
     {
       "username": "security",

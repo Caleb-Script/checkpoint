@@ -3,800 +3,230 @@
 
 import * as React from "react";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Stack,
-  Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Chip,
-  Alert,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Checkbox,
-  Tooltip,
+  Box, Button, Card, CardContent, CardHeader, Stack, Typography, FormControl, InputLabel, Select, MenuItem,
+  Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Chip, IconButton, Tooltip, Snackbar, Alert
 } from "@mui/material";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
-import EventSeatRoundedIcon from "@mui/icons-material/EventSeatRounded";
-import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
-import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
-import { format } from "date-fns";
-import de from "date-fns/locale/de";
-import { useRouter } from "next/navigation";
-import { useSession } from "@/context/SessionContext";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
-type Item = {
+type EventDto = { id: string; name: string };
+
+type InvitationRow = {
   id: string;
-  createdAt: string;
-  rsvpChoice: "YES" | "NO" | null;
-  rsvpAt: string | null;
-  approved: boolean;
-  approvedAt: string | null;
   status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELED";
-  guestProfile: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    primaryEmail: string | null;
-    phone: string | null;
-  };
-  ticket: {
-    id: string;
-    seat?: {
-      section: string | null;
-      row: string | null;
-      number: string | null;
-    } | null;
-  } | null;
-  event: { id: string; name: string; startsAt: string };
-  approvedBy?: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-  } | null;
-};
-
-type ShareInfo = {
-  ok: true;
-  invitationId: string;
-  event: { id: string; name: string };
-  guest: {
-    firstName: string | null;
-    lastName: string | null;
-    primaryEmail: string | null;
-  } | null;
-  maxInvitees: number;
-  used: number;
-  remaining: number;
+  rsvpChoice: "YES" | "NO" | null;
+  approved: boolean;
   shareCode: string | null;
-  shareLink: string | null;
+  inviteLink: string | null;
+  type: "main" | "plusone";
+  invitedByName?: string | null;
+  maxInvitees?: number | null;
+  guest: { email?: string | null; phone?: string | null; name?: string | null };
+  ticket: { id: string; state: string; seat?: { section?: string | null; row?: string | null; number?: string | null } | null } | null;
 };
 
-export default function InvitationResponsesPage() {
-  const { loading, isAuthenticated, roles } = useSession();
-  const router = useRouter();
-  const isAdmin = roles.includes("admin") || roles.includes("security");
+type IssueTicketResp = {
+  ok: boolean;
+  invitation: { id: string; name: string };
+  account: { username: string; tempPassword: string };
+  ticket: { id: string; url: string; pngUrl: string; pdfUrl: string };
+  whatsapp: { url: string; text: string };
+  error?: string;
+};
 
-  const [eventId, setEventId] = React.useState("");
-  const [items, setItems] = React.useState<Item[]>([]);
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // Auswahl
+export default function ResponsesPage() {
+  const [events, setEvents] = React.useState<EventDto[]>([]);
+  const [eventId, setEventId] = React.useState<string>("");
+  const [rows, setRows] = React.useState<InvitationRow[]>([]);
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
+  const [onlyAccepted, setOnlyAccepted] = React.useState<boolean>(true);
+  const [loading, setLoading] = React.useState(false);
 
-  // Sitz-Dialog (Approve mit Sitz)
-  const [seatDlg, setSeatDlg] = React.useState<{
-    open: boolean;
-    invitationId?: string;
-    section?: string;
-    row?: string;
-    number?: string;
-  }>({ open: false });
-
-  // Share-Dialog (Quota + Link)
-  const [shareDlg, setShareDlg] = React.useState<{
-    open: boolean;
-    invitationId?: string;
-    maxInvitees?: number;
-    shareLink?: string | null;
-    shareCode?: string | null;
-    used?: number;
-    remaining?: number;
-  }>({ open: false });
-
-  // Batch Versand Optionen
-  const [seatAll, setSeatAll] = React.useState<{
-    section?: string;
-    row?: string;
-    number?: string;
-  }>({});
-  const [webBaseUrl, setWebBaseUrl] = React.useState<string>("");
-  const [profilePath, setProfilePath] = React.useState<string>("/my-qr");
-  const [appStoreUrl, setAppStoreUrl] = React.useState<string>(
-    "https://apps.apple.com/de/app/"
-  );
-  const [playStoreUrl, setPlayStoreUrl] = React.useState<string>(
-    "https://play.google.com/store/apps/details?id="
-  );
-  const [waResults, setWaResults] = React.useState<
-    {
-      invitationId: string;
-      waLink: string;
-      imageUrl: string;
-      profileUrl: string;
-      phone?: string | null;
-    }[]
-  >([]);
+  const [snack, setSnack] = React.useState<{ open: boolean; msg: string; sev: "success" | "error" | "info" }>({ open: false, msg: "", sev: "success" });
 
   React.useEffect(() => {
-    // Default Base: Origin
-    if (typeof window !== "undefined") {
-      setWebBaseUrl(window.location.origin);
-    }
+    (async () => {
+      const r = await fetch("/api/admin/events");
+      const j = await r.json();
+      if (j.ok) setEvents(j.events.map((e: any) => ({ id: e.id, name: e.name })));
+    })();
   }, []);
 
-  const load = async () => {
-    setBusy(true);
-    setError(null);
+  async function refresh() {
+    if (!eventId) return;
+    setLoading(true);
     try {
-      const url = new URL("/api/invitations/responses", window.location.origin);
-      if (eventId) url.searchParams.set("eventId", eventId);
-      url.searchParams.set("rsvp", "YES");
-      url.searchParams.set("approved", "false");
-      url.searchParams.set("limit", "200");
-      const res = await fetch(url, { credentials: "include" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Fehler beim Laden");
-      setItems(data.items || []);
-      setSelected({});
-      setWaResults([]);
-    } catch (e: any) {
-      setError(e?.message || "Unbekannter Fehler");
+      const r = await fetch(`/api/admin/invitations?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store" });
+      const j = await r.json();
+      if (j.ok) setRows(j.invitations as InvitationRow[]);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  };
-
-  const approve = async (
-    invitationId: string,
-    seat?: { section?: string; row?: string; number?: string }
-  ) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/invitations/approve", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invitationId, seat }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Freigabe fehlgeschlagen");
-      setItems((prev) => prev.filter((x) => x.id !== invitationId));
-      setSelected((prev) => {
-        const next = { ...prev };
-        delete next[invitationId];
-        return next;
-      });
-    } catch (e: any) {
-      setError(e?.message || "Unbekannter Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const reject = async (invitationId: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/invitations/reject", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invitationId, revokeTicket: true }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Ablehnung fehlgeschlagen");
-      setItems((prev) => prev.filter((x) => x.id !== invitationId));
-      setSelected((prev) => {
-        const next = { ...prev };
-        delete next[invitationId];
-        return next;
-      });
-    } catch (e: any) {
-      setError(e?.message || "Unbekannter Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const fetchShareInfo = async (invitationId: string) => {
-    const base = webBaseUrl || window.location.origin;
-    const res = await fetch(
-      `/api/invitations/share?invitationId=${encodeURIComponent(invitationId)}&base=${encodeURIComponent(base)}`,
-      { credentials: "include" }
-    );
-    const data = (await res.json()) as ShareInfo | any;
-    if (!res.ok || !data?.ok)
-      throw new Error(data?.error || "Fehler beim Laden des Share-Status");
-    return data as ShareInfo;
-  };
-
-  const openShareDialog = async (invitationId: string) => {
-    try {
-      const info = await fetchShareInfo(invitationId);
-      setShareDlg({
-        open: true,
-        invitationId,
-        maxInvitees: info.maxInvitees,
-        shareLink: info.shareLink,
-        shareCode: info.shareCode,
-        used: info.used,
-        remaining: info.remaining,
-      });
-    } catch (e: any) {
-      setError(e?.message || "Share-Status konnte nicht geladen werden");
-    }
-  };
-
-  const saveShareDialog = async (rotate = false) => {
-    if (!shareDlg.invitationId) return;
-    try {
-      const res = await fetch("/api/invitations/share", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invitationId: shareDlg.invitationId,
-          maxInvitees:
-            shareDlg.maxInvitees !== undefined
-              ? Math.max(0, Math.floor(shareDlg.maxInvitees))
-              : undefined,
-          rotate,
-          base: webBaseUrl || window.location.origin,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data?.ok)
-        throw new Error(data?.error || "Speichern fehlgeschlagen");
-      setShareDlg({
-        open: true,
-        invitationId: data.invitationId,
-        maxInvitees: data.maxInvitees,
-        shareLink: data.shareLink,
-        shareCode: data.shareCode,
-        used: data.used,
-        remaining: data.remaining,
-      });
-    } catch (e: any) {
-      setError(e?.message || "Fehler beim Speichern des Share-Links");
-    }
-  };
-
-  const selectedIds = React.useMemo(
-    () =>
-      Object.entries(selected)
-        .filter(([_, v]) => v)
-        .map(([k]) => k),
-    [selected]
-  );
-  const allChecked = items.length > 0 && selectedIds.length === items.length;
-  const someChecked =
-    selectedIds.length > 0 && selectedIds.length < items.length;
-
-  const toggleAll = (val: boolean) => {
-    const next: Record<string, boolean> = {};
-    if (val) items.forEach((x) => (next[x.id] = true));
-    setSelected(next);
-  };
-
-  const batchSend = async () => {
-    if (selectedIds.length === 0) return;
-    setBusy(true);
-    setError(null);
-    setWaResults([]);
-    try {
-      const res = await fetch("/api/tickets/send", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invitationIds: selectedIds,
-          seat: seatAll,
-          webBaseUrl,
-          profilePath,
-          appStoreUrl,
-          playStoreUrl,
-          sendWhatsApp: true,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data?.ok)
-        throw new Error(data?.error || "Versand fehlgeschlagen");
-      const rows = (data.results || [])
-        .filter((r: any) => r.ok)
-        .map((r: any) => ({
-          invitationId: r.invitationId,
-          waLink: r.waLink,
-          imageUrl: r.imageUrl,
-          profileUrl: r.profileUrl,
-          phone: r.phone || null,
-        }));
-      setWaResults(rows);
-    } catch (e: any) {
-      setError(e?.message || "Unbekannter Fehler beim Versand");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // noop
-    }
-  };
-
-  if (loading) {
-    return (
-      <Box textAlign="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
   }
-  if (!isAuthenticated) {
-    router.push(`/login?next=${encodeURIComponent("/invitations/responses")}`);
-    return null;
+  React.useEffect(() => { void refresh(); }, [eventId]);
+
+  function toggle(id: string) {
+    setSelected((s) => ({ ...s, [id]: !s[id] }));
   }
-  if (!isAdmin) {
-    return (
-      <Box mt={4}>
-        <Alert severity="error">Kein Zugriff – nur Security/Admin.</Alert>
-      </Box>
-    );
+
+  const visibleRows = rows
+    .filter(r => (onlyAccepted ? r.status === "ACCEPTED" : true))
+    .sort((a, b) => (a.type === "main" && b.type !== "main" ? -1 : a.type !== "main" && b.type === "main" ? 1 : 0));
+
+  const selectedRows = visibleRows.filter(r => selected[r.id]);
+
+  async function issueOne(invitationId: string) {
+    try {
+      const r = await fetch("/api/admin/invitations/issue-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId }),
+      });
+      const j: IssueTicketResp = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "Ticket-Ausstellung fehlgeschlagen");
+
+      // Account & WA
+      const creds = `User: ${j.account.username} — Passwort: ${j.account.tempPassword}`;
+      await navigator.clipboard.writeText(`${creds}\n${j.whatsapp.text}`);
+      window.open(j.whatsapp.url, "_blank"); // WhatsApp mit vorgefülltem Text öffnen
+
+      // Optional: PDF direkt öffnen
+      window.open(j.ticket.pdfUrl, "_blank");
+
+      setSnack({ open: true, msg: `Ticket erstellt. Zugang kopiert & WA geöffnet. (${j.invitation.name})`, sev: "success" });
+      await refresh();
+    } catch (e: any) {
+      setSnack({ open: true, msg: e.message || "Fehler", sev: "error" });
+    }
+  }
+
+  async function issueSelected() {
+    for (const r of selectedRows) {
+      if (r.status !== "ACCEPTED") continue;
+      await issueOne(r.id);
+    }
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 2 }}
-        >
-          <Typography variant="h6" fontWeight={800}>
-            RSVP‑Antworten – Freigabe & Versand
-          </Typography>
-          <IconButton onClick={load} disabled={busy} aria-label="Neu laden">
-            <RefreshRoundedIcon />
-          </IconButton>
-        </Stack>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1300, mx: "auto" }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>Einladungs-Antworten & Tickets</Typography>
 
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={1}
-          alignItems="center"
-          mb={2}
-        >
-          <TextField
-            label="Event‑ID (optional filtern)"
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            size="small"
-            fullWidth
-          />
-          <Button variant="contained" onClick={load} disabled={busy}>
-            {busy ? "Lade …" : "Laden"}
-          </Button>
-        </Stack>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Batch‑Versand Optionen */}
-        <Stack spacing={1.5} sx={{ mb: 2 }}>
-          <Typography variant="subtitle2">
-            Batch‑Versand Optionen (für ausgewählte Einträge)
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="Sitz Sektion (alle)"
-              value={seatAll.section || ""}
-              onChange={(e) =>
-                setSeatAll((p) => ({
-                  ...p,
-                  section: e.target.value || undefined,
-                }))
-              }
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Sitz Reihe (alle)"
-              value={seatAll.row || ""}
-              onChange={(e) =>
-                setSeatAll((p) => ({ ...p, row: e.target.value || undefined }))
-              }
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Sitz Platz (alle)"
-              value={seatAll.number || ""}
-              onChange={(e) =>
-                setSeatAll((p) => ({
-                  ...p,
-                  number: e.target.value || undefined,
-                }))
-              }
-              size="small"
-              fullWidth
-            />
-          </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="Web‑Base URL"
-              helperText="z. B. https://… (wird für Bild/Profil‑Links verwendet)"
-              value={webBaseUrl}
-              onChange={(e) => setWebBaseUrl(e.target.value)}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Profil‑Pfad"
-              value={profilePath}
-              onChange={(e) => setProfilePath(e.target.value)}
-              size="small"
-              fullWidth
-            />
-          </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              label="App Store (iOS)"
-              value={appStoreUrl}
-              onChange={(e) => setAppStoreUrl(e.target.value)}
-              size="small"
-              fullWidth
-            />
-            <TextField
-              label="Play Store (Android)"
-              value={playStoreUrl}
-              onChange={(e) => setPlayStoreUrl(e.target.value)}
-              size="small"
-              fullWidth
-            />
-          </Stack>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              startIcon={<WhatsAppIcon />}
-              disabled={busy || selectedIds.length === 0}
-              onClick={batchSend}
-            >
-              Tickets via WhatsApp vorbereiten ({selectedIds.length})
+      <Card sx={{ mb: 3 }}>
+        <CardHeader title="1) Event auswählen" />
+        <CardContent>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+            <FormControl sx={{ minWidth: 320 }}>
+              <InputLabel>Event</InputLabel>
+              <Select value={eventId} label="Event" onChange={(e) => setEventId(String(e.target.value))}>
+                {events.map((e) => <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button variant={onlyAccepted ? "contained" : "outlined"} onClick={() => setOnlyAccepted(!onlyAccepted)}>
+              {onlyAccepted ? "Nur ACCEPTED (aktiv)" : "Alle anzeigen"}
             </Button>
+            <Button variant="outlined" onClick={refresh} disabled={!eventId || loading}>Aktualisieren</Button>
           </Stack>
-          {waResults.length > 0 && (
-            <Alert severity="success">
-              {waResults.length} WhatsApp‑Links wurden erzeugt. Klicke auf den
-              Link‑Button in der Tabelle, um pro Gast zu öffnen/kopieren.
-            </Alert>
-          )}
-        </Stack>
+        </CardContent>
+      </Card>
 
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={allChecked}
-                  indeterminate={someChecked}
-                  onChange={(e) => toggleAll(e.target.checked)}
-                />
-              </TableCell>
-              <TableCell>Datum</TableCell>
-              <TableCell>Gast</TableCell>
-              <TableCell>Kontakt</TableCell>
-              <TableCell>Event</TableCell>
-              <TableCell>RSVP</TableCell>
-              <TableCell>Ticket/Sitz</TableCell>
-              <TableCell align="right">Aktion</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.length === 0 ? (
+      <Card>
+        <CardHeader
+          title="2) Antworten verwalten & Tickets verteilen"
+          subheader="Wähle Gäste aus (ACCEPTED) und sende Ticket via WhatsApp inkl. PDF-QR. Der Account wird automatisch erzeugt."
+        />
+        <CardContent>
+          <Table size="small">
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={8} align="center">
-                  {busy ? "Lade …" : "Keine Einträge"}
-                </TableCell>
+                <TableCell>✔</TableCell>
+                <TableCell>Typ</TableCell>
+                <TableCell>Gast</TableCell>
+                <TableCell>Kontakt</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Ticket</TableCell>
+                <TableCell align="right">Aktionen</TableCell>
               </TableRow>
-            ) : (
-              items.map((it) => {
-                const g = it.guestProfile;
-                const seat = it.ticket?.seat;
-                const seatText = seat
-                  ? [seat.section, seat.row, seat.number]
-                      .filter(Boolean)
-                      .join(" ")
-                  : "—";
-                const checked = !!selected[it.id];
-                const wa = waResults.find((w) => w.invitationId === it.id);
-
-                return (
-                  <TableRow key={it.id} hover>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={checked}
-                        onChange={(e) =>
-                          setSelected((p) => ({
-                            ...p,
-                            [it.id]: e.target.checked,
-                          }))
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {format(
-                        new Date(it.rsvpAt || it.createdAt),
-                        "dd.MM.y HH:mm",
-                        { locale: de }
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography fontWeight={600}>
-                        {[g.firstName, g.lastName].filter(Boolean).join(" ") ||
-                          "Gast"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {g.primaryEmail || "—"}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {g.phone || "—"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{it.event.name}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      {it.rsvpChoice === "YES" ? (
-                        <Chip size="small" color="success" label="Zusage" />
-                      ) : it.rsvpChoice === "NO" ? (
-                        <Chip size="small" color="error" label="Absage" />
-                      ) : (
-                        <Chip size="small" label="—" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {it.ticket ? (
-                        <Chip
-                          size="small"
-                          icon={<EventSeatRoundedIcon />}
-                          label={seatText}
-                        />
-                      ) : (
-                        <Chip size="small" label="Kein Ticket" />
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        justifyContent="flex-end"
-                      >
-                        <Tooltip title="Share‑Link & Kontingent">
-                          <IconButton onClick={() => openShareDialog(it.id)}>
-                            <LinkRoundedIcon />
+            </TableHead>
+            <TableBody>
+              {visibleRows.map((r) => (
+                <TableRow key={r.id} hover>
+                  <TableCell><Checkbox checked={!!selected[r.id]} onChange={() => toggle(r.id)} /></TableCell>
+                  <TableCell>{r.type === "main" ? "Haupt" : `Plus-One${r.invitedByName ? ` von ${r.invitedByName}` : ""}`}</TableCell>
+                  <TableCell>{r.guest?.name || "-"}</TableCell>
+                  <TableCell>
+                    <div>{r.guest?.email || "-"}</div>
+                    <div>{r.guest?.phone || "-"}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip size="small" label={r.status} color={r.status === "ACCEPTED" ? "primary" : r.status === "PENDING" ? "default" : "default"} />
+                      {r.rsvpChoice && <Chip size="small" variant="outlined" label={`RSVP: ${r.rsvpChoice}`} />}
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    {r.ticket ? <Chip size="small" color="success" label="erstellt" /> : <Chip size="small" label="offen" />}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Tooltip title="Ticket + WhatsApp senden (inkl. PDF-Link)">
+                        <span>
+                          <IconButton
+                            color="success"
+                            onClick={() => issueOne(r.id)}
+                            disabled={r.status !== "ACCEPTED"}
+                          >
+                            <WhatsAppIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      {/* Optional: Link der Einladung kopieren */}
+                      {r.inviteLink && (
+                        <Tooltip title="Einladungs-Link kopieren">
+                          <IconButton onClick={() => navigator.clipboard.writeText(r.inviteLink!)}>
+                            <ContentCopyIcon />
                           </IconButton>
                         </Tooltip>
-                        {wa ? (
-                          <>
-                            <Tooltip title="WhatsApp öffnen">
-                              <IconButton
-                                onClick={() =>
-                                  window.open(
-                                    wa.waLink,
-                                    "_blank",
-                                    "noopener,noreferrer"
-                                  )
-                                }
-                              >
-                                <WhatsAppIcon color="success" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="wa.me Link kopieren">
-                              <IconButton onClick={() => copy(wa.waLink)}>
-                                <ContentCopyRoundedIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        ) : null}
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<EventSeatRoundedIcon />}
-                          onClick={() =>
-                            setSeatDlg({
-                              open: true,
-                              invitationId: it.id,
-                              section: seat?.section ?? "",
-                              row: seat?.row ?? "",
-                              number: seat?.number ?? "",
-                            })
-                          }
-                        >
-                          Sitz + Freigeben
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="success"
-                          startIcon={<CheckCircleRoundedIcon />}
-                          onClick={() => approve(it.id)}
-                        >
-                          Freigeben
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          startIcon={<CancelRoundedIcon />}
-                          onClick={() => reject(it.id)}
-                        >
-                          Ablehnen
-                        </Button>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
+                      )}
+                      {/* Falls schon Ticket existiert: PDF öffnen */}
+                      {r.ticket && (
+                        <Tooltip title="PDF-QR öffnen (falls vorhanden)">
+                          <span>
+                            <IconButton onClick={async () => {
+                              // Hole aktuellen Ticket-Share mitsamt PDF-URL über issue-Ticket erneut (idempotent)
+                              const rr = await fetch("/api/admin/invitations/issue-ticket", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ invitationId: r.id }),
+                              });
+                              const jj: IssueTicketResp = await rr.json();
+                              if (jj.ok) window.open(jj.ticket.pdfUrl, "_blank");
+                            }}>
+                              <PictureAsPdfIcon />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
-      {/* Sitz-Dialog */}
-      <Dialog
-        open={seatDlg.open}
-        onClose={() => setSeatDlg({ open: false })}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>Sitz vergeben & freigeben</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1.5} mt={1}>
-            <TextField
-              label="Sektion"
-              value={seatDlg.section || ""}
-              onChange={(e) =>
-                setSeatDlg((d) => ({ ...d, section: e.target.value }))
-              }
-              fullWidth
-            />
-            <TextField
-              label="Reihe"
-              value={seatDlg.row || ""}
-              onChange={(e) =>
-                setSeatDlg((d) => ({ ...d, row: e.target.value }))
-              }
-              fullWidth
-            />
-            <TextField
-              label="Platz"
-              value={seatDlg.number || ""}
-              onChange={(e) =>
-                setSeatDlg((d) => ({ ...d, number: e.target.value }))
-              }
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSeatDlg({ open: false })}>Abbrechen</Button>
-          <Button
-            variant="contained"
-            onClick={async () => {
-              const id = seatDlg.invitationId!;
-              await approve(id, {
-                section: seatDlg.section || undefined,
-                row: seatDlg.row || undefined,
-                number: seatDlg.number || undefined,
-              });
-              setSeatDlg({ open: false });
-            }}
-          >
-            Freigeben
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Share-Dialog */}
-      <Dialog
-        open={shareDlg.open}
-        onClose={() => setShareDlg({ open: false })}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Share‑Link & Kontingent</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1.5} mt={1}>
-            <TextField
-              label="Max. weitere Einladungen (Kontingent)"
-              type="number"
-              value={shareDlg.maxInvitees ?? 0}
-              onChange={(e) =>
-                setShareDlg((d) => ({
-                  ...d,
-                  maxInvitees: Number(e.target.value || 0),
-                }))
-              }
-              fullWidth
-            />
-            <Stack direction="row" spacing={1}>
-              <Chip label={`Belegt: ${shareDlg.used ?? 0}`} size="small" />
-              <Chip
-                color="success"
-                label={`Frei: ${shareDlg.remaining ?? 0}`}
-                size="small"
-              />
-            </Stack>
-            <TextField
-              label="Share‑Link"
-              value={shareDlg.shareLink || ""}
-              InputProps={{ readOnly: true }}
-              fullWidth
-            />
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<ContentCopyRoundedIcon />}
-                onClick={() =>
-                  shareDlg.shareLink &&
-                  navigator.clipboard.writeText(shareDlg.shareLink)
-                }
-                disabled={!shareDlg.shareLink}
-              >
-                Link kopieren
-              </Button>
-              <Button
-                variant="text"
-                startIcon={<RefreshRoundedIcon />}
-                onClick={() => saveShareDialog(true)}
-              >
-                Code rotieren
+          {selectedRows.length > 0 && (
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+              <Button variant="contained" startIcon={<WhatsAppIcon />} onClick={issueSelected}>
+                Für ausgewählte: Ticket & WhatsApp senden
               </Button>
             </Stack>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShareDlg({ open: false })}>
-            Schließen
-          </Button>
-          <Button variant="contained" onClick={() => saveShareDialog(false)}>
-            Speichern
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+
+      <Snackbar open={snack.open} autoHideDuration={4000} onClose={() => setSnack(s => ({ ...s, open: false }))}>
+        <Alert severity={snack.sev} variant="filled">{snack.msg}</Alert>
+      </Snackbar>
+    </Box>
   );
 }

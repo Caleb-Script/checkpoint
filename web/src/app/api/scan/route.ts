@@ -26,7 +26,7 @@ type ScanPayload = {
     ticketId: string;
     eventId: string;
     deviceId?: string;
-    direction: "IN" | "OUT";
+    direction: "INSIDE" | "OUTSIDE";
     iat?: number;
     exp?: number;
 };
@@ -115,7 +115,9 @@ export async function POST(req: NextRequest) {
 
         // 5) Zustandsübergang bestimmen
         let newState = ticket.currentState;
-        if (decoded.direction === "IN") {
+
+        console.log(decoded.direction)
+        if (decoded.direction === "INSIDE") {
             if (ticket.currentState === "INSIDE") {
                 return NextResponse.json({ error: "Person ist bereits drinnen" }, { status: 409 });
             }

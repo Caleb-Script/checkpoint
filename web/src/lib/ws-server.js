@@ -1,116 +1,98 @@
 // /Users/gentlebookpro/Projekte/checkpoint/web/src/lib/ws-server.js
 const { WebSocketServer } = require("ws");
+const url = require("url");
 
-let wss = null;
-let heartbeatTimer = null;
+const CHANNELS = ["security", "admin", "public"];
 
-/**
- * Markiert einen Client als lebendig (wird bei 'pong' aufgerufen).
- */
-function heartbeat() {
-  this.isAlive = true;
-}
+function initWebSocketServer() {
+  // Wir nutzen noServer und hooken das Upgrade im server.js
+  const wss = new WebSocketServer({ noServer: true });
 
-/**
- * Hängt einen WebSocket-Server an den HTTP-Server (Singleton).
- * Fügt Heartbeat (Ping/Pong) hinzu, damit Proxies/Dev-Server die
- * Verbindung nicht wegschlafen lassen und tote Sockets aufgeräumt werden.
- */
-function initWebSocketServer(server) {
-  if (wss) return wss;
+  // Channel -> Set<WebSocket>
+  wss.channels = new Map(CHANNELS.map((c) => [c, new Set()]));
 
-  wss = new WebSocketServer({ server });
+  const count = (channel) => wss.channels.get(channel)?.size ?? 0;
 
-  wss.on("connection", (ws) => {
+  function broadcast(channel, data) {
+    const msg = typeof data === "string" ? data : JSON.stringify(data);
+    for (const ws of wss.channels.get(channel) || []) {
+      if (ws.readyState === ws.OPEN) ws.send(msg);
+    }
+  }
+  wss.broadcast = broadcast;
+
+  // Heartbeat: Browser antworten automatisch mit 'pong'
+  function heartbeat() {
+    this.isAlive = true;
+  }
+
+  wss.on("connection", (ws, request, clientInfo) => {
+    const channel = clientInfo.channel || "public";
+    ws.channel = channel;
     ws.isAlive = true;
+
+    wss.channels.get(channel).add(ws);
     ws.on("pong", heartbeat);
 
-    console.log(
-      "🔌 Neue Security-Client-Verbindung",
-      `| aktive Clients: ${getClientCount() + 1}` // +1, weil noch nicht gezählt
-    );
+    console.log(`🔌 Neue ${channel}-Client-Verbindung | aktive Clients: ${count(channel)}`);
 
     ws.on("close", () => {
-      console.log(
-        "❌ Security-Client getrennt",
-        `| aktive Clients: ${getClientCount()}`
-      );
+      wss.channels.get(channel).delete(ws);
+      console.log(`❌ ${channel}-Client getrennt | aktive Clients: ${count(channel)}`);
     });
 
     ws.on("error", (err) => {
-      console.warn("⚠️ WS Client Error:", err?.message || err);
+      console.warn(`⚠️ WS error (${channel}): ${err.message}`);
     });
+
+    // Optional: initiale Nachricht
+    try {
+      ws.send(JSON.stringify({ type: "hello", channel, t: Date.now() }));
+    } catch {}
   });
 
-  // Heartbeat-Intervall: alle 15s pingen
-  heartbeatTimer = setInterval(() => {
-    if (!wss) return;
-    wss.clients.forEach((ws) => {
-      if (ws.isAlive === false) {
+  // Ping-Loop: hält Verbindungen wach und räumt tote Verbindungen auf
+  const interval = setInterval(() => {
+    for (const [channel, set] of wss.channels) {
+      for (const ws of set) {
+        if (ws.isAlive === false) {
+          try {
+            ws.terminate();
+          } catch {}
+          set.delete(ws);
+          console.log(`⛔️ Terminated stale ${channel}-client | aktive Clients: ${set.size}`);
+          continue;
+        }
+        ws.isAlive = false;
         try {
-          ws.terminate();
+          ws.ping();
         } catch {}
-        return;
       }
-      ws.isAlive = false;
-      try {
-        ws.ping(); // Client antwortet mit 'pong' -> heartbeat()
-      } catch {}
-    });
-  }, 15000);
+    }
+  }, 30000);
 
-  console.log("✅ WebSocket-Server initialisiert (Heartbeat aktiv)");
+  wss.on("close", () => clearInterval(interval));
+
   return wss;
 }
 
-/**
- * Broadcastet einen neuen Scan-Log an alle verbundenen Clients.
- * @param {any} log
- */
-function broadcastScanUpdate(log) {
-  if (!wss) return;
-  const message = JSON.stringify({ type: "scan-log", data: log });
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      try {
-        client.send(message);
-      } catch {}
-    }
+function handleUpgrade(wss, request, socket, head) {
+  const { pathname, query } = url.parse(request.url, true);
+  // Erwartet /ws/<channel>
+  const parts = pathname.split("/").filter(Boolean); // ['ws','security']
+  const channel = (parts[1] || query.channel || "public").toLowerCase();
+
+  if (parts[0] !== "ws" || !CHANNELS.includes(channel)) {
+    socket.destroy();
+    return;
+  }
+
+  // ✋ Optional: Origin-Check hier einbauen, falls nötig
+  // const origin = request.headers.origin || "";
+
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit("connection", ws, request, { channel });
   });
 }
 
-/**
- * Anzahl aktiver/verbindungsbereiter Clients ermitteln.
- */
-function getClientCount() {
-  if (!wss) return 0;
-  let count = 0;
-  wss.clients.forEach((c) => {
-    if (c.readyState === 1) count++;
-  });
-  return count;
-}
-
-/**
- * Optionaler Shutdown-Hook (z. B. bei process.on('SIGINT')).
- */
-function shutdownWebSocketServer() {
-  if (heartbeatTimer) {
-    clearInterval(heartbeatTimer);
-    heartbeatTimer = null;
-  }
-  if (wss) {
-    try {
-      wss.close();
-    } catch {}
-    wss = null;
-  }
-  console.log("🛑 WebSocket-Server gestoppt");
-}
-
-module.exports = {
-  initWebSocketServer,
-  broadcastScanUpdate,
-  getClientCount,
-  shutdownWebSocketServer,
-};
+module.exports = { initWebSocketServer, handleUpgrade };

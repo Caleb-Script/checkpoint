@@ -160,6 +160,7 @@ export default function ScanPage() {
       setFetching(false);
     }
   };
+  
 
   // WebSocket für Live-Logs
   React.useEffect(() => {

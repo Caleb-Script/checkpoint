@@ -3,7 +3,7 @@
         "appName": "Checkpoint",
             "webDir": "out",
                 "server": {
-        "url": "https://9012d75a55d3.ngrok-free.app",
+        "url": "https://9c9ef72bcc6a.ngrok-free.app",
             "cleartext": false,
                 "allowNavigation": [
                     "*.example.com",

@@ -35,11 +35,15 @@
     "jsonwebtoken": "^9.0.2",
     "keycloak-js": "^26.2.0",
     "next": "15.4.6",
+    "pdfkit": "^0.17.1",
     "qrcode": "^1.5.4",
+    "querystring": "^0.2.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-qr-barcode-scanner": "^2.1.8",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "xlsx": "^0.18.5",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.2",
