@@ -1,0 +1,20 @@
+{
+    "appId": "de.checkpoint.app",
+        "appName": "Checkpoint",
+            "webDir": "out",
+                "server": {
+        "url": "https://9012d75a55d3.ngrok-free.app",
+            "cleartext": false,
+                "allowNavigation": [
+                    "*.example.com",
+                    "*.your-domain.de",
+                    "checkpoint.example.com"
+                ]
+    },
+    "ios": {
+        "contentInset": "automatic",
+            "allowsLinkPreview": false
+    },
+    "plugins": { }
+}
+  

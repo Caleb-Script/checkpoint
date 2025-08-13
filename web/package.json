@@ -1,0 +1,57 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "scripts": {
+    "dev2": "node server.js",
+    "build2": "next build",
+    "start2": "NODE_ENV=production node server.js",
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:format": "prisma format",
+    "prisma:gen": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "studio": "prisma studio",
+    "prisma:reset": "npx prisma migrate reset",
+    "seed": "npx prisma db seed"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/ios": "^7.4.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@prisma/client": "^6.14.0",
+    "axios": "^1.11.0",
+    "canvas": "^3.1.2",
+    "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "keycloak-js": "^26.2.0",
+    "next": "15.4.6",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-qr-barcode-scanner": "^2.1.8",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.6",
+    "prisma": "^6.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}

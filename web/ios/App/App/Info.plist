@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Standard App Infos -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Checkpoint</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+
+	<!-- Kamera- & Mikrofon-Berechtigungen -->
+	<key>NSCameraUsageDescription</key>
+	<string>Die Kamera wird zum Scannen von QR-Codes für Einlass- und Auslasskontrollen benötigt.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Das Mikrofon wird nur benötigt, wenn Audioaufnahme in der App aktiviert wird.</string>
+
+	<!-- Optional: Zugriff auf Fotomediathek -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Wird benötigt, um heruntergeladene QR-Codes in deiner Fotomediathek zu speichern.</string>
+
+	<!-- WKWebView Konfiguration -->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>checkpoint.example.com</string>
+		<string>*.your-domain.de</string>
+	</array>
+
+	<!-- ATS für lokale Dev-URL (http://localhost) - nur für Entwicklung aktivieren -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPSLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
+	<!-- Standard Storyboard-Config -->
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!-- App Orientierung -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+
+	<!-- Statusleiste -->
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDefault</string>
+
+	<!-- iPad Unterstützung -->
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+</dict>
+</plist>
