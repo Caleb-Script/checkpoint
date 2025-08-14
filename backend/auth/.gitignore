@@ -1,0 +1,175 @@
+# ─────────────────────────────────────────────
+# 📦 Node.js & TypeScript
+# ─────────────────────────────────────────────
+node_modules/
+dist/
+build/
+out/
+*.tsbuildinfo
+*.tgz
+.npm
+.pnpm-debug.log*
+.yarn/*
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.eslintcache
+.stylelintcache
+
+# Runtime & PID files
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# Diagnostic reports
+report.*.json
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output
+.clinic
+
+# VSCode & IDEs
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+*.launch
+
+# ─────────────────────────────────────────────
+# 🐍 Python & FastAPI
+# ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage*
+.cache/
+nosetests.xml
+coverage.xml
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+.env
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Poetry & Pipenv
+poetry.lock
+.pdm.lock
+.pdm.toml
+Pipfile.lock
+__pypackages__/
+
+# Jupyter/IPython
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# Framework-Spezifisch
+instance/
+.webassets-cache
+.scrapy/
+docs/_build/
+.site/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3*
+celerybeat-*.pid
+
+# SageMath
+*.sage.py
+
+# ─────────────────────────────────────────────
+# ☕ Java & Gradle
+# ─────────────────────────────────────────────
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+**/build/
+!**/src/**/build/
+.gradle-task-name-cache
+HELP.md
+bin/
+!**/src/**/bin/
+target/
+*.class
+
+# IntelliJ
+*.iws
+*.ipr
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ─────────────────────────────────────────────
+# 📄 Dokumentation & Assets
+# ─────────────────────────────────────────────
+.extras/doc/projekthandbuch/html/*
+.extras/doc/folien/*.html
+.extras/doc/api/*
+.extras/doc/ReadMe.html
+scripts/dependency-check-report.html
+dependencies.svg
+
+# ─────────────────────────────────────────────
+# 🔐 Sensible Daten
+# ─────────────────────────────────────────────
+.env*
+.extras/compose/db/*_password.txt
+src/config/resources/tls/key.pem
+sonar-project.properties
+
+# Assets
+.extras/*.{png,jpeg,gif,mp4,mpeg,mkv,avi,ogg,webm}
+
+# ─────────────────────────────────────────────
+# 🧪 Tests & Snapshots
+# ─────────────────────────────────────────────
+__tests__/**/__snapshots__/
+
+# ─────────────────────────────────────────────
+# 🖥️ Betriebssystem
+# ─────────────────────────────────────────────
+.DS_Store

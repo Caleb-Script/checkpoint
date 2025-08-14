@@ -1,0 +1,148 @@
+{
+  "realm": "checkpoint",
+  "enabled": true,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      { "name": "admin" },
+      { "name": "security" },
+      { "name": "guest" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "checkpoint-mein",
+      "name": "checkpoint-main",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "secret": "REPLACE_WITH_SECURE_SECRET",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "true"
+      }
+    },
+    {
+      "clientId": "checkpoint-admin",
+      "name": "checkpoint-admin (Next.js Admin, confidential)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "secret": "REPLACE_WITH_SECURE_SECRET",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "true"
+      }
+    },
+    {
+      "clientId": "checkpoint-guest",
+      "name": "checkpoint-guest (Guest Web)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    },
+    {
+      "clientId": "checkpoint-api",
+      "name": "checkpoint-api (Resource Server, bearer-only)",
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
+      "clientId": "checkpoint-jobs",
+      "name": "checkpoint-jobs (M2M/Service Account)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "REPLACE_WITH_SECURE_SECRET",
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
+      "clientId": "checkpoint-mobile",
+      "name": "checkpoint-mobile (Expo/Native)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "exp://127.0.0.1:19000/*",
+        "https://auth.expo.io/@DEIN_EXPO_USERNAME/checkpoint"
+      ],
+      "webOrigins": [],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@omnixys.com",
+      "firstName": "Admin",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "security",
+      "email": "security@omnixys.com",
+      "firstName": "Security",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["security"]
+    },
+    {
+      "username": "guest",
+      "email": "guest@omnixys.com",
+      "firstName": "Guest",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["guest"]
+    }
+  ]
+}

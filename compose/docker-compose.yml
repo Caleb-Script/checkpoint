@@ -9,7 +9,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - keycloak_pg_data:/var/lib/postgresql/data
+      - type: bind
+        source: ../volumes/postgres/keycloak
+        target: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloakdb"]
       interval: 10s
@@ -25,7 +27,10 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - app_pg_data:/var/lib/postgresql/data
+      - type: bind
+        source: ../volumes/postgres/app
+        target: /var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U eventuser -d eventdb"]
       interval: 10s
@@ -38,7 +43,9 @@ services:
       - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - redis_data:/data
+      - type: bind
+        source: ../volumes/redis
+        target: /data
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
@@ -61,7 +68,9 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "false"
     volumes:
-      - ./import:/opt/keycloak/data/import
+      - type: bind
+        source: ../volumes/keycloak/import
+        target: /opt/keycloak/data/import
 
 volumes:
   keycloak_pg_data:

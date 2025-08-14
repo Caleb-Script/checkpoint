@@ -1,0 +1,98 @@
+# Hauptschema
+schema {
+  mutation: Mutation
+}
+# Mutation-Typ
+type Mutation {
+  login(username: String!, password: String!): LoginResult
+  refresh(refresh_token: String!): LoginResult
+  signIn(input: SignInInput!): SignInPayload
+
+  updateUser(userIdOrUsername: String!, input: UpdateUserInput!): OkPayload!
+  setUserPassword(input: SetPasswordInput!): OkPayload!
+  deleteUser(userIdOrUsername: String!): OkPayload!
+
+  assignRealmRole(username: String!, roleName: Role!): OkPayload!
+  removeRealmRole(username: String!, roleName: Role!): OkPayload!
+}
+
+# ===== Enums & Scalar =====
+enum Role {
+  ADMIN
+  SECURITY
+  GUEST
+}
+
+# ===== Inputs =====
+input SignInInput {
+  firstName: String!
+  lastName: String!
+  emailData: String
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  email: String
+}
+
+input SetPasswordInput {
+  userIdOrUsername: String!
+  newPassword: String!
+}
+
+
+# ===== Payloads =====
+type SignInPayload {
+  username: String!
+  password: String!
+}
+
+type OkPayload {
+  ok: Boolean!
+}
+
+type UpdatePayload {
+   username: String
+  password: String
+  email: String
+}
+
+type SignInPayload {
+  username: String!
+  password: String!
+}
+
+# Ergebnis des Logins
+type LoginResult {
+    """
+  Zugriffstoken für authentifizierte Operationen.
+  """
+  access_token: String!
+
+  """
+  Gültigkeitsdauer des Zugriffstokens (in Sekunden).
+  """
+  expires_in: Int!
+
+  """
+  Token zur Erneuerung des Zugriffstokens.
+  """
+  refresh_token: String!
+
+  """
+  Gültigkeitsdauer des Refresh-Tokens (in Sekunden).
+  """
+  refresh_expires_in: Int!
+
+  """
+  ID-Token, das Benutzerinformationen enthält.
+  """
+  id_token: String!
+
+  """
+  Gültigkeitsbereich des Tokens.
+  """
+  scope: String!
+  roles: [String!]
+}

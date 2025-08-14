@@ -11,6 +11,27 @@
   },
   "clients": [
     {
+      "clientId": "checkpoint-mein",
+      "name": "checkpoint-main",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "secret": "REPLACE_WITH_SECURE_SECRET",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
       "clientId": "checkpoint-admin",
       "name": "checkpoint-admin (Next.js Admin)",
       "protocol": "openid-connect",

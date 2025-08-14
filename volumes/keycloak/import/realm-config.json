@@ -1,0 +1,133 @@
+{
+  "realm": "checkpoint",
+  "enabled": true,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      { "name": "ADMIN" },
+      { "name": "SECURITY" },
+      { "name": "GUEST" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "checkpoint-main",
+      "name": "checkpoint-main",
+      "protocol": "openid-connect",
+      "description": "",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "secret": "REPLACE_WITH_SECURE_SECRET",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "checkpoint-admin",
+      "name": "checkpoint-admin (Next.js Admin)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    },
+    {
+      "clientId": "checkpoint-guest",
+      "name": "checkpoint-guest (Guest Web /me)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": []
+    },
+    {
+      "clientId": "checkpoint-mobile",
+      "name": "checkpoint-mobile (Expo/Native)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "exp://127.0.0.1:19000/*",
+        "https://auth.expo.io/@DEIN_EXPO_USERNAME/checkpoint"
+      ],
+      "webOrigins": []
+    },
+    {
+      "clientId": "checkpoint-api",
+      "name": "checkpoint-api (server-to-server)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "zomzt73VuP6LTUpPpZf5pghlv8exNCtB",
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@omnixys.com",
+      "firstName": "Admin",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["ADMIN"],
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
+    },
+    {
+      "username": "security",
+      "email": "security@omnixys.com",
+      "firstName": "Security",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["SECURITY"]
+    },
+    {
+      "username": "guest",
+      "email": "guest@omnixys.com",
+      "firstName": "Guest",
+      "lastName": "Omnixys",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "p" }],
+      "realmRoles": ["GUEST"]
+    }
+  ]
+}

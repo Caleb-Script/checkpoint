@@ -1,0 +1,43 @@
+# /services/seatmap-extractor/src/graphql/schema.graphql
+scalar Upload
+
+input ImportOptions {
+  eventId: String
+  webhookUrl: String
+}
+
+type Seat {
+  id: String
+  label: String
+  section: String
+  row: String
+  number: String
+  x: Float!
+  y: Float!
+  w: Float!
+  h: Float!
+  confidence: Float
+}
+
+type SeatMap {
+  width: Float!
+  height: Float!
+  seats: [Seat!]!
+  sourceType: String!
+}
+
+type ImportResult {
+  ok: Boolean!
+  seatCount: Int!
+  warnings: [String!]
+  pushedTo: String
+}
+
+type Query {
+  _health: String!
+}
+
+type Mutation {
+  importSeatMap(file: Upload!, options: ImportOptions): SeatMap!
+  pushToCheckpoint(seatMap: String!, options: ImportOptions!): ImportResult!
+}
