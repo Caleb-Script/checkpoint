@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - type: bind
-        source: ../volumes/postgres/keycloak
+        source: ../volumes/postgres/keycloak/data
         target: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloakdb"]
@@ -28,7 +28,7 @@ services:
       - "5433:5432"
     volumes:
       - type: bind
-        source: ../volumes/postgres/app
+        source: ../volumes/postgres/app/data
         target: /var/lib/postgresql/data
 
     healthcheck:
@@ -44,7 +44,7 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - type: bind
-        source: ../volumes/redis
+        source: ../volumes/redis/data
         target: /data
 
   keycloak:
@@ -71,8 +71,3 @@ services:
       - type: bind
         source: ../volumes/keycloak/import
         target: /opt/keycloak/data/import
-
-volumes:
-  keycloak_pg_data:
-  app_pg_data:
-  redis_data:
