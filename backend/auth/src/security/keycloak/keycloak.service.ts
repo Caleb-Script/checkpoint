@@ -55,6 +55,15 @@ type KeycloakUser = {
   enabled?: boolean;
 };
 
+export type Token = {
+  access_token: string;
+  expires_in: number;
+  refresh_token: string;
+  refresh_expires_in: number;
+  id_token: string;
+  scope: string;
+};
+
 @Injectable()
 export class KeycloakService implements KeycloakConnectOptionsFactory {
   readonly #loginHeaders: RawAxiosRequestHeaders;
@@ -100,7 +109,7 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
     }
 
     this.#logPayload(response);
-    return response.data;
+    return response.data as Token;
   }
 
   async refresh(refresh_token: string | undefined) {

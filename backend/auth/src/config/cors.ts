@@ -8,7 +8,7 @@ export const corsOptions: CorsOptions = {
     'http://gateway:3000',
   ],
   // origin: true,
-
+  credentials: true,
   // Access-Control-Allow-Methods (hier: default)
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   // Access-Control-Allow-Headers

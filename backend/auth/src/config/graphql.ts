@@ -23,5 +23,6 @@ export const graphQlModuleOptions: ApolloDriverConfig = {
   // driver: ApolloDriver,
   driver: ApolloFederationDriver,
   playground: false,
+  context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
   // TODO formatError und logger konfigurieren, damit UserInputError nicht in der Konsole protokolliert wird
 };

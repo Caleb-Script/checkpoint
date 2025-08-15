@@ -3,8 +3,10 @@ import { ResponseTimeInterceptor } from '../../logger/response-time.interceptor.
 import { BadUserInputError } from './errors.js';
 import { KeycloakService, SignIn } from './keycloak.service.js';
 import { UseInterceptors } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
 import { Public } from 'nest-keycloak-connect';
+import { CookieOptions, Response } from 'express';
+import process from 'node:process';
 
 // @nestjs/graphql fasst die Input-Daten zu einem Typ zusammen
 /** Typdefinition für Login-Daten bei GraphQL */
@@ -21,6 +23,19 @@ export interface RefreshInput {
   readonly refresh_token: string; // eslint-disable-line @typescript-eslint/naming-convention
 }
 
+const cookieOpts = (maxAgeMs: number): CookieOptions => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production' ? true : false,
+  sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax') as
+    | true
+    | false
+    | 'strict'
+    | 'lax'
+    | 'none',
+  path: '/',
+  maxAge: maxAgeMs,
+});
+
 @Resolver('login')
 @UseInterceptors(ResponseTimeInterceptor)
 export class LoginResolver {
@@ -34,20 +49,34 @@ export class LoginResolver {
 
   @Mutation()
   @Public()
-  async login(@Args() { username, password }: LoginInput) {
+  async login(
+    @Args() { username, password }: LoginInput,
+    @Context() ctx: { res: Response },
+  ) {
     this.#logger.debug('login: username=%s', username);
 
     const result = await this.#keycloakService.login({
       username,
       password,
     });
-    if (result === undefined) {
+    if (result === undefined || result === null) {
       throw new BadUserInputError(
         'Falscher Benutzername oder falsches Passwort',
       );
     }
 
-    this.#logger.trace('login: result=%o', result);
+    // Tokens → Cookies
+    ctx.res.cookie(
+      'kc_access_token',
+      result.access_token,
+      cookieOpts(result.expires_in * 1000),
+    );
+    ctx.res.cookie(
+      'kc_refresh_token',
+      result.refresh_token,
+      cookieOpts(result.refresh_expires_in * 1000),
+    );
+
     return result;
   }
 
@@ -126,6 +155,7 @@ export class LoginResolver {
   @Public()
   async deleteUser(@Args('userIdOrUsername') userIdOrUsername: string) {
     await this.#keycloakService.deleteUser(userIdOrUsername);
+
     return { ok: true };
   }
 

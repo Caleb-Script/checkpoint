@@ -6,9 +6,9 @@ schema {
 type Mutation {
   login(username: String!, password: String!): LoginResult
   refresh(refresh_token: String!): LoginResult
-  signIn(input: SignInInput!): SignInPayload
+  signIn(input: UserInput!): SignInPayload
 
-  updateUser(userIdOrUsername: String!, input: UpdateUserInput!): OkPayload!
+  updateUser(userIdOrUsername: String!, input: UserInput!): OkPayload!
   setUserPassword(input: SetPasswordInput!): OkPayload!
   deleteUser(userIdOrUsername: String!): OkPayload!
 
@@ -24,15 +24,9 @@ enum Role {
 }
 
 # ===== Inputs =====
-input SignInInput {
+input UserInput {
   firstName: String!
   lastName: String!
-  emailData: String
-}
-
-input UpdateUserInput {
-  firstName: String
-  lastName: String
   email: String
 }
 
