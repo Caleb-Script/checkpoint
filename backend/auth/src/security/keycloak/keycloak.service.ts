@@ -1,6 +1,6 @@
 import { keycloakConnectOptions, paths } from '../../config/keycloak.js';
 import { getLogger } from '../../logger/logger.js';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import axios, {
   type AxiosInstance,
   type AxiosResponse,
@@ -10,6 +10,8 @@ import {
   type KeycloakConnectOptions,
   type KeycloakConnectOptionsFactory,
 } from 'nest-keycloak-connect';
+import { BadUserInputError } from './errors.js';
+import * as jose from 'jose';
 
 const { authServerUrl, clientId, secret } = keycloakConnectOptions;
 
@@ -64,11 +66,37 @@ export type Token = {
   scope: string;
 };
 
+export interface KeycloakUserInfo {
+  sub: string;
+  username?: string;
+  name?: string;
+  givenName?: string;
+  familyName?: string;
+  email?: string;
+  roles: string[];
+}
+
+type RealmPayload = jose.JWTPayload & {
+  sub: string;
+  preferred_username?: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  email?: string;
+  email_verified?: boolean;
+  realm_access?: { roles?: string[] };
+  iss?: string; // issuer
+  azp?: string; // authorized party (client)
+};
+
 @Injectable()
 export class KeycloakService implements KeycloakConnectOptionsFactory {
   readonly #loginHeaders: RawAxiosRequestHeaders;
   readonly #keycloakClient: AxiosInstance;
   readonly #logger = getLogger(KeycloakService.name);
+
+  // JWKS Cache pro Issuer (robuster gegen Port/Host-Änderungen)
+  #jwksCache = new Map<string, ReturnType<typeof jose.createRemoteJWKSet>>();
 
   constructor() {
     const authorization = Buffer.from(`${clientId}:${secret}`, 'utf8').toString(
@@ -91,6 +119,31 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
   // ================================================= Auth ========================================================================
 
+  async getUserInfo(token: string): Promise<KeycloakUserInfo> {
+    const decoded = jose.decodeJwt(token) as RealmPayload;
+    const iss = decoded.iss;
+    if (!iss) throw new UnauthorizedException('Missing issuer');
+
+    // Token kryptografisch prüfen (Issuer erzwingen, Audience optional)
+    const JWKS = this.#getJwks(iss);
+    const { payload } = await jose.jwtVerify(token, JWKS, {
+      issuer: iss,
+      // audience: this.config.clientId, // optional, wenn du azp/aud erzwingen willst
+    });
+
+    const p = payload as RealmPayload;
+
+    return {
+      sub: p.sub,
+      username: p.preferred_username,
+      name: p.name,
+      givenName: p.given_name,
+      familyName: p.family_name,
+      email: p.email,
+      roles: p.realm_access?.roles ?? [],
+    };
+  }
+
   async login({ username, password }: Login) {
     this.#logger.debug('login: username=%s', username);
     if (username === undefined || password === undefined) {
@@ -110,6 +163,28 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
     this.#logPayload(response);
     return response.data as Token;
+  }
+
+  async logout(refreshToken: string | undefined) {
+    this.#logger.debug('logout: refresh=%s', refreshToken);
+
+    // 1) Keycloak: Refresh-Token invalidieren (Token-Revocation)
+    if (refreshToken) {
+      const logoutBody = `client_id=${clientId}&refresh_token=${refreshToken}`;
+
+      try {
+        await this.#keycloakClient.post(paths.logout, logoutBody, {
+          headers: this.#loginHeaders,
+        });
+      } catch {
+        this.#logger.warn(
+          'logout: Fehler bei POST-Request: path=%s, body=%o',
+          paths.logout,
+          logoutBody,
+        );
+        throw new BadUserInputError('Falscher Token');
+      }
+    }
   }
 
   async refresh(refresh_token: string | undefined) {
@@ -135,7 +210,7 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
       return null;
     }
     this.#logger.debug('refresh: response.data=%o', response.data);
-    return response.data;
+    return response.data as Token;
   }
 
   // ================================================= User anlegen ======================================================
@@ -436,5 +511,15 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
     const { roles } = realm_access;
     this.#logger.debug('#logPayload: roles=%o', roles);
+  }
+
+  #getJwks(issuer: string) {
+    const url = new URL(`${issuer}/protocol/openid-connect/certs`);
+    let jwks = this.#jwksCache.get(url.href);
+    if (!jwks) {
+      jwks = jose.createRemoteJWKSet(url);
+      this.#jwksCache.set(url.href, jwks);
+    }
+    return jwks;
   }
 }

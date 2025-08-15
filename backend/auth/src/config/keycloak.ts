@@ -41,6 +41,7 @@ if (NODE_ENV === 'development') {
 /** Pfade für den REST-Client zu Keycloak */
 export const paths = {
   accessToken: `realms/${realm}/protocol/openid-connect/token`,
+  logout: `realms/${realm}/protocol/openid-connect/logout`,
   userInfo: `realms/${realm}/protocol/openid-connect/userinfo`,
   introspect: `realms/${realm}/protocol/openid-connect/token/introspect`,
   users: `admin/realms/${realm}/users`,

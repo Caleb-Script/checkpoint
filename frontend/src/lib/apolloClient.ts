@@ -20,7 +20,7 @@ let currentToken: string | undefined = undefined;
 const getApolloClient = (
   token: string | undefined,
 ): ApolloClient<NormalizedCacheObject> => {
-  if (client && currentToken === token) {
+  if (client && currentToken !== token) {
     return client; // Gibt die existierende Instanz zurück, wenn der Token gleich ist
   }
 
@@ -37,7 +37,7 @@ const getApolloClient = (
    */
   const httpLink = createHttpLink({
     uri, // GraphQL-Endpunkt
-    credentials: "include", // <<-- wichtig: HttpOnly-Cookies reisen mit
+    credentials: 'include', // <<-- wichtig: HttpOnly-Cookies reisen mit
   });
 
   /**

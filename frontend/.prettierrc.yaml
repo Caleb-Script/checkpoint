@@ -1,0 +1,48 @@
+# Basisoptionen
+singleQuote: true
+semi: true
+tabWidth: 2
+printWidth: 80
+trailingComma: all
+bracketSpacing: true
+arrowParens: always
+endOfLine: lf
+quoteProps: as-needed
+
+# Import-Sortierung für bessere Lesbarkeit
+plugins:
+  - prettier-plugin-organize-imports
+
+overrides:
+  # TypeScript, JavaScript, JSX/TSX
+  - files:
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - '*.jsx'
+      - '*.cjs'
+      - '*.mjs'
+      - '*.mts'
+    options:
+      tabWidth: 2
+      trailingComma: all
+      semi: true
+      singleQuote: true
+      printWidth: 80
+
+  # JSON und YAML – maschinenlesbar und sauber formatiert
+  - files:
+      - '*.json'
+      - '*.yaml'
+      - '*.yml'
+    options:
+      tabWidth: 2
+      trailingComma: none
+      singleQuote: false
+
+  # Markdown – für lesbare Dokumentation (z. B. README.md)
+  - files:
+      - '*.md'
+    options:
+      proseWrap: always
+      printWidth: 100

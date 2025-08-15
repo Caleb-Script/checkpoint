@@ -1,10 +1,17 @@
 # Hauptschema
 schema {
   mutation: Mutation
+  query: Query
 }
+
+type Query {
+  me(token: String): UserInfo
+}
+
 # Mutation-Typ
 type Mutation {
   login(username: String!, password: String!): LoginResult
+  logout: OkPayload!
   refresh(refresh_token: String!): LoginResult
   signIn(input: UserInput!): SignInPayload
 
@@ -55,6 +62,16 @@ type UpdatePayload {
 type SignInPayload {
   username: String!
   password: String!
+}
+
+type UserInfo {
+  sub: ID! 
+  username: String
+  name: String
+  givenName: String
+  familyName: String
+  email: String
+  roles: [String!]!
 }
 
 # Ergebnis des Logins

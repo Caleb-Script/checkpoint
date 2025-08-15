@@ -3,9 +3,9 @@ import { ResponseTimeInterceptor } from '../../logger/response-time.interceptor.
 import { BadUserInputError } from './errors.js';
 import { KeycloakService, SignIn } from './keycloak.service.js';
 import { UseInterceptors } from '@nestjs/common';
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Public } from 'nest-keycloak-connect';
-import { CookieOptions, Response } from 'express';
+import { CookieOptions, Response, Request } from 'express';
 import process from 'node:process';
 
 // @nestjs/graphql fasst die Input-Daten zu einem Typ zusammen
@@ -23,7 +23,19 @@ export interface RefreshInput {
   readonly refresh_token: string; // eslint-disable-line @typescript-eslint/naming-convention
 }
 
-const cookieOpts = (maxAgeMs: number): CookieOptions => ({
+// ENV -> erlaubte Werte mappen
+// function parseSameSite(input?: string): SameSiteOpt {
+//   switch ((input ?? 'strict').toLowerCase()) {
+//     case 'lax': return 'lax';
+//     case 'none': return 'none';
+//     case 'strict': return 'strict';
+//     case 'true': return true;
+//     case 'false': return false;
+//     default: return 'strict';
+//   }
+// }
+
+const cookieOpts = (maxAgeMs: number | undefined): CookieOptions => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production' ? true : false,
   sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax') as
@@ -33,7 +45,7 @@ const cookieOpts = (maxAgeMs: number): CookieOptions => ({
     | 'lax'
     | 'none',
   path: '/',
-  maxAge: maxAgeMs,
+  maxAge: maxAgeMs ? maxAgeMs : undefined, // in Millisekunden
 });
 
 @Resolver('login')
@@ -45,6 +57,31 @@ export class LoginResolver {
 
   constructor(keycloakService: KeycloakService) {
     this.#keycloakService = keycloakService;
+  }
+
+  @Query()
+  @Public()
+  async me(
+    @Args('token') token: string,
+    @Context() ctx: { req: Request; res: Response },
+  ) {
+    this.#logger.debug('me: ctx.req.cookies=%o', ctx.req.cookies);
+    this.#logger.debug('me: ctx.req.cookies=%o', ctx.req);
+    let accessToken = ctx.req.cookies?.kc_access_token;
+    if (!accessToken) {
+      if (token) {
+        accessToken = token;
+      } else {
+        throw new BadUserInputError('Kein Access-Token gesetzt');
+      }
+    }
+
+    const user = await this.#keycloakService.getUserInfo(accessToken);
+    if (!user) {
+      throw new BadUserInputError('Benutzer nicht gefunden');
+    }
+
+    return user;
   }
 
   @Mutation()
@@ -81,6 +118,20 @@ export class LoginResolver {
     );
 
     return result;
+  }
+
+  @Mutation()
+  @Public()
+  async logout(@Context() ctx: { res: Response; req: Request }) {
+    const refreshToken = ctx.req.cookies?.kc_refresh_token;
+
+    await this.#keycloakService.logout(refreshToken);
+
+    // 2) Cookies löschen
+    ctx.res.clearCookie('kc_access_token', cookieOpts(undefined));
+    ctx.res.clearCookie('kc_refresh_token', cookieOpts(undefined));
+
+    return { ok: true };
   }
 
   @Mutation()
