@@ -65,6 +65,9 @@ export class LoginResolver {
       );
     }
 
+    // 1000 * 60 * 15, // 15 min
+    //   1000 * 60 * 60 * 24 * 7, // 7 Tage
+
     // Tokens → Cookies
     ctx.res.cookie(
       'kc_access_token',
