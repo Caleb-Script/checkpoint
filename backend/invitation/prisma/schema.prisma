@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELED
+}
+
+enum RsvpChoice {
+  YES
+  NO
+}
+
+model Invitation {
+  id             String            @id @default(cuid())
+  eventId        String
+  guestProfileId String?
+  status         InvitationStatus  @default(PENDING)
+
+  rsvpChoice     RsvpChoice?
+  approved       Boolean           @default(false)
+
+  // Plus-Ones
+  maxInvitees    Int               @default(0)
+  invitedByInvitationId String?
+  invitedBy               Invitation? @relation("InviteChain", fields: [invitedByInvitationId], references: [id])
+  plusOnes                Invitation[] @relation("InviteChain")
+
+
+  @@index([eventId, status])
+  @@index([eventId, rsvpChoice])
+  @@index([invitedByInvitationId])
+}

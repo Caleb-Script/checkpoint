@@ -1,0 +1,95 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+Einladung zu einem Event. Minimalvariante ohne Prisma-Relationen (eventId, guestProfileId sind Strings).
+"""
+type Invitation {
+  """
+  Admin-Approval. Wenn das DB-Schema dieses Feld enthält, wird es hier gespiegelt.
+  """
+  approved: Boolean
+
+  """ID des Events (String, FK im Zielsystem)."""
+  eventId: String!
+
+  """ID des Gast-Profils (String, FK im Zielsystem)."""
+  guestProfileId: String!
+
+  """ID der Einladung (cuid)."""
+  id: ID!
+
+  """
+  Optional: Referenz auf die Einladung, durch die diese Einladung entstanden ist (Invite-Chain).
+  """
+  invitedByInvitationId: String
+
+  """Wie viele zusätzliche Gäste darf dieser Gast einladen (Plus-Ones)."""
+  maxInvitees: Int!
+
+  """RSVP-Antwort (YES/NO), optional."""
+  rsvpChoice: RsvpChoice
+
+  """Aktueller Status der Einladung."""
+  status: InvitationStatus!
+}
+
+"""
+Create-Input für Einladungen: nur Event-Bezug, Plus-Ones und ggf. Invite-Chain. Gastprofil wird erst bei Ticketausgabe erzeugt.
+"""
+input InvitationCreateInput {
+  """Event-ID (String)."""
+  eventId: String!
+
+  """
+  Optional: Eltern-Einladung (Invite-Chain), falls diese Einladung von einer anderen abgeleitet wurde.
+  """
+  invitedByInvitationId: String
+
+  """Maximale Anzahl Plus-Ones (>= 0)."""
+  maxInvitees: Int! = 0
+}
+
+"""
+Status einer Einladung: PENDING (neu), ACCEPTED (zugesagt), DECLINED (abgelehnt), CANCELED (storniert).
+"""
+enum InvitationStatus {
+  ACCEPTED
+  CANCELED
+  DECLINED
+  PENDING
+}
+
+"""
+Update-Input: nur RSVP (Gast) und Approved (Admin). Plus-Ones (maxInvitees) kann Admin anpassen. Alles andere wird automatisch ermittelt.
+"""
+input InvitationUpdateInput {
+  """
+  Admin-Approval der Einladung (true/false). Erfordert passende Berechtigung im Resolver/Guard.
+  """
+  approved: Boolean
+
+  """Plus-Ones Limit. Änderung typischerweise nur durch Admin erlaubt."""
+  maxInvitees: Int
+
+  """RSVP des Gasts (YES/NO)."""
+  rsvpChoice: RsvpChoice
+}
+
+type Mutation {
+  createInvitation(input: InvitationCreateInput!): Invitation!
+  removeInvitation(id: String!): Invitation!
+  updateInvitation(id: String!, input: InvitationUpdateInput!): Invitation!
+}
+
+type Query {
+  invitation(id: ID!): Invitation!
+  invitations: [Invitation!]!
+}
+
+"""Antwort (RSVP) eines Gasts: YES oder NO."""
+enum RsvpChoice {
+  NO
+  YES
+}
