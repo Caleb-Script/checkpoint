@@ -71,7 +71,7 @@ export default function MyQrPage() {
     }
     const t = setTimeout(
       () => setCountdown((c) => (c !== null ? c - 1 : null)),
-      1000
+      1000,
     );
     return () => clearTimeout(t);
   }, [countdown, fetchMyQr]);

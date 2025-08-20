@@ -9,10 +9,10 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import getApolloClient from '../lib/apolloClient';
-import { fetchLogout, fetchUserInfo } from '../lib/server/auth/auth';
-import { KeycloakUserInfo } from '../types/auth/auth.type';
 import { LOGOUT } from '../graphql/auth/mutation';
+import getApolloClient from '../lib/apolloClient';
+import { fetchUserInfo } from '../lib/server/auth/auth';
+import { KeycloakUserInfo } from '../types/auth/auth.type';
 
 type AuthContextType = {
   user: KeycloakUserInfo | null;

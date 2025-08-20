@@ -1,6 +1,7 @@
 import { IsString } from 'class-validator';
 
 export class MintTicketDto {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @IsString()
   invitationId!: string;
 

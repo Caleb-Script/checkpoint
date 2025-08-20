@@ -1,6 +1,6 @@
 // /src/invitation/service/invitation-read.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
 
 @Injectable()
 export class InvitationReadService {
@@ -11,16 +11,17 @@ export class InvitationReadService {
   }
 
   async findAll() {
-    return await this.#prismaService.invitation.findMany({
-    });
+    return await this.#prismaService.invitation.findMany({});
   }
 
   async findOne(id: string) {
     const found = await this.#prismaService.invitation.findUnique({
-      where: { id }, include: {
+      where: { id },
+      include: {
         plusOnes: true,
-      }, });
-    if (!found) throw new NotFoundException('Event nicht gefunden');
+      },
+    });
+    if (!found) throw new NotFoundException("Event nicht gefunden");
     return found;
   }
 }

@@ -4,13 +4,37 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Box, Card, CardContent, CardHeader, Typography, Stack, Chip, Alert, Divider, Button, LinearProgress
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  Stack,
+  Chip,
+  Alert,
+  Divider,
+  Button,
+  LinearProgress,
 } from "@mui/material";
 
 type InfoResp = {
   ok: boolean;
-  ticket?: { id: string; state: "INSIDE" | "OUTSIDE"; seat: { section?: string | null; row?: string | null; number?: string | null } | null };
-  event?: { id: string; name: string; startsAt: string; endsAt: string; rotateSeconds: number };
+  ticket?: {
+    id: string;
+    state: "INSIDE" | "OUTSIDE";
+    seat: {
+      section?: string | null;
+      row?: string | null;
+      number?: string | null;
+    } | null;
+  };
+  event?: {
+    id: string;
+    name: string;
+    startsAt: string;
+    endsAt: string;
+    rotateSeconds: number;
+  };
   guest?: { name: string };
   media?: { pngUrl: string; pdfUrl: string };
   token?: { value: string; ttl: number; exp: number };
@@ -31,7 +55,10 @@ export default function TicketPage() {
     let active = true;
     (async () => {
       try {
-        const r = await fetch(`/api/public/tickets/info?token=${encodeURIComponent(claim)}`, { cache: "no-store" });
+        const r = await fetch(
+          `/api/public/tickets/info?token=${encodeURIComponent(claim)}`,
+          { cache: "no-store" },
+        );
         const j: InfoResp = await r.json();
         if (!active) return;
         if (!r.ok || !j.ok) throw new Error(j.error || "Ticket nicht geladen");
@@ -43,7 +70,9 @@ export default function TicketPage() {
         if (active) setErr(e.message || "Fehler");
       }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [claim]);
 
   // Countdown + Rotation
@@ -78,7 +107,7 @@ export default function TicketPage() {
       setPngUrl(cacheBust(j.media.pngUrl));
       setPdfUrl(j.media.pdfUrl);
       setSecondsLeft(j.token.ttl);
-      setInfo((old) => old ? { ...old, token: j.token } : old);
+      setInfo((old) => (old ? { ...old, token: j.token } : old));
     } catch (e: any) {
       // Wenn Rotation fehlschlägt: Fehlermeldung, aber Seite bleibt nutzbar (Nächster Versuch in 60s)
       setErr(e.message || "Rotation fehlgeschlagen");
@@ -86,7 +115,10 @@ export default function TicketPage() {
   }
 
   function cacheBust(url: string) {
-    const u = new URL(url, typeof window === "undefined" ? "http://x" : window.location.origin);
+    const u = new URL(
+      url,
+      typeof window === "undefined" ? "http://x" : window.location.origin,
+    );
     u.searchParams.set("v", Date.now().toString());
     return u.pathname + "?" + u.searchParams.toString();
   }
@@ -111,7 +143,9 @@ export default function TicketPage() {
     return (
       <Box sx={{ p: 4 }}>
         <LinearProgress />
-        <Typography variant="body2" sx={{ mt: 2 }}>Lade Ticket…</Typography>
+        <Typography variant="body2" sx={{ mt: 2 }}>
+          Lade Ticket…
+        </Typography>
       </Box>
     );
   }
@@ -121,7 +155,9 @@ export default function TicketPage() {
         info.ticket.seat.section ? `Sektion ${info.ticket.seat.section}` : null,
         info.ticket.seat.row ? `Reihe ${info.ticket.seat.row}` : null,
         info.ticket.seat.number ? `Platz ${info.ticket.seat.number}` : null,
-      ].filter(Boolean).join(" · ")
+      ]
+        .filter(Boolean)
+        .join(" · ")
     : "Kein Sitz zugewiesen";
 
   const presence =
@@ -130,7 +166,10 @@ export default function TicketPage() {
       : { label: "DRAUßEN", color: "default" as const };
 
   const secondsTotal = info.event?.rotateSeconds ?? 60;
-  const progress = Math.max(0, Math.min(100, ((secondsTotal - secondsLeft) / secondsTotal) * 100));
+  const progress = Math.max(
+    0,
+    Math.min(100, ((secondsTotal - secondsLeft) / secondsTotal) * 100),
+  );
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: "auto" }}>
@@ -141,8 +180,15 @@ export default function TicketPage() {
         />
         <CardContent>
           {/* Kopfbereich */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, gap: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>{info.guest?.name}</Typography>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2, gap: 2 }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {info.guest?.name}
+            </Typography>
             <Chip label={presence.label} color={presence.color} />
           </Stack>
 
@@ -169,27 +215,52 @@ export default function TicketPage() {
           </Stack>
 
           {/* Countdown / Fortschritt */}
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center" }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", textAlign: "center" }}
+          >
             Nächster QR in {secondsLeft}s
           </Typography>
           <Box sx={{ mt: 1, mb: 2 }}>
             <LinearProgress variant="determinate" value={progress} />
           </Box>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
-            <Button href={pngUrl} target="_blank" rel="noopener" variant="outlined" fullWidth>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            sx={{ mb: 2 }}
+          >
+            <Button
+              href={pngUrl}
+              target="_blank"
+              rel="noopener"
+              variant="outlined"
+              fullWidth
+            >
               QR als PNG öffnen
             </Button>
-            <Button href={pdfUrl} target="_blank" rel="noopener" variant="contained" fullWidth>
+            <Button
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener"
+              variant="contained"
+              fullWidth
+            >
               PDF herunterladen
             </Button>
           </Stack>
 
-          {err && <Alert severity="warning" sx={{ mt: 1 }}>{err}</Alert>}
+          {err && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {err}
+            </Alert>
+          )}
 
           <Divider sx={{ my: 3 }} />
           <Typography variant="caption" color="text.secondary">
-            Dieses Ticket rotiert alle {secondsTotal}s. Teile den Link nicht weiter.
+            Dieses Ticket rotiert alle {secondsTotal}s. Teile den Link nicht
+            weiter.
           </Typography>
         </CardContent>
       </Card>

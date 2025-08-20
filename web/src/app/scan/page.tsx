@@ -105,11 +105,11 @@ export default function ScanPage() {
       message.toLowerCase().includes("denied")
     ) {
       setCameraError(
-        "Kein Kamerazugriff. Bitte Kameraberechtigung erlauben und Seite neu laden."
+        "Kein Kamerazugriff. Bitte Kameraberechtigung erlauben und Seite neu laden.",
       );
       setFrameStatus("error");
       openErrorDialog(
-        "Kamera-Berechtigung fehlt. Erlaube den Zugriff in den Browser-/Systemeinstellungen."
+        "Kamera-Berechtigung fehlt. Erlaube den Zugriff in den Browser-/Systemeinstellungen.",
       );
     } else {
       setFrameStatus("error");
@@ -160,7 +160,6 @@ export default function ScanPage() {
       setFetching(false);
     }
   };
-  
 
   // WebSocket für Live-Logs
   React.useEffect(() => {

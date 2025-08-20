@@ -11,4 +11,4 @@ export const env = {
   SERVICE,
 } as const;
 
-console.debug('NODE_ENV = %s', NODE_ENV);
+console.debug("NODE_ENV = %s", NODE_ENV);

@@ -16,7 +16,7 @@ export function distance(ax: number, ay: number, bx: number, by: number) {
 export function nearest<T>(
   origin: { x: number; y: number },
   items: T[],
-  getPoint: (t: T) => { x: number; y: number }
+  getPoint: (t: T) => { x: number; y: number },
 ) {
   let best: { item: T; d: number } | null = null;
   for (const it of items) {
@@ -26,4 +26,3 @@ export function nearest<T>(
   }
   return best?.item ?? null;
 }
-

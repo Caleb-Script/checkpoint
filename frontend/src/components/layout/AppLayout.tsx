@@ -124,7 +124,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         roles={user?.roles || []}
         onLoginRoute={() => router.push('/login')}
         onLogout={() => logout()}
-        
       />
 
       <Box

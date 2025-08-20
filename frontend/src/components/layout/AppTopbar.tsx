@@ -2,7 +2,6 @@
 
 import Brightness4RoundedIcon from '@mui/icons-material/Brightness4Rounded';
 import Brightness7RoundedIcon from '@mui/icons-material/Brightness7Rounded';
-import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MenuIcon from '@mui/icons-material/Menu';
 import SensorsRoundedIcon from '@mui/icons-material/SensorsRounded';
@@ -165,13 +164,16 @@ export function AppTopBar({
                   onLogout();
                 }}
               >
-                <LogoutRoundedIcon fontSize="small" style={{ marginRight: 8 }} />
+                <LogoutRoundedIcon
+                  fontSize="small"
+                  style={{ marginRight: 8 }}
+                />
                 Logout
               </MenuItem>
             </Menu>
           </>
         ) : (
-          <LogoutButton/>
+          <LogoutButton />
         )}
       </Toolbar>
     </AppBar>

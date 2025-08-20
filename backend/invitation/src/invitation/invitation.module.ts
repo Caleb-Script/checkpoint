@@ -4,7 +4,7 @@ import { InvitationQueryResolver } from "./resolver/invitation-query.resolver.js
 import { InvitationMutationResolver } from "./resolver/invitation-mutation.resolver.js";
 import { PrismaService } from "./service/prisma.service.js";
 import { GraphQLModule } from "@nestjs/graphql";
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 import { join } from "path";
 import { InvitationWriteService } from "./service/invitation-write.service.js";
 
@@ -14,7 +14,7 @@ import { InvitationWriteService } from "./service/invitation-write.service.js";
     InvitationWriteService,
     InvitationQueryResolver,
     InvitationMutationResolver,
-    PrismaService
+    PrismaService,
   ],
 })
 export class InvitationModule {}

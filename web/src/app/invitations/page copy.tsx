@@ -87,7 +87,7 @@ function simpleCsvParse(input: string): Row[] {
   };
 
   const header = parseLine(lines[0]).map((h) =>
-    (h || "").toString().toLowerCase()
+    (h || "").toString().toLowerCase(),
   );
   const looksLikeHeader =
     header.includes("firstname") ||
@@ -164,14 +164,14 @@ export default function InvitationsPage() {
   const [eventName, setEventName] = React.useState<string>("Sommer Gala 2025");
   const [webUrlBase, setWebUrlBase] = React.useState<string>("");
   const [appStoreUrl, setAppStoreUrl] = React.useState<string>(
-    "https://apps.apple.com/de/app/"
+    "https://apps.apple.com/de/app/",
   );
   const [includeAppStore, setIncludeAppStore] = React.useState<boolean>(false);
   const [messagePreview, setMessagePreview] = React.useState<string>("");
 
   const anySelected = React.useMemo(
     () => Object.values(selected).some(Boolean),
-    [selected]
+    [selected],
   );
 
   React.useEffect(() => {
@@ -202,7 +202,7 @@ export default function InvitationsPage() {
 
   const selectedRows = React.useMemo(
     () => rows.filter((r) => selected[r.id]),
-    [rows, selected]
+    [rows, selected],
   );
 
   const buildPersonalLink = (r: Row) => {
@@ -509,7 +509,7 @@ Bis bald!`;
                     window.open(
                       buildWhatsAppUrl(msg),
                       "_blank",
-                      "noopener,noreferrer"
+                      "noopener,noreferrer",
                     );
                 }}
               >

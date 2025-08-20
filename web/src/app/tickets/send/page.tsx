@@ -118,7 +118,7 @@ export default function TicketSendPage() {
         `/api/invitations/responses?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Fehler beim Laden");
@@ -183,7 +183,7 @@ export default function TicketSendPage() {
   const refreshPreview = async () => {
     // QR neu generieren (z. B. nach Ablauf)
     const current = items.find(
-      (i) => previewQr && (i.ticket?.id === previewQr.ticketId || i.id)
+      (i) => previewQr && (i.ticket?.id === previewQr.ticketId || i.id),
     ); // grob
     if (current) await openPreviewForInvitation(current);
   };
@@ -370,10 +370,10 @@ ${webUrl}/my-qr`;
                                   onClick={() =>
                                     window.open(
                                       buildWhatsAppUrl(
-                                        buildWhatsAppMessage(inv)
+                                        buildWhatsAppMessage(inv),
                                       ),
                                       "_blank",
-                                      "noopener,noreferrer"
+                                      "noopener,noreferrer",
                                     )
                                   }
                                 >
@@ -426,7 +426,7 @@ ${webUrl}/my-qr`;
                 const chosen = items.filter((i) => selected[i.id]);
                 const lines: string[] = [];
                 lines.push(
-                  `Einlass-QR – ${direction === "IN" ? "Eingang" : "Ausgang"}`
+                  `Einlass-QR – ${direction === "IN" ? "Eingang" : "Ausgang"}`,
                 );
                 lines.push("");
                 const origin =
@@ -440,7 +440,7 @@ ${webUrl}/my-qr`;
                 window.open(
                   buildWhatsAppUrl(msg),
                   "_blank",
-                  "noopener,noreferrer"
+                  "noopener,noreferrer",
                 );
               }}
             >
@@ -532,7 +532,7 @@ ${webUrl}/my-qr`;
                       onClick={() =>
                         downloadDataUrl(
                           previewQr.qr,
-                          `ticket-${previewQr.ticketId}-${direction}.png`
+                          `ticket-${previewQr.ticketId}-${direction}.png`,
                         )
                       }
                     >

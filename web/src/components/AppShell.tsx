@@ -60,17 +60,61 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/", icon: <HomeRoundedIcon /> },
   { label: "Mein QR", href: "/my-qr", icon: <QrCode2RoundedIcon /> },
   { label: "QR (Demo)", href: "/qr", icon: <BadgeRoundedIcon /> },
-  { label: "Ticket öffnen", href: "/ticket", icon: <ConfirmationNumberOutlinedIcon /> },
+  {
+    label: "Ticket öffnen",
+    href: "/ticket",
+    icon: <ConfirmationNumberOutlinedIcon />,
+  },
 
-  { label: "Scanner", href: "/scan", icon: <CameraAltRoundedIcon />, roles: ["security", "admin"] },
-  { label: "Security", href: "/security", icon: <ShieldRoundedIcon />, roles: ["security", "admin"] },
-  { label: "Einladungen (CSV)", href: "/invitations", icon: <MailRoundedIcon />, roles: ["security", "admin"] },
-  { label: "RSVP Freigabe & Versand", href: "/invitations/responses", icon: <SendRoundedIcon />, roles: ["security", "admin"] },
-  { label: "Freigegebene (Client)", href: "/invitations/responses/client", icon: <TableViewRoundedIcon />, roles: ["security", "admin"] },
+  {
+    label: "Scanner",
+    href: "/scan",
+    icon: <CameraAltRoundedIcon />,
+    roles: ["security", "admin"],
+  },
+  {
+    label: "Security",
+    href: "/security",
+    icon: <ShieldRoundedIcon />,
+    roles: ["security", "admin"],
+  },
+  {
+    label: "Einladungen (CSV)",
+    href: "/invitations",
+    icon: <MailRoundedIcon />,
+    roles: ["security", "admin"],
+  },
+  {
+    label: "RSVP Freigabe & Versand",
+    href: "/invitations/responses",
+    icon: <SendRoundedIcon />,
+    roles: ["security", "admin"],
+  },
+  {
+    label: "Freigegebene (Client)",
+    href: "/invitations/responses/client",
+    icon: <TableViewRoundedIcon />,
+    roles: ["security", "admin"],
+  },
 
-  { label: "Gäste", href: "/guests", icon: <GroupRoundedIcon />, roles: ["admin"] },
-  { label: "Sitzplätze", href: "/seats", icon: <EventSeatRoundedIcon />, roles: ["admin"] },
-  { label: "Events", href: "/events", icon: <EventRoundedIcon />, roles: ["admin"] },
+  {
+    label: "Gäste",
+    href: "/guests",
+    icon: <GroupRoundedIcon />,
+    roles: ["admin"],
+  },
+  {
+    label: "Sitzplätze",
+    href: "/seats",
+    icon: <EventSeatRoundedIcon />,
+    roles: ["admin"],
+  },
+  {
+    label: "Events",
+    href: "/events",
+    icon: <EventRoundedIcon />,
+    roles: ["admin"],
+  },
 ];
 
 const DRAWER_WIDTH = 240;
@@ -91,11 +135,16 @@ function UserMenu({
 }) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleOpen = (e: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
   const initials =
-    (name?.split(" ").map((n) => n[0]).join("").toUpperCase() ||
+    (name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() ||
       email?.[0]?.toUpperCase() ||
       "U") + "";
 
@@ -116,12 +165,18 @@ function UserMenu({
         <MenuItem disabled>
           <Box sx={{ display: "grid" }}>
             <Typography fontWeight={700}>{name || "Nutzer"}</Typography>
-            <Typography variant="caption" color="text.secondary">{email || "-"}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {email || "-"}
+            </Typography>
           </Box>
         </MenuItem>
         <Divider />
-        <MenuItem component={Link} href="/my-qr">Mein QR</MenuItem>
-        <MenuItem component={Link} href="/settings">Einstellungen</MenuItem>
+        <MenuItem component={Link} href="/my-qr">
+          Mein QR
+        </MenuItem>
+        <MenuItem component={Link} href="/settings">
+          Einstellungen
+        </MenuItem>
         <Divider />
         <MenuItem
           onClick={() => {
@@ -152,13 +207,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Sichtbare Sidebar-Items nach Rolle
   const visibleItems = React.useMemo(() => {
     if (!isAuthenticated) return NAV_ITEMS.filter((i) => !i.roles);
-    return NAV_ITEMS.filter((i) => !i.roles || i.roles.some((r) => roles.includes(r)));
+    return NAV_ITEMS.filter(
+      (i) => !i.roles || i.roles.some((r) => roles.includes(r)),
+    );
   }, [isAuthenticated, roles]);
 
   // Aktiver Index für BottomNav
   const activeIndex = React.useMemo(() => {
     const ix = visibleItems.findIndex(
-      (i) => pathname === i.href || (i.href !== "/" && pathname?.startsWith(i.href + "/"))
+      (i) =>
+        pathname === i.href ||
+        (i.href !== "/" && pathname?.startsWith(i.href + "/")),
     );
     return ix === -1 ? 0 : ix;
   }, [pathname, visibleItems]);
@@ -173,19 +232,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // ------------------------------
   const [live, setLive] = React.useState(false);
   const [liveCount, setLiveCount] = React.useState<number | null>(null);
-  const reconnectRef = React.useRef({ tries: 0, timer: 0 as unknown as number });
+  const reconnectRef = React.useRef({
+    tries: 0,
+    timer: 0 as unknown as number,
+  });
   const wsRef = React.useRef<WebSocket | null>(null);
 
   const connectWs = React.useCallback(() => {
     if (!isAuthenticated) return;
 
     // vorhandene Verbindung schließen
-    try { wsRef.current?.close(); } catch {}
+    try {
+      wsRef.current?.close();
+    } catch {}
     wsRef.current = null;
 
     const url =
       process.env.NEXT_PUBLIC_WS_URL ||
-      (typeof window !== "undefined" ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:3001` : "");
+      (typeof window !== "undefined"
+        ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:3001`
+        : "");
 
     if (!url) return;
 
@@ -204,11 +270,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         // Backoff (max ~10s)
         reconnectRef.current.tries += 1;
         const delay = Math.min(10000, 500 * reconnectRef.current.tries);
-        reconnectRef.current.timer = window.setTimeout(connectWs, delay) as unknown as number;
+        reconnectRef.current.timer = window.setTimeout(
+          connectWs,
+          delay,
+        ) as unknown as number;
       };
 
       ws.onerror = () => {
-        try { ws.close(); } catch {}
+        try {
+          ws.close();
+        } catch {}
       };
 
       ws.onmessage = (ev) => {
@@ -216,13 +287,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           const data = JSON.parse(ev.data);
           const n = data?.active ?? data?.activeClients;
           if (typeof n === "number") setLiveCount(n);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       };
     } catch {
       setLive(false);
       reconnectRef.current.tries += 1;
       const delay = Math.min(10000, 500 * reconnectRef.current.tries);
-      reconnectRef.current.timer = window.setTimeout(connectWs, delay) as unknown as number;
+      reconnectRef.current.timer = window.setTimeout(
+        connectWs,
+        delay,
+      ) as unknown as number;
     }
   }, [isAuthenticated]);
 
@@ -234,8 +310,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
     connectWs();
     return () => {
-      try { wsRef.current?.close(); } catch {}
-      if (reconnectRef.current.timer) window.clearTimeout(reconnectRef.current.timer as number);
+      try {
+        wsRef.current?.close();
+      } catch {}
+      if (reconnectRef.current.timer)
+        window.clearTimeout(reconnectRef.current.timer as number);
     };
   }, [isAuthenticated, connectWs]);
 
@@ -259,7 +338,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <List>
         {visibleItems.map((item) => {
           const selected =
-            pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href + "/"));
+            pathname === item.href ||
+            (item.href !== "/" && pathname?.startsWith(item.href + "/"));
           return (
             <ListItemButton
               key={item.href}
@@ -302,7 +382,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         elevation={0}
         sx={{
           backgroundColor:
-            theme.palette.mode === "light" ? "rgba(255,255,255,0.7)" : "rgba(18,18,18,0.6)",
+            theme.palette.mode === "light"
+              ? "rgba(255,255,255,0.7)"
+              : "rgba(18,18,18,0.6)",
           backdropFilter: "saturate(180%) blur(20px)",
           WebkitBackdropFilter: "saturate(180%) blur(20px)",
           boxShadow: "none",
@@ -311,7 +393,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       >
         <Toolbar sx={{ gap: 1 }}>
           {!isMdUp && (
-            <IconButton edge="start" aria-label="menu" onClick={() => setDrawerOpen(true)}>
+            <IconButton
+              edge="start"
+              aria-label="menu"
+              onClick={() => setDrawerOpen(true)}
+            >
               <MenuIcon />
             </IconButton>
           )}
@@ -327,15 +413,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               variant="outlined"
               color={live ? "success" : "default"}
               icon={<SensorsRoundedIcon />}
-              label={live ? (liveCount != null ? `Live · ${liveCount}` : "Live") : "Offline"}
+              label={
+                live
+                  ? liveCount != null
+                    ? `Live · ${liveCount}`
+                    : "Live"
+                  : "Offline"
+              }
               sx={{ mr: 1 }}
             />
           )}
 
           {/* Theme Toggle */}
-          <Tooltip title={theme.palette.mode === "light" ? "Dark Mode" : "Light Mode"}>
+          <Tooltip
+            title={theme.palette.mode === "light" ? "Dark Mode" : "Light Mode"}
+          >
             <IconButton onClick={onToggleTheme}>
-              {theme.palette.mode === "light" ? <Brightness4RoundedIcon /> : <Brightness7RoundedIcon />}
+              {theme.palette.mode === "light" ? (
+                <Brightness4RoundedIcon />
+              ) : (
+                <Brightness7RoundedIcon />
+              )}
             </IconButton>
           </Tooltip>
 
@@ -362,7 +460,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               boxSizing: "border-box",
               borderRight: "none",
               backgroundColor:
-                theme.palette.mode === "light" ? "rgba(255,255,255,0.55)" : "rgba(18,18,18,0.5)",
+                theme.palette.mode === "light"
+                  ? "rgba(255,255,255,0.55)"
+                  : "rgba(18,18,18,0.5)",
               backdropFilter: "saturate(180%) blur(20px)",
             },
           }}
@@ -420,7 +520,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             right: 0,
             borderTop: "none",
             backgroundColor:
-              theme.palette.mode === "light" ? "rgba(255,255,255,0.9)" : "rgba(18,18,18,0.9)",
+              theme.palette.mode === "light"
+                ? "rgba(255,255,255,0.9)"
+                : "rgba(18,18,18,0.9)",
             backdropFilter: "saturate(180%) blur(20px)",
           }}
         >
@@ -433,7 +535,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             showLabels
           >
             {visibleItems.map((item) => (
-              <BottomNavigationAction key={item.href} label={item.label} icon={item.icon} />
+              <BottomNavigationAction
+                key={item.href}
+                label={item.label}
+                icon={item.icon}
+              />
             ))}
           </BottomNavigation>
         </Box>

@@ -1,5 +1,8 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@app/prisma/prisma.service.js";
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from './prisma.service.js';
 
 @Injectable()
 export class TicketReadService {

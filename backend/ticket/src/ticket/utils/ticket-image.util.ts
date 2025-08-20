@@ -5,17 +5,18 @@ import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 
 export function svgForTicket(params: {
-    eventName: string;
-    guestName?: string | null;
-    seatLabel?: string | null;
-    qrDataUrl: string;
-    ticketId: string;
+  eventName: string;
+  guestName?: string | null;
+  seatLabel?: string | null;
+  qrDataUrl: string;
+  ticketId: string;
 }) {
-    const { eventName, guestName, seatLabel, qrDataUrl, ticketId } = params;
+  const { eventName, guestName, seatLabel, qrDataUrl, ticketId } = params;
 
-    const safe = (s?: string | null) => (s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;') : '');
+  const safe = (s?: string | null) =>
+    s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;') : '';
 
-    return `
+  return `
 <svg xmlns="http://www.w3.org/2000/svg" width="700" height="300">
   <style>
     .title { font: 700 24px system-ui, -apple-system, Segoe UI, Roboto; fill: #111; }
@@ -42,5 +43,5 @@ export function svgForTicket(params: {
 // Für Server-seitiges PNG könntest du 'sharp' nutzen. Hier geben wir SVG direkt zurück und der Route-Handler
 // setzt image/svg+xml. Alternativ bauen wir PNG nur wenn sharp installiert wird.
 export function svgToBuffer(svg: string): Buffer {
-    return Buffer.from(svg, 'utf8');
+  return Buffer.from(svg, 'utf8');
 }

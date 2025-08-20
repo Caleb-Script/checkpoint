@@ -17,7 +17,6 @@ import {
 import { useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 import * as React from 'react';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import LogoutButton from '../LogoutButton';
 
 export const DRAWER_WIDTH = 240;
@@ -97,7 +96,7 @@ export function SideNav({
             </IconButton>
           </Tooltip>
         ) : (
-           <LogoutButton/>
+          <LogoutButton />
         )}
       </Box>
     </Box>

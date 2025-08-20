@@ -1,19 +1,32 @@
-import { Field, ID, ObjectType } from "@nestjs/graphql";
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { IsString } from 'class-validator';
+import { PresenceState } from '../enums/presenceState.enum.js';
 
-@ObjectType("Ticket")
+@ObjectType()
 export class Ticket {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => ID, { nullable: true })
+  @Field(() => ID)
   @IsString()
-  eventId: String!
+  eventId!: string;
 
-  @Field(() => ID, { nullable: true })
+  @Field(() => ID)
   @IsString()
-  invitationId: String!
+  invitationId!: string;
 
-  @Field(() => ID, { nullable: true })
+  @Field(() => ID)
   @IsString()
-  seatId: string
+  seatId?: string;
+
+  @Field(() => PresenceState)
+  currentState?: PresenceState;
+
+  @Field(() => String, { nullable: true })
+  deviceBoundKey?: string | null;
+
+  @Field(() => Boolean)
+  revoked!: boolean;
 }

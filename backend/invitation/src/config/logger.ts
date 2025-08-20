@@ -1,25 +1,25 @@
-import { env } from './env.js';
-import { resolve } from 'node:path';
-import pino from 'pino';
-import type { PrettyOptions } from 'pino-pretty';
+import { env } from "./env.js";
+import { resolve } from "node:path";
+import pino from "pino";
+import type { PrettyOptions } from "pino-pretty";
 
 const now = new Date();
-const dateStr = now.toISOString().split('T')[0]; // z.B. '2025-04-11'
+const dateStr = now.toISOString().split("T")[0]; // z.B. '2025-04-11'
 const service = env.SERVICE;
 
-const logDirDefault = 'log';
+const logDirDefault = "log";
 const logFileNameDefault = `${service}.${dateStr}.log`;
 const logFileDefault = resolve(logDirDefault, logFileNameDefault);
 
 const log = {
-  level: 'debug',
-  dir: './log',
+  level: "debug",
+  dir: "./log",
   pretty: true,
   default: false,
 };
 
 export const loggerDefaultValue =
-  env.LOG_DEFAULT?.toLowerCase() === 'true' || log?.default === true;
+  env.LOG_DEFAULT?.toLowerCase() === "true" || log?.default === true;
 
 const logDir: string | undefined =
   (log?.dir as string | undefined) === undefined
@@ -30,8 +30,8 @@ const logFile =
   logDir === undefined ? logFileDefault : resolve(logDir, logFileNameDefault);
 const pretty = log?.pretty === true;
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug';
-let logLevelTmp: LogLevel = 'info';
+type LogLevel = "error" | "warn" | "info" | "debug";
+let logLevelTmp: LogLevel = "info";
 if (env.LOG_DEFAULT !== undefined) {
   logLevelTmp = env.LOG_DEFAULT as LogLevel;
 } else if (log?.level !== undefined) {
@@ -57,20 +57,20 @@ if (!loggerDefaultValue) {
 
 const fileOptions = {
   level: logLevel,
-  target: 'pino/file',
+  target: "pino/file",
   options: { destination: logFile, mkdir: true },
 };
 const prettyOptions: PrettyOptions = {
-  translateTime: 'SYS:standard',
+  translateTime: "SYS:standard",
   singleLine: true,
   colorize: true,
-  ignore: 'pid,hostname',
+  ignore: "pid,hostname",
 };
 const prettyTransportOptions = {
   level: logLevel,
-  target: 'pino-pretty',
+  target: "pino-pretty",
   options: prettyOptions,
-  redact: ['asd'],
+  redact: ["asd"],
 };
 
 const options: pino.TransportMultiOptions | pino.TransportSingleOptions = pretty

@@ -134,7 +134,7 @@ export default function InvitationResponsesClientPage() {
 
   if (!isAuthenticated) {
     router.push(
-      `/login?next=${encodeURIComponent("/invitations/responses/client")}`
+      `/login?next=${encodeURIComponent("/invitations/responses/client")}`,
     );
     return null;
   }
@@ -238,7 +238,7 @@ export default function InvitationResponsesClientPage() {
                         "dd.MM.y HH:mm",
                         {
                           locale: de,
-                        }
+                        },
                       )}
                     </TableCell>
                     <TableCell>

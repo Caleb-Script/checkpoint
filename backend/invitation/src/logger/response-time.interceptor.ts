@@ -1,15 +1,15 @@
-import { getLogger } from './logger.js';
-import { Temporal } from '@js-temporal/polyfill';
+import { getLogger } from "./logger.js";
+import { Temporal } from "@js-temporal/polyfill";
 import {
   type CallHandler,
   type ExecutionContext,
   Injectable,
   type NestInterceptor,
-} from '@nestjs/common';
-import { type Response } from 'express';
-import { type Observable } from 'rxjs';
-import { type TapObserver } from 'rxjs/internal/operators/tap';
-import { tap } from 'rxjs/operators';
+} from "@nestjs/common";
+import { type Response } from "express";
+import { type Observable } from "rxjs";
+import { type TapObserver } from "rxjs/internal/operators/tap";
+import { tap } from "rxjs/operators";
 
 /**
  * `ResponseTimeInterceptor` protokolliert die Antwortzeit und den Statuscode
@@ -32,11 +32,11 @@ export class ResponseTimeInterceptor implements NestInterceptor {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (statusMessage === undefined) {
           // GraphQL
-          this.#logger.debug('Response time: %d ms', responseTime);
+          this.#logger.debug("Response time: %d ms", responseTime);
           return;
         }
         this.#logger.debug(
-          'Response time: %d ms, %d %s',
+          "Response time: %d ms, %d %s",
           responseTime,
           statusCode,
           statusMessage,

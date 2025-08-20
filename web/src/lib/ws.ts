@@ -1,7 +1,7 @@
 // /Users/gentlebookpro/Projekte/checkpoint/web/src/lib/ws.ts
 /* eslint-disable no-console */
 type Channel = "security" | "admin" | "public";
-type WsMessage = { type: string;[k: string]: any };
+type WsMessage = { type: string; [k: string]: any };
 type Listener = (msg: WsMessage | string) => void;
 
 type WSClient = {
@@ -71,7 +71,7 @@ export function getWs(channel: Channel = "public"): WSClient {
       let payload: any = ev.data;
       try {
         payload = JSON.parse(ev.data);
-      } catch { }
+      } catch {}
       for (const cb of listeners) cb(payload);
     });
 
@@ -86,14 +86,14 @@ export function getWs(channel: Channel = "public"): WSClient {
       console.warn(`[WS:${channel}] error`, e);
       try {
         ws.close();
-      } catch { }
+      } catch {}
     });
   };
 
   void connect();
 
   const client: WSClient = {
-    socket: (ws as any),
+    socket: ws as any,
     channel,
     on: (cb: Listener) => {
       listeners.add(cb);
@@ -112,7 +112,7 @@ export function getWs(channel: Channel = "public"): WSClient {
       try {
         listeners.clear();
         ws?.close();
-      } catch { }
+      } catch {}
     },
     state: () => ws?.readyState ?? WebSocket.CLOSED,
   };

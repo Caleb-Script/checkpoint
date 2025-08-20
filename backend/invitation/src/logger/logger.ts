@@ -5,8 +5,8 @@
  * @packageDocumentation
  */
 
-import { parentLogger } from '../config/logger.js';
-import type pino from 'pino';
+import { parentLogger } from "../config/logger.js";
+import type pino from "pino";
 
 /**
  * Eine-Klasse, um ein Logger-Objekt von `Pino` zu erzeugen, so dass ein
@@ -18,7 +18,7 @@ import type pino from 'pino';
 export const getLogger: (
   context: string,
   kind?: string,
-) => pino.Logger<string> = (context: string, kind = 'class') => {
+) => pino.Logger<string> = (context: string, kind = "class") => {
   const bindings: Record<string, string> = {};
   // "indexed access" auf eine Property, deren Name als Wert im Argument "kind" uebergeben wird
   // eslint-disable-next-line security/detect-object-injection

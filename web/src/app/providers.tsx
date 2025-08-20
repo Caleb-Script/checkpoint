@@ -38,7 +38,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     const saved = window.localStorage.getItem("cp_theme_mode");
     if (saved === "light" || saved === "dark") return saved;
     const prefersDark = window.matchMedia?.(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     )?.matches;
     return prefersDark ? "dark" : "light";
   });

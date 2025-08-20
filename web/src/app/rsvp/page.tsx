@@ -31,7 +31,7 @@ export default function RsvpPage() {
   const [eventId] = React.useState<string | null>(params.get("eventId"));
 
   const [status, setStatus] = React.useState<"accepted" | "declined" | null>(
-    null
+    null,
   );
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);

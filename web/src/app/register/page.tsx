@@ -4,7 +4,16 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Box, Card, CardContent, CardHeader, Stack, TextField, Button, Typography, Alert, CircularProgress
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Stack,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 
 export default function RegisterPage() {
@@ -34,7 +43,10 @@ export default function RegisterPage() {
           setReady(false);
           return;
         }
-        const r = await fetch(`/api/auth/claim?token=${encodeURIComponent(token)}`, { cache: "no-store" });
+        const r = await fetch(
+          `/api/auth/claim?token=${encodeURIComponent(token)}`,
+          { cache: "no-store" },
+        );
         const j = await r.json();
         if (!r.ok || !j.ok) throw new Error(j.error || "claim failed");
         setReady(true);
@@ -47,17 +59,30 @@ export default function RegisterPage() {
 
   async function submit() {
     setErr("");
-    if (password.length < 8) { setErr("Passwort muss mindestens 8 Zeichen haben."); return; }
-    if (password !== password2) { setErr("Passwörter stimmen nicht überein."); return; }
+    if (password.length < 8) {
+      setErr("Passwort muss mindestens 8 Zeichen haben.");
+      return;
+    }
+    if (password !== password2) {
+      setErr("Passwörter stimmen nicht überein.");
+      return;
+    }
     try {
       setLoading(true);
       const r = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email? email: 'n/a@omnixys.com', password, firstName, lastName, phone }),
+        body: JSON.stringify({
+          email: email ? email : "n/a@omnixys.com",
+          password,
+          firstName,
+          lastName,
+          phone,
+        }),
       });
       const j = await r.json();
-      if (!r.ok || !j.ok) throw new Error(j.error || "Registrierung fehlgeschlagen");
+      if (!r.ok || !j.ok)
+        throw new Error(j.error || "Registrierung fehlgeschlagen");
 
       // Optional: direkt einloggen (falls du /api/auth/login hast)
       try {
@@ -71,7 +96,9 @@ export default function RegisterPage() {
           setDone(true);
           return;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       setDone(true);
     } catch (e: any) {
@@ -84,7 +111,10 @@ export default function RegisterPage() {
   if (!ready && !err) {
     return (
       <Box sx={{ p: 4 }}>
-        <Stack alignItems="center" spacing={2}><CircularProgress /><div>Prüfe Berechtigung…</div></Stack>
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress />
+          <div>Prüfe Berechtigung…</div>
+        </Stack>
       </Box>
     );
   }
@@ -92,8 +122,16 @@ export default function RegisterPage() {
   if (done) {
     return (
       <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 520, mx: "auto" }}>
-        <Alert severity="success" sx={{ mb: 2 }}>Registrierung erfolgreich.</Alert>
-        <Button fullWidth variant="contained" onClick={() => router.replace(returnTo)}>Weiter</Button>
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Registrierung erfolgreich.
+        </Alert>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => router.replace(returnTo)}
+        >
+          Weiter
+        </Button>
       </Box>
     );
   }
@@ -101,31 +139,67 @@ export default function RegisterPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 520, mx: "auto" }}>
       <Card>
-        <CardHeader title="Registrieren" subheader="Lege deinen Zugang an, um QR & Einladungen zu verwalten." />
+        <CardHeader
+          title="Registrieren"
+          subheader="Lege deinen Zugang an, um QR & Einladungen zu verwalten."
+        />
         <CardContent>
-          {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
+          {err && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {err}
+            </Alert>
+          )}
           {!ready && err && (
             <Typography variant="body2" color="text.secondary">
-              Diese Seite ist nur über einen gültigen Einladungs- oder Ticket-Link erreichbar.
+              Diese Seite ist nur über einen gültigen Einladungs- oder
+              Ticket-Link erreichbar.
             </Typography>
           )}
           {ready && (
             <Stack spacing={2}>
-              <TextField label="E-Mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <TextField
+                label="E-Mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="Passwort" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <TextField label="Passwort (Wiederholung)" type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} />
+                <TextField
+                  label="Passwort"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <TextField
+                  label="Passwort (Wiederholung)"
+                  type="password"
+                  value={password2}
+                  onChange={(e) => setPassword2(e.target.value)}
+                />
               </Stack>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="Vorname" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                <TextField label="Nachname" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <TextField
+                  label="Vorname"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+                <TextField
+                  label="Nachname"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
               </Stack>
-              <TextField label="Telefon (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <TextField
+                label="Telefon (optional)"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
               <Button variant="contained" disabled={loading} onClick={submit}>
                 {loading ? "Wird angelegt…" : "Account anlegen"}
               </Button>
               <Typography variant="caption" color="text.secondary">
-                Hinweis: Registrierung ist nur mit gültigem Link möglich (Schutz vor Copy-Share).
+                Hinweis: Registrierung ist nur mit gültigem Link möglich (Schutz
+                vor Copy-Share).
               </Typography>
             </Stack>
           )}

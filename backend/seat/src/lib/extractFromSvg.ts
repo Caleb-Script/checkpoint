@@ -27,7 +27,14 @@ function tScale(sx: number, sy?: number): M {
   const syv = sy ?? sx;
   return [sx, 0, 0, syv, 0, 0];
 }
-function tMatrix(a: number, b: number, c: number, d: number, e: number, f: number): M {
+function tMatrix(
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+  e: number,
+  f: number,
+): M {
   return [a, b, c, d, e, f];
 }
 function apply(Mm: M, x: number, y: number) {
@@ -43,7 +50,10 @@ function parseTransform(attr?: string): M {
   let mth: RegExpExecArray | null;
   while ((mth = re.exec(attr))) {
     const [, kind, argsStr] = mth;
-    const nums = argsStr.split(/[, \t]+/).map((v) => Number(v.trim())).filter((v) => Number.isFinite(v));
+    const nums = argsStr
+      .split(/[, \t]+/)
+      .map((v) => Number(v.trim()))
+      .filter((v) => Number.isFinite(v));
     if (kind === "translate") {
       const [tx, ty = 0] = nums;
       m = mmul(m, tTranslate(tx || 0, ty || 0));
@@ -67,7 +77,9 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
   let width = parseFloat(root.attributes.width || "");
   let height = parseFloat(root.attributes.height || "");
   if (!Number.isFinite(width) || !Number.isFinite(height)) {
-    const vb = (root.attributes.viewBox || root.attributes.viewbox || "").toString().trim();
+    const vb = (root.attributes.viewBox || root.attributes.viewbox || "")
+      .toString()
+      .trim();
     const parts = vb.split(/[\s,]+/).map(Number);
     if (parts.length === 4 && parts.every((n) => Number.isFinite(n))) {
       width = parts[2];
@@ -85,12 +97,21 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
   const maxSeatWidth = Math.max(30, Math.min(width, height) * 0.06); // ~6% -> verhindert fette Blöcke
   const maxSeatHeight = Math.max(30, Math.min(width, height) * 0.06);
   const maxCanvasArea = width * height;
-  const maxSeatArea = Math.min(maxCanvasArea * 0.01, maxSeatWidth * maxSeatHeight); // niemals >1% der Fläche
+  const maxSeatArea = Math.min(
+    maxCanvasArea * 0.01,
+    maxSeatWidth * maxSeatHeight,
+  ); // niemals >1% der Fläche
   const dedupEps = 0.75; // px
 
   // Hilfsfunktionen
   const pushRect = (x: number, y: number, w: number, h: number) => {
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) return;
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(w) ||
+      !Number.isFinite(h)
+    )
+      return;
     if (w <= 0 || h <= 0) return;
     const area = w * h;
     // Filter: zu große/backdrop-Rects raus
@@ -119,9 +140,10 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
       const y = parseFloat(a.y ?? "0");
       let txt = "";
       for (const c of node.children || []) {
-        if (c.type === "text") txt += (c.value || "");
+        if (c.type === "text") txt += c.value || "";
         if ((c.name || "").toLowerCase() === "tspan") {
-          for (const gc of c.children || []) if (gc.type === "text") txt += (gc.value || "");
+          for (const gc of c.children || [])
+            if (gc.type === "text") txt += gc.value || "";
         }
       }
       const p = apply(Mnow, x, y);
@@ -131,7 +153,8 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
       const x = parseFloat(a.x ?? "0");
       const y = parseFloat(a.y ?? "0");
       let txt = "";
-      for (const c of node.children || []) if (c.type === "text") txt += (c.value || "");
+      for (const c of node.children || [])
+        if (c.type === "text") txt += c.value || "";
       const p = apply(Mnow, x, y);
       pushText(p.x, p.y, txt);
     } else if (name === "circle") {
@@ -169,7 +192,8 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
   walk(root, I);
 
   // Deduplikation (häufige Duplikate aus ClipGroups etc.)
-  const key = (r: RectItem) => `${Math.round(r.x / dedupEps)},${Math.round(r.y / dedupEps)},${Math.round(r.w / dedupEps)},${Math.round(r.h / dedupEps)}`;
+  const key = (r: RectItem) =>
+    `${Math.round(r.x / dedupEps)},${Math.round(r.y / dedupEps)},${Math.round(r.w / dedupEps)},${Math.round(r.h / dedupEps)}`;
   const unique = new Map<string, RectItem>();
   for (const r of rects) {
     const k = key(r);
@@ -189,7 +213,11 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
   }
 
   // Nearest-Text-Zuordnung (nur wenn Text in sinnvoller Nähe liegt)
-  function nearestText(cx: number, cy: number, maxDist: number): TextItem | null {
+  function nearestText(
+    cx: number,
+    cy: number,
+    maxDist: number,
+  ): TextItem | null {
     let best: TextItem | null = null;
     let bestD = Infinity;
     for (const t of cleanTexts) {
@@ -244,7 +272,7 @@ export async function extractFromSvg(svgContent: string): Promise<SeatMap> {
   }
 
   // Sortierung (erst nach y, dann x) – schöner fürs UI
-  seats.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+  seats.sort((a, b) => a.y - b.y || a.x - b.x);
 
   return {
     width,

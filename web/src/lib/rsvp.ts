@@ -11,15 +11,15 @@ const SECRET = process.env.JWT_SECRET || "dev-secret";
  * - iat/exp optional
  */
 export type RsvpPayload = {
-    invitationId: string;
-    eventId: string;
-    canInvite?: number;
+  invitationId: string;
+  eventId: string;
+  canInvite?: number;
 };
 
 export function signRsvpToken(payload: RsvpPayload, expiresIn = "14d") {
-    return jwt.sign(payload, SECRET, { expiresIn });
+  return jwt.sign(payload, SECRET, { expiresIn });
 }
 
 export function verifyRsvpToken(token: string): RsvpPayload {
-    return jwt.verify(token, SECRET) as RsvpPayload;
+  return jwt.verify(token, SECRET) as RsvpPayload;
 }

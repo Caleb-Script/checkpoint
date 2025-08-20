@@ -25,7 +25,7 @@ type SessionState = {
 type SessionContextType = SessionState & {
   login: (
     username: string,
-    password: string
+    password: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
@@ -48,7 +48,7 @@ export const useSession = () => React.useContext(SessionContext);
 
 // kleine Helper
 async function apiGet<T>(
-  url: string
+  url: string,
 ): Promise<{ ok: boolean; data?: T; status: number }> {
   const res = await fetch(url, {
     method: "GET",
@@ -63,7 +63,7 @@ async function apiGet<T>(
 
 async function apiPost<T>(
   url: string,
-  body?: any
+  body?: any,
 ): Promise<{ ok: boolean; data?: T; status: number }> {
   const res = await fetch(url, {
     method: "POST",
@@ -131,7 +131,7 @@ export default function SessionProvider({
         await refresh();
       }, triggerInMs) as unknown as number;
     },
-    [clearRefreshTimer]
+    [clearRefreshTimer],
   );
 
   const reload = React.useCallback(async () => {
@@ -179,7 +179,7 @@ export default function SessionProvider({
 
   const refresh = React.useCallback(async () => {
     const res = await apiPost<{ ok: true; expiresAt: number }>(
-      "/api/auth/refresh"
+      "/api/auth/refresh",
     );
     if (!res.ok || !res.data) {
       // Refresh fehlgeschlagen → Session fällt zurück auf ausgeloggt beim nächsten /me
@@ -207,7 +207,7 @@ export default function SessionProvider({
       await reload();
       return { ok: true };
     },
-    [reload]
+    [reload],
   );
 
   const logout = React.useCallback(async () => {
@@ -230,7 +230,7 @@ export default function SessionProvider({
       refresh,
       reload,
     }),
-    [state, login, logout, refresh, reload]
+    [state, login, logout, refresh, reload],
   );
 
   return (

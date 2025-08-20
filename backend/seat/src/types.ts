@@ -29,4 +29,3 @@ export type ImportOptions = {
   eventId?: string;
   webhookUrl?: string;
 };
-

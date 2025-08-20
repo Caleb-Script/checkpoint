@@ -6,10 +6,10 @@ import {
   LoginInput,
   Token,
 } from '../../../types/auth/auth.type';
+import { getCookies } from '../../../utils/getCookies';
 import { handleGraphQLError } from '../../../utils/graphqlHandler.error';
 import { getLogger } from '../../../utils/logger';
 import getApolloClient from '../../apolloClient';
-import { getCookies } from '../../../utils/getCookies';
 
 const logger = getLogger('auth.ts');
 
@@ -53,15 +53,14 @@ export async function fetchLogout() {
   const client = getApolloClient(undefined);
   try {
     await client.mutate({
-        mutation: LOGOUT,
-        context: {
-            headers: { cookie: await getCookies() },
-          },
+      mutation: LOGOUT,
+      context: {
+        headers: { cookie: await getCookies() },
+      },
     });
   } catch (error) {
     handleGraphQLError(error, 'Fehler beim Ausloggen');
   } finally {
     await client.clearStore(); // Cache leeren
-    
   }
 }

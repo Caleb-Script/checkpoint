@@ -7,12 +7,12 @@
  * Dieser Service gibt beim Start der Anwendung ein Banner und wichtige Anwendungsinformationen aus.
  */
 
-import { nodeConfig } from '../config/node.js';
-import { getLogger } from './logger.js';
-import { Injectable, type OnApplicationBootstrap } from '@nestjs/common';
-import { say } from 'cfonts';
-import chalk from 'chalk';
-import { release, type, userInfo } from 'node:os';
+import { nodeConfig } from "../config/node.js";
+import { getLogger } from "./logger.js";
+import { Injectable, type OnApplicationBootstrap } from "@nestjs/common";
+import { say } from "cfonts";
+import chalk from "chalk";
+import { release, type, userInfo } from "node:os";
 
 /**
  * BannerService - Service zum Generieren und Ausgeben von Anwendungsinformationen sowie einem Banner.
@@ -34,24 +34,24 @@ export class BannerService implements OnApplicationBootstrap {
     this.#generateBanner(service);
 
     // Umgebungsinformationen mit Farben ausgeben
-    this.#logger.info(chalk.green('=== Anwendungsinformationen ==='));
-    this.#logger.info(chalk.cyan('Anwendungsname: ') + chalk.yellow(service));
+    this.#logger.info(chalk.green("=== Anwendungsinformationen ==="));
+    this.#logger.info(chalk.cyan("Anwendungsname: ") + chalk.yellow(service));
     this.#logger.info(
-      chalk.cyan('Node.js-Version: ') + chalk.yellow(process.version),
+      chalk.cyan("Node.js-Version: ") + chalk.yellow(process.version),
     );
-    this.#logger.info(chalk.cyan('Umgebung: ') + chalk.yellow(nodeEnv));
-    this.#logger.info(chalk.cyan('Host: ') + chalk.yellow(host));
-    this.#logger.info(chalk.cyan('Port: ') + chalk.yellow(port.toString()));
+    this.#logger.info(chalk.cyan("Umgebung: ") + chalk.yellow(nodeEnv));
+    this.#logger.info(chalk.cyan("Host: ") + chalk.yellow(host));
+    this.#logger.info(chalk.cyan("Port: ") + chalk.yellow(port.toString()));
     this.#logger.info(
-      chalk.cyan('Betriebssystem: ') + chalk.yellow(`${type()} (${release()})`),
-    );
-    this.#logger.info(
-      chalk.cyan('Benutzer: ') + chalk.yellow(userInfo().username),
+      chalk.cyan("Betriebssystem: ") + chalk.yellow(`${type()} (${release()})`),
     );
     this.#logger.info(
-      chalk.cyan('Swagger UI: ') + chalk.yellowBright('/swagger'),
+      chalk.cyan("Benutzer: ") + chalk.yellow(userInfo().username),
     );
-    this.#logger.info(chalk.green('===============================')); // Endmarkierung für die Anwendungsinformationen
+    this.#logger.info(
+      chalk.cyan("Swagger UI: ") + chalk.yellowBright("/swagger"),
+    );
+    this.#logger.info(chalk.green("===============================")); // Endmarkierung für die Anwendungsinformationen
   }
 
   /**
@@ -59,10 +59,10 @@ export class BannerService implements OnApplicationBootstrap {
    */
   #generateBanner(service: string) {
     say(service, {
-      font: 'block', // Schriftart des Banners
-      align: 'left', // Ausrichtung des Textes
-      gradient: ['white', 'black'], // Farbverlauf für das Banner
-      background: 'transparent', // Hintergrund des Banners
+      font: "block", // Schriftart des Banners
+      align: "left", // Ausrichtung des Textes
+      gradient: ["white", "black"], // Farbverlauf für das Banner
+      background: "transparent", // Hintergrund des Banners
       letterSpacing: 1, // Buchstabenabstand
       lineHeight: 1, // Zeilenhöhe
     });

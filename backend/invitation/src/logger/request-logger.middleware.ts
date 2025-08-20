@@ -1,6 +1,6 @@
-import { getLogger } from './logger.js';
-import { Injectable, type NestMiddleware } from '@nestjs/common';
-import { type NextFunction, type Request, type Response } from 'express';
+import { getLogger } from "./logger.js";
+import { Injectable, type NestMiddleware } from "@nestjs/common";
+import { type NextFunction, type Request, type Response } from "express";
 
 /**
  * Die Middleware (-Funktion) wird vor dem "Route Handler" aufgerufen.
@@ -19,7 +19,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction) {
     const { method, originalUrl, headers } = req;
     this.#logger.debug(
-      'method=%s, url=%s, header=%o',
+      "method=%s, url=%s, header=%o",
       method,
       originalUrl,
       headers,

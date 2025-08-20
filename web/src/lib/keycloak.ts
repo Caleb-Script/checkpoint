@@ -65,4 +65,3 @@ export function getKeycloakToken() {
   const kc = initKeycloak();
   return kc.token || null;
 }
-
