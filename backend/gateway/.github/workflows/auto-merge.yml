@@ -1,0 +1,28 @@
+name: 🤖 Enable Auto-Merge for Dependabot
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  automerge:
+    if: |
+      github.actor == 'dependabot[bot]' &&
+      contains(github.event.pull_request.labels.*.name, 'automerge')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+      actions: read
+      statuses: read
+    steps:
+      - name: Wait for status checks & approvals
+        uses: ahmadnassri/action-dependabot-auto-merge@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-method: squash
+          require:
+            - status-success
+            - approved
+          labels: |
+            automerge

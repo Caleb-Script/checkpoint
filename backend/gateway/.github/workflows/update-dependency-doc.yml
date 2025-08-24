@@ -1,0 +1,40 @@
+name: 🔄 Update Dependency Management Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-dependency-doc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Git
+        run: |
+          git config user.name "omnixys-bot"
+          git config user.email "bot@omnixys.com"
+
+      - name: Generate docs/dependency-management.md
+        run: |
+          mkdir -p docs
+          cat <<'EOF' > docs/dependency-management.md
+          # 📦 Dependency Management in Omnixys Schopping Cart Service
+
+          Dieses Dokument beschreibt, wie Abhängigkeiten im `omnixys-schopping-cart-service` mit [Dependabot](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/about-dependabot-version-updates) und GitHub Actions verwaltet werden.
+
+          ...
+
+          © 2025 Omnixys – Modular Thinking. Infinite Possibilities.
+          EOF
+
+      - name: Commit and Push if Changed
+        run: |
+          git add docs/dependency-management.md
+          git diff --quiet && echo "No changes." || (
+            git commit -m "docs: update dependency-management.md [automated]"
+            git push
+          )

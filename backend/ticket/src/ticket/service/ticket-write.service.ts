@@ -2,7 +2,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from './prisma.service.js';
 import { CreateTicketInput } from '../models/input/create-ticket.input.js';
 import { TicketReadService } from './ticket-read.service.js';
@@ -39,16 +43,11 @@ export class TicketWriteService {
     return (this.prisma as any).ticket.delete({ where: { id } });
   }
 
-
-  async rotate(
-    ticketId: string,
-    ttlSeconds?: number,
-    deviceHash?: string,
-  ) {
+  async rotate(ticketId: string, ttlSeconds?: number, deviceHash?: string) {
     const ticket: Ticket = await this.ticketReadService.findById(ticketId);
     if (ticket.revoked) throw new BadRequestException('Ticket revoked');
 
-    const ttl =ttlSeconds ?? 60; // Default TTL in seconds
+    const ttl = ttlSeconds ?? 60; // Default TTL in seconds
     // ⚠️ Nur Minimaldaten ins JWT packen
     const payload = {
       sub: ticket.id, // Ticket-ID

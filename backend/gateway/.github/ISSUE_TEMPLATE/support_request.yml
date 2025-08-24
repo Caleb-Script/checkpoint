@@ -1,0 +1,41 @@
+name: 🙋 Support-Anfrage
+description: Bitte um Hilfe oder Klärung zu Setup, Nutzung oder Konfiguration
+labels: [question, support]
+body:
+  - type: input
+    id: context
+    attributes:
+      label: Betroffener Bereich
+      placeholder: z. B. "lokales Setup mit Docker", "Keycloak Login", ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Beschreibung des Problems
+      description: Was funktioniert nicht? Was erwartest du?
+      placeholder: |
+        - Ich habe `docker-compose up` ausgeführt, aber ...
+        - Login schlägt fehl trotz gültigem Token
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevante Fehlermeldungen oder Logs
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: env
+    attributes:
+      label: Umgebung
+      options:
+        - Lokal (Docker)
+        - GitHub Actions
+        - Kubernetes (Staging)
+        - Kubernetes (Prod)
+        - Anderes

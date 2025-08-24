@@ -1,0 +1,43 @@
+name: Dependency Check – Gateway
+
+on:
+  workflow_dispatch: # Manuelles Auslösen
+  schedule:
+    - cron: "0 12 * * 1" # Jeden Montag um 12:00 Uhr UTC
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [23]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          mkdir -p reports
+          npm audit --json > reports/audit-report.json
+          jq '.' reports/audit-report.json > reports/audit-report-pretty.json
+
+      - name: Check outdated packages
+        run: |
+          npm outdated --json > reports/outdated.json || true
+          jq '.' reports/outdated.json > reports/outdated-pretty.json || true
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-dependency-reports
+          path: reports/

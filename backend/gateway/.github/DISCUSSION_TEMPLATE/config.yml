@@ -1,0 +1,23 @@
+# Konfiguration für GitHub Discussions-Kategorien
+# Diese Datei muss ggf. manuell über die GitHub-UI nachgetragen werden
+
+categories:
+  - name: 💡 Ideen & Vorschläge
+    description: Tausche dich über mögliche Features oder Verbesserungen aus.
+    emoji: 💡
+    is_answerable: false
+
+  - name: 🧪 Implementierungsdetails
+    description: Diskutiere Architekturentscheidungen, Technologiewahl oder Integration.
+    emoji: 🛠️
+    is_answerable: false
+
+  - name: ❓ Fragen & Support
+    description: Hilfe bei der Verwendung, Lokalem Setup oder Deployment.
+    emoji: 🙋
+    is_answerable: true
+
+  - name: 🧵 Allgemein
+    description: Off-Topic, Feedback, Meta
+    emoji: 🧵
+    is_answerable: false

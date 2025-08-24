@@ -1,0 +1,23 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type ShutdownPayload {
+  success: Boolean!
+  message: String
+}
+
+type Query {
+  """Liefert aktuelle Prometheus-Metriken (im Textformat)"""
+  metrics: String!
+
+  """Liveness Check – prüft, ob die Anwendung grundsätzlich läuft."""
+  live: String!
+
+  """Readiness Check – prüft, ob Datenbankverbindung steht."""
+  ready: String!
+}
+
+type Mutation {
+  shutdownAllMicroservices: ShutdownPayload!
+}

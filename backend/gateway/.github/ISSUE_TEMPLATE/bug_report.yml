@@ -1,0 +1,59 @@
+name: 🐛 Bug Report
+description: Melde einen Fehler im Payment-Service
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du einen Fehler meldest! Bitte gib so viele Details wie möglich an.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Kurze Zusammenfassung
+      description: Was ist das Problem?
+      placeholder: z. B. "Service wirft NullPointer bei Start"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Wie kann man das Problem nachstellen?
+      placeholder: |
+        1. Starte Service mit `docker-compose up`
+        2. Rufe `/graphql` auf
+        3. Fehler tritt auf...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was hättest du erwartet?
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevante Logs oder Stacktrace
+      render: shell
+      description: Kopiere hier die relevanten Logs rein (ohne Passwörter oder Tokens!)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Umgebung
+      multiple: false
+      options:
+        - Lokales Docker
+        - GitHub Actions
+        - Kubernetes Staging
+        - Kubernetes Produktion
+    validations:
+      required: true

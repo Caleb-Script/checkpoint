@@ -1,3 +1,4 @@
+// backend/ticket/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,7 +6,12 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // wichtig für Migrate:
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
+
+// Tipp: Wenn du keine DB‑FKs willst (reine ID-Referenzen), kannst du Relation-Checks auf Prisma heben:
+// relationMode = "prisma"
 
 enum InvitationStatus {
   PENDING

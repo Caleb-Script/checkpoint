@@ -1,6 +1,6 @@
-import { UpdateEventInput } from '../models/dto/update-event.input.js';
 import { Event } from '../models/entities/event.entity.js';
 import { CreateEventInput } from '../models/input/create-event.input.js';
+import { UpdateEventInput } from '../models/input/update-event.input.js';
 import { EventWriteService } from '../services/event-write.service.js';
 import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
 

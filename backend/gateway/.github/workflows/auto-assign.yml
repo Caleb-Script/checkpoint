@@ -1,0 +1,25 @@
+name: 🔁 Auto Assign
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Print tag
+        run: echo "The tag is ${{ github.ref_name }}"
+      - name: Auto-assign issue or PR
+        uses: pozil/auto-assign-issue@v1
+        with:
+           repo-token: ${{ secrets.GITHUB_TOKEN }}
+           assignees: Caleb-Script
+           reviewers: |
+             Caleb-Script
+           numOfAssignee: 1
+           numOfReviewer: 1
+

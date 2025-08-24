@@ -9,7 +9,7 @@ async function main() {
     create: {
       id: '00000000-0000-0000-0000-000000000000',
       eventId: 'seed-sommer-gala-2025',
-      guestProfileId: 'seed-guest-profile',
+      guestProfileId: '61e4d86b-d227-4de5-9514-46c5d956b663',
         status: 'PENDING',
         rsvpChoice: null,
         maxInvitees: 2,

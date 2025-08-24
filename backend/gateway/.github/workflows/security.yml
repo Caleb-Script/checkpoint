@@ -1,0 +1,148 @@
+name: Security
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # täglich um 3:00 Uhr UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USER }}/${{ secrets.SERVICE }}-service
+
+jobs:
+  dependency-check:
+    name: "Security-Dependency-Check-${{ matrix.node-version }}-${{ vars.CURRENT_DATE }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [23.10.0]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@75ba02d6183445fe0761d26e836bde58b1560600
+        with:
+          project: "Omnixys-Order-Service"
+          path: './'
+          format: 'HTML'
+
+      - name: Upload Dependency Check report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Depcheck-report
+          path: ./reports
+
+  snyk:
+    name: "Security-Snyk-Scan-${{ matrix.node-version }}-${{ vars.CURRENT_DATE }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [23.10.0]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@cdb760004ba9ea4d525f2e043745dfe85bb9077e
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Authenticate with Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Code Test (SARIF)
+        run: snyk code test --sarif > snyk-code.sarif
+        continue-on-error: true
+
+      - name: Run Snyk Dependency Test (JSON)
+        run: snyk test --severity-threshold=high --json-file-output=snyk-report.json
+        continue-on-error: true
+
+      - name: Install snyk-to-html
+        run: npm install snyk-to-html -g
+
+      - name: Generate HTML Report
+        run: |
+          snyk-to-html -i snyk-report.json -o snyk-report.html
+          mkdir -p reports
+          mv snyk-report.html reports/
+
+      - name: Upload Snyk Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Snyk-report
+          path: ./reports
+
+      - name: Run Snyk Monitor
+        if: github.event_name == 'push'
+        run: snyk monitor --all-projects
+
+      - name: Run Snyk IaC Test
+        run: snyk iac test --report
+        continue-on-error: true
+
+      - name: Run Snyk Container Monitor
+        run: snyk container monitor ${{ env.IMAGE_NAME }}:latest
+
+      - name: Upload SARIF Report to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-code.sarif
+
+  docker-scout:
+    name: "Security-Docker-Scout-${{ vars.CURRENT_DATE }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker Scout Quickview
+        id: docker-scout-quickview
+        uses: docker/scout-action@v1.18.1
+        with:
+          command: quickview
+          image: "${{ env.IMAGE_NAME }}:latest"
+
+      - name: Docker Scout CVEs
+        id: docker-scout-cves
+        uses: docker/scout-action@v1.18.1
+        with:
+          command: cves
+          image: "${{ env.IMAGE_NAME }}:latest"
+
+      - name: Save Docker Scout Reports
+        run: |
+          echo "${{ steps.docker-scout-quickview.outputs.quickview }}" > docker-scout-quickview.md
+          echo "${{ steps.docker-scout-cves.outputs.cves }}" > docker-scout-cves.md
+        continue-on-error: true
+
+      - name: Upload Docker Scout Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-scout-reports
+          path: ./docker-scout-*.md

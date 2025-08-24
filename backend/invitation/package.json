@@ -26,6 +26,7 @@
     "prettier": "prettier --cache --write \"src/**/*.ts\" \"prisma/**/*.ts\""
   },
   "dependencies": {
+    "@apollo/subgraph": "^2.11.2",
     "@js-temporal/polyfill": "^0.5.1",
     "@nestjs/apollo": "^13.1.0",
     "@nestjs/common": "^11.0.1",

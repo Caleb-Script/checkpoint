@@ -6,8 +6,8 @@ async function main() {
   // Tickets für akzeptierte Einladungen
   await prisma.ticket.create({
     data: {
-      eventId: 'event 1',
-      invitationId: 'inv 1',
+      eventId: 'seed-sommer-gala-2025',
+      invitationId: '00000000-0000-0000-0000-000000000000',
       seatId: 'A1',
       currentState: PresenceState.OUTSIDE,
       revoked: false,
@@ -16,8 +16,8 @@ async function main() {
 
   await prisma.ticket.create({
     data: {
-      eventId: 'event 1',
-      invitationId: 'inv 2',
+      eventId: 'seed-sommer-gala-2025',
+      invitationId: '00000000-0000-0000-0000-000000000001',
       seatId: 'A2',
       currentState: PresenceState.OUTSIDE,
       revoked: false,

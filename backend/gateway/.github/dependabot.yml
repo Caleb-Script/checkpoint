@@ -1,0 +1,67 @@
+version: 2
+updates:
+
+  # 1. GitHub Actions Updates
+  - package-ecosystem: "github-actions"
+    directory: "/"               # Root-Verzeichnis des Repos
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "04:00"
+      timezone: "Europe/Berlin"
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
+    reviewers:
+      - omnixys-maintainers
+    assignees:
+      - caleb-script
+
+  # 2. Gradle Runtime Dependencies
+  - package-ecosystem: "gradle"
+    directory: "/"               # Falls du ein Submodul hast, hier Pfad anpassen
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "03:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - gradle
+      - runtime
+    ignore:
+      - dependency-name: "org.springframework.boot:spring-boot-starter-logging"
+        versions: [">=3.0.0"]
+    commit-message:
+      prefix: "fix"
+      include: "scope"
+    reviewers:
+      - omnixys-maintainers
+    assignees:
+      - caleb-script
+
+  # 3. Gradle Dev/Test Dependencies
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "02:00"
+      timezone: "Europe/Berlin"
+    labels:
+      - dependencies
+      - gradle
+      - dev
+    allow:
+      - dependency-type: "development"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - omnixys-maintainers
+    assignees:
+      - caleb-script
+

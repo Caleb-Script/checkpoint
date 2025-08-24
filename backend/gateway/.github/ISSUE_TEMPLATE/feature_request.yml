@@ -1,0 +1,45 @@
+name: ✨ Feature Request
+description: Vorschlag für ein neues Feature im Payment-Service
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Vorschlag! Bitte fülle dieses Formular aus, um dein Feature bestmöglich zu beschreiben.
+
+  - type: input
+    id: title
+    attributes:
+      label: Feature-Titel
+      placeholder: z. B. "Rollenverwaltung erweitern"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Beschreibe, was das Feature leisten soll.
+      placeholder: |
+        - Neue GraphQL-Mutation zur Änderung von Rollen
+        - Zugriff nur für Admin-Rolle
+        - Kafka-Event: `role.updated`
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation & Mehrwert
+      description: Warum sollte dieses Feature umgesetzt werden?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Auswirkungen
+      options:
+        - label: Ändert GraphQL-Schema
+        - label: Erfordert neue Tests
+        - label: Betrifft mehrere Microservices

@@ -1,0 +1,37 @@
+name: Daily OWASP Dependency Check – Omnixys Gateway Service
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # täglich um 2 Uhr nachts (UTC)
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OWASP Dependency-Check
+        run: |
+            curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v12.1.0/dependency-check-12.1.0-release.zip -o dependency-check-12.1.0-release.zip
+            unzip dependency-check-12.1.0-release.zip -d dependency-check
+            chmod +x dependency-check/dependency-check
+
+      - name: Run OWASP Dependency Check
+        run: |
+          dependency-check/dependency-check/bin/dependency-check.sh \
+            --project "Omnixys Gateway Service" \
+            --scan . \
+            --nvdApiKey ${{ secrets.NVD_API_KEY }} \
+            --format "HTML" \
+            --out dependency-check-report
+        continue-on-error: true
+
+      - name: Upload Report as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: ./dependency-check-report/*.html

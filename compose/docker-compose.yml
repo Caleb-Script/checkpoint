@@ -1,58 +1,50 @@
 services:
-  keycloak-db:
+  postgres:
     image: postgres:16
-    container_name: keycloak_postgres
+    container_name: postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: keycloakdb
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+      POSTGRES_DB: postgres
+      TZ: Europe/Berlin
     ports:
       - "5432:5432"
-    volumes:
-      - type: bind
-        source: ../volumes/postgres/keycloak/data
-        target: /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloakdb"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       retries: 5
-
-  app-db:
-    image: postgres:16
-    container_name: eventapp_postgres
-    environment:
-      POSTGRES_DB: eventdb
-      POSTGRES_USER: eventuser
-      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
-    ports:
-      - "5433:5432"
     volumes:
       - type: bind
         source: ../volumes/postgres/app/data
         target: /var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eventuser -d eventdb"]
-      interval: 10s
-      retries: 5
-
-  redis:
-    image: redis:7
-    container_name: eventapp_redis
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
       - type: bind
-        source: ../volumes/redis/data
-        target: /data
+        source: ../volumes/postgres/app/initdb
+        target: /docker-entrypoint-initdb.d
+    networks:
+      - checkpoint-net
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      TZ: Europe/Berlin
+    ports:
+      - "8081:80" # http://localhost:8081
+    depends_on:
+      - postgres
+    networks:
+      - checkpoint-net
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
-    container_name: keycloak_server
+    container_name: keycloak
     command: start-dev --import-realm
     depends_on:
-      keycloak-db:
+      postgres:
         condition: service_healthy
     ports:
       - "8080:8080"
@@ -62,7 +54,7 @@ services:
       KC_DB: postgres
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
-      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_HOST: postgres
       KC_DB_URL_PORT: 5432
       KC_DB_URL_DATABASE: keycloakdb
       KC_HEALTH_ENABLED: "true"
@@ -71,3 +63,10 @@ services:
       - type: bind
         source: ../volumes/keycloak/import
         target: /opt/keycloak/data/import
+    networks:
+      - checkpoint-net
+
+
+networks:
+  checkpoint-net:
+    name: checkpoint-net
