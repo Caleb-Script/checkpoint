@@ -1,8 +1,6 @@
 // checkpoint/web/src/app/events/new/page.tsx
 'use client';
 
-import { CREATE_EVENT } from '../../../graphql/event/mutation';
-import { EVENTS } from '../../../graphql/event/query';
 import { useMutation } from '@apollo/client';
 import {
   Alert,
@@ -18,6 +16,8 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { CREATE_EVENT } from '../../../graphql/event/mutation';
+import { EVENTS } from '../../../graphql/event/query';
 
 type CreateEventInput = {
   name: string;

@@ -1,13 +1,6 @@
 // checkpoint/web/src/app/events/[id]/page.tsx
 'use client';
 
-import {
-  CREATE_SEAT,
-  DELETE_EVENT,
-  IMPORT_SEATS,
-  UPDATE_EVENT,
-} from '../../../graphql/event/mutation';
-import { EVENT_BY_ID, EVENT_SEATS } from '../../../graphql/event/query';
 import { useMutation, useQuery } from '@apollo/client';
 import {
   Alert,
@@ -32,6 +25,13 @@ import {
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
+import {
+  CREATE_SEAT,
+  DELETE_EVENT,
+  IMPORT_SEATS,
+  UPDATE_EVENT,
+} from '../../../graphql/event/mutation';
+import { EVENT_BY_ID, EVENT_SEATS } from '../../../graphql/event/query';
 
 type EventDto = {
   id: string;

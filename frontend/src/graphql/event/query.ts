@@ -39,16 +39,15 @@ export const EVENT_BY_ID = gql`
   }
 `;
 
-
-export const EVENT_SEATS = gql/* GraphQL */ `
+export const EVENT_SEATS = gql /* GraphQL */ `
   query EventSeats($eventId: ID!) {
     seatsByEvent(eventId: $eventId) {
       id
-    eventId
-    section
-    table
-    number
-    note
+      eventId
+      section
+      table
+      number
+      note
     }
   }
 `;

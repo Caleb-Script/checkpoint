@@ -19,7 +19,7 @@ const bootstrap = async () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.enableCors(corsOptions);
     await app.listen(port);
-    console.log(`🚀 Gateway ready at http${httpsOptions ? 's' : ''}://localhost:${port}/graphql`)
+    console.log(`🚀 Gateway ready at http${httpsOptions ? 's' : ''}://localhost:${port}/graphql`);
 };
 
 await bootstrap();

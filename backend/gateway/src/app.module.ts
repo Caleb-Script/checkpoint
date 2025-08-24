@@ -1,5 +1,6 @@
 // /Users/gentlebookpro/Projekte/checkpoint/backend/gateway/src/app.module.ts
 import { IntrospectAndCompose, RemoteGraphQLDataSource } from '@apollo/gateway';
+import { GraphQLRequestContextWillSendResponse } from '@apollo/server';
 import { ApolloGatewayDriver, ApolloGatewayDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
@@ -7,7 +8,6 @@ import type { Request } from 'express';
 import { subgraph } from './config/subgraph.js';
 import { HealthModule } from './health/health.module.js';
 import { LoggerModule } from './logger/logger.module.js';
-import { GraphQLRequestContextWillSendResponse } from '@apollo/server';
 
 /**
  * Extrahiert Auth + Cookies aus dem eingehenden Gateway-Request.
@@ -48,8 +48,7 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     // Wir erkennen zwei typische Rückgaben aus dem Auth-Subgraph:
     // mutation { login(...) { accessToken refreshToken ... } }
     // mutation { refresh(...) { accessToken refreshToken ... } }
-    const authPayload =
-        data?.login ?? data?.refresh ?? data?.authenticate ?? null;
+    const authPayload = data?.login ?? data?.refresh ?? data?.authenticate ?? null;
     const didLogout: boolean = !!data?.logout?.ok;
 
     // 1) Logout: lösche Cookies
@@ -57,7 +56,10 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
         const sameSite = (process.env.COOKIE_SAMESITE ?? 'lax').toLowerCase(); // 'lax' | 'strict' | 'none'
         const secure = process.env.COOKIE_SECURE === 'true'; // true nur mit HTTPS
 
-        const clearOpts = { sameSite: sameSite[0].toUpperCase() + sameSite.slice(1) as 'Lax' | 'Strict' | 'None', secure };
+        const clearOpts = {
+            sameSite: (sameSite[0].toUpperCase() + sameSite.slice(1)) as 'Lax' | 'Strict' | 'None',
+            secure,
+        };
         const cookies = [
             clearCookie('kc_access_token', clearOpts),
             clearCookie('kc_refresh_token', clearOpts),
@@ -79,8 +81,9 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     const sameSite = (process.env.COOKIE_SAMESITE ?? 'lax').toLowerCase(); // 'lax' | 'strict' | 'none'
     const secure = process.env.COOKIE_SECURE === 'true'; // true nur mit HTTPS
 
-    const cookieBase = `Path=/; HttpOnly; SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}${secure ? '; Secure' : ''
-        }`;
+    const cookieBase = `Path=/; HttpOnly; SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}${
+        secure ? '; Secure' : ''
+    }`;
 
     const cookies: string[] = [
         `kc_access_token=${accessToken}; Max-Age=${token_expires_in ?? 300}; ${cookieBase}`,
@@ -90,7 +93,10 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     http.headers.set('set-cookie', cookies);
 }
 
-function clearCookie(name: string, opts?: { secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' }) {
+function clearCookie(
+    name: string,
+    opts?: { secure?: boolean; sameSite?: 'Lax' | 'Strict' | 'None' },
+) {
     const parts: string[] = [
         `${name}=`,
         `Path=/`,
@@ -102,7 +108,6 @@ function clearCookie(name: string, opts?: { secure?: boolean; sameSite?: 'Lax' |
     if (opts?.secure) parts.push(`Secure`);
     return parts.join('; ');
 }
-
 
 @Module({
     imports: [
@@ -143,7 +148,7 @@ function clearCookie(name: string, opts?: { secure?: boolean; sameSite?: 'Lax' |
                 // RemoteGraphQLDataSource: hier leiten wir Headers an die Subgraphs weiter
                 buildService: ({ url }) =>
                     new (class extends RemoteGraphQLDataSource {
-                         override willSendRequest({ request, context }: any) {
+                        override willSendRequest({ request, context }: any) {
                             // 1) Authorization (so wie vom Client gesendet)
                             if (context?.token) {
                                 // Erwartet wird normal "Bearer <token>"
@@ -161,10 +166,23 @@ function clearCookie(name: string, opts?: { secure?: boolean; sameSite?: 'Lax' |
                             }
 
                             // 4) Nützliche Meta-Header (optional für Logging / Rate-Limiting downstream)
-                            if (context?.meta?.ip) request.http?.headers.set('x-forwarded-for', String(context.meta.ip));
-                            if (context?.meta?.ua) request.http?.headers.set('x-forwarded-user-agent', String(context.meta.ua));
-                            if (context?.meta?.host) request.http?.headers.set('x-forwarded-host', String(context.meta.host));
-                            if (context?.meta?.origin) request.http?.headers.set('origin', String(context.meta.origin));
+                            if (context?.meta?.ip)
+                                request.http?.headers.set(
+                                    'x-forwarded-for',
+                                    String(context.meta.ip),
+                                );
+                            if (context?.meta?.ua)
+                                request.http?.headers.set(
+                                    'x-forwarded-user-agent',
+                                    String(context.meta.ua),
+                                );
+                            if (context?.meta?.host)
+                                request.http?.headers.set(
+                                    'x-forwarded-host',
+                                    String(context.meta.host),
+                                );
+                            if (context?.meta?.origin)
+                                request.http?.headers.set('origin', String(context.meta.origin));
                         }
                     })({ url }),
             },
@@ -173,4 +191,4 @@ function clearCookie(name: string, opts?: { secure?: boolean; sameSite?: 'Lax' |
         HealthModule,
     ],
 })
-export class AppModule { }
+export class AppModule {}

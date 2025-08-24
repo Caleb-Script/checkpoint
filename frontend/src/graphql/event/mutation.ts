@@ -40,9 +40,25 @@ export const CREATE_EVENT = gql`
  * Event aktualisieren (Beispiel: allowReEntry togglen)
  */
 export const UPDATE_EVENT = gql`
-  mutation UpdateEvent($id: ID!, $allowReEntry: Boolean, $name: String, $rotateSeconds: Int, $maxSeats: Int, $startsAt: DateTime, $endsAt: DateTime) {
+  mutation UpdateEvent(
+    $id: ID!
+    $allowReEntry: Boolean
+    $name: String
+    $rotateSeconds: Int
+    $maxSeats: Int
+    $startsAt: DateTime
+    $endsAt: DateTime
+  ) {
     updateEvent(
-      input: { id: $id, allowReEntry: $allowReEntry, name: $name, rotateSeconds: $rotateSeconds, maxSeats: $maxSeats, startsAt: $startsAt, endsAt: $endsAt }
+      input: {
+        id: $id
+        allowReEntry: $allowReEntry
+        name: $name
+        rotateSeconds: $rotateSeconds
+        maxSeats: $maxSeats
+        startsAt: $startsAt
+        endsAt: $endsAt
+      }
     ) {
       allowReEntry
       createdAt
@@ -80,9 +96,21 @@ export const DELETE_EVENT = gql`
  * Einzelsitz anlegen
  */
 export const CREATE_SEAT = gql`
-  mutation CreateSeat($eventId: ID!, $note: String, $number: String, $section: String, $table: String) {
+  mutation CreateSeat(
+    $eventId: ID!
+    $note: String
+    $number: String
+    $section: String
+    $table: String
+  ) {
     createSeat(
-      input: { eventId: $eventId, note: $note, number: $number, section: $section, table: $table }
+      input: {
+        eventId: $eventId
+        note: $note
+        number: $number
+        section: $section
+        table: $table
+      }
     ) {
       eventId
       id

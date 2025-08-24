@@ -17,8 +17,8 @@ import {
   Typography,
 } from '@mui/material';
 import Link from 'next/link';
-import { EventsQueryResult } from '../../types/event/event.type';
 import { EVENTS } from '../../graphql/event/query';
+import { EventsQueryResult } from '../../types/event/event.type';
 import { getLogger } from '../../utils/logger';
 
 export default function EventsListPage() {

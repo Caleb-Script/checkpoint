@@ -57,7 +57,7 @@ export default function LoginPage() {
         return setError(data?.login?.error || 'Anmeldung fehlgeschlagen.');
       refetchMe();
       router.push(returnTo);
-    } catch(err) {
+    } catch (err) {
       logger.error(err);
       setError('Netzwerk-/Serverfehler.');
     }
