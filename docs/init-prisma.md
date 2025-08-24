@@ -196,3 +196,32 @@ npx prisma generate
 # (Falls noch nicht gemacht) erste Migration aus deinem Schema anlegen:
 npx prisma migrate dev --name init
 ```
+
+# INIT MULTI PRISMA SCHEMA
+
+````bash
+cd backend/event
+pnpm install
+npx prisma generate
+npx prisma migrate dev --name init
+cd ../..
+# Invitation-Service
+cd backend/invitation
+pnpm install
+npx prisma generate
+npx prisma migrate dev --name init
+cd ../..
+# Ticket-Service
+cd backend/ticket
+pnpm install
+npx prisma generate
+npx prisma migrate dev --name init
+cd ../..
+
+
+
+docker compose down -v
+rm -rf ../volumes/postgres/app/data
+mkdir -p ../volumes/postgres/app/data
+docker compose up -d
+```

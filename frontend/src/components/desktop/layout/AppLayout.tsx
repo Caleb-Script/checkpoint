@@ -20,8 +20,8 @@ import QrCode2RoundedIcon from '@mui/icons-material/QrCode2Rounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
 import TableViewRoundedIcon from '@mui/icons-material/TableViewRounded';
-import { useAuth } from '../../context/AuthContext';
-import getApolloClient from '../../lib/apolloClient';
+import { useAuth } from '../../../context/AuthContext';
+import getApolloClient from '../../../lib/apolloClient';
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', href: '/', icon: <HomeRoundedIcon /> },

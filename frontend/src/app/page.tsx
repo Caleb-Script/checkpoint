@@ -1,95 +1,99 @@
-import Image from 'next/image';
-import styles from './page.module.css';
+import { Box, Button, Grid, Paper, Stack, Typography } from '@mui/material';
+import Link from 'next/link';
 
-export default function Home() {
+export default function Page() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <Box>
+      <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
+        Willkommen 👋
+      </Typography>
+      <Typography sx={{ color: 'text.secondary', mb: 3 }}>
+        Einladungen, RSVP, QR‑Tickets & Security‑Scan – alles mobilfreundlich.
+        Wähle deinen Bereich:
+      </Typography>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              👤 Gast
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
+              RSVP beantworten, Ticket abrufen, Plus‑Ones einladen.
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button LinkComponent={Link} href="/rsvp" variant="contained">
+                RSVP
+              </Button>
+              <Button LinkComponent={Link} href="/my-qr" variant="outlined">
+                Mein QR
+              </Button>
+              <Button LinkComponent={Link} href="/invite" variant="text">
+                Plus‑One
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              🛡️ Security
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
+              Schnell scannen, Einlass/Auslass buchen, Live‑Status.
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button LinkComponent={Link} href="/scan" variant="contained">
+                Scanner
+              </Button>
+              <Button LinkComponent={Link} href="/security" variant="outlined">
+                Dashboard
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              👨‍💼 Admin
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
+              Einladungen verwalten, Approven, Tickets versenden.
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button
+                LinkComponent={Link}
+                href="/invitations"
+                variant="contained"
+              >
+                Einladungen
+              </Button>
+              <Button
+                LinkComponent={Link}
+                href="/invitations/approve"
+                variant="outlined"
+              >
+                Approve
+              </Button>
+              <Button
+                LinkComponent={Link}
+                href="/invitations/responses"
+                variant="outlined"
+              >
+                Responses
+              </Button>
+              <Button LinkComponent={Link} href="/tickets/send" variant="text">
+                Tickets senden
+              </Button>
+              <Button LinkComponent={Link} href="/qr" variant="text">
+                QR Übersicht
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

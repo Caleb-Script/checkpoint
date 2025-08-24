@@ -24,8 +24,11 @@ import * as React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LOGIN } from '../../graphql/auth/mutation';
 import getApolloClient from '../../lib/apolloClient';
+import { getLogger } from '../../utils/logger';
 
 export default function LoginPage() {
+  const logger = getLogger(LoginPage.name);
+
   const { refetchMe } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -54,7 +57,8 @@ export default function LoginPage() {
         return setError(data?.login?.error || 'Anmeldung fehlgeschlagen.');
       refetchMe();
       router.push(returnTo);
-    } catch {
+    } catch(err) {
+      logger.error(err);
       setError('Netzwerk-/Serverfehler.');
     }
   }

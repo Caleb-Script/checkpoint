@@ -7,8 +7,7 @@ export const corsOptions: CorsOptions = {
         'https://omnixys.com',
         'https://omnixys-sphere-ihh4dk9zv-omnixys.vercel.app',
     ],
-    // origin: true,
-
+    credentials: true,
     // Access-Control-Allow-Methods (hier: default)
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     // Access-Control-Allow-Headers

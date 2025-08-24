@@ -17,7 +17,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 import * as React from 'react';
-import LogoutButton from '../LogoutButton';
+import LogoutButton from '../../LogoutButton';
 
 export const DRAWER_WIDTH = 240;
 
