@@ -7,6 +7,7 @@ import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
 } from "@nestjs/apollo";
+import { KafkaModule } from "./messaging/kafka.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import {
         introspection: true,
       }),
     }),
+    KafkaModule,
     LoggerModule,
     InvitationModule,
   ],

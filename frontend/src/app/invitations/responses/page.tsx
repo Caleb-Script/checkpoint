@@ -1,52 +1,56 @@
+// /web/src/app/invitations/responses/page.tsx
 'use client';
-
+import { useQuery } from '@apollo/client';
 import {
   Alert,
+  Button,
   Card,
   CardContent,
+  CardHeader,
   Chip,
   Stack,
   Typography,
 } from '@mui/material';
-import * as React from 'react';
-
-type Summary = { yes: number; no: number; pending: number };
+import { INVITATIONS } from '../../../graphql/invitation/query';
+import { InvitationsQueryResult } from '../../../types/invitation/invitation.type';
 
 export default function ResponsesPage() {
-  const [sum, setSum] = React.useState<Summary>({ yes: 0, no: 0, pending: 0 });
-  const [error, setError] = React.useState<string | null>(null);
+  const { data, loading, error, refetch } = useQuery<InvitationsQueryResult>(
+    INVITATIONS,
+    { fetchPolicy: 'cache-and-network' },
+  );
+  const items = data?.invitations ?? [];
 
-  const load = async () => {
-    try {
-      setError(null);
-      const res = await fetch('/api/invitations/responses');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? 'Fehler');
-      setSum(data?.summary ?? { yes: 0, no: 0, pending: 0 });
-    } catch (e: any) {
-      setError(e.message);
-    }
-  };
-
-  React.useEffect(() => {
-    load();
-  }, []);
+  const yes = items.filter((i) => i.rsvpChoice === 'YES').length;
+  const no = items.filter((i) => i.rsvpChoice === 'NO').length;
+  const declined = items.filter((i) => i.status === 'DECLINED').length;
+  const canceled = items.filter((i) => i.status === 'CANCELED').length;
+  const pending = items.length - yes - no - declined - canceled;
 
   return (
     <Card variant="outlined">
+      <CardHeader
+        title="Responses"
+        titleTypographyProps={{ variant: 'h5', sx: { fontWeight: 800 } }}
+        action={
+          <Button onClick={() => refetch()} variant="outlined">
+            Aktualisieren
+          </Button>
+        }
+      />
       <CardContent>
-        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-          Responses
-        </Typography>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {error.message}
           </Alert>
         )}
+        {loading && !data && <Typography>Wird geladen…</Typography>}
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-          <Chip label={`Zugesagt: ${sum.yes}`} color="success" />
-          <Chip label={`Abgesagt: ${sum.no}`} color="warning" />
-          <Chip label={`Offen: ${sum.pending}`} />
+          <Chip label={`Zugesagt: ${yes}`} color="success" />
+          <Chip label={`Abgesagt: ${no}`} color="warning" />
+          <Chip label={`Offen: ${pending}`} />
+          <Chip label={`Declined (Status): ${declined}`} />
+          <Chip label={`Canceled: ${canceled}`} />
         </Stack>
       </CardContent>
     </Card>

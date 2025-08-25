@@ -65,6 +65,44 @@ services:
         target: /opt/keycloak/data/import
     networks:
       - checkpoint-net
+  
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    hostname: zookeeper
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181", "|", "grep", "imok"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    networks:
+      - checkpoint-net
+
+  kafka:
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    hostname: kafka
+    healthcheck:
+      test: ["CMD", "bash", "-c", "nc -z localhost 9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: ${KAFKA_ADVERTISED_HOST_NAME}
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    # command: sh -c "export KAFKA_ADVERTISED_HOST_NAME=$(hostname); /usr/bin/start-kafka.sh"
+    networks:
+      - checkpoint-net
+
 
 
 networks:

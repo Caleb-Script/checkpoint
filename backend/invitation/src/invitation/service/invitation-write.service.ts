@@ -10,10 +10,135 @@ import { RsvpChoice } from "../models/enums/rsvp-choice.enum";
 import { InvitationStatus } from "../models/enums/invitation-status.enum";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
 import { InvitationCreateInput } from "../models/input/create-invitation.input";
+import { InvitationReadService } from "./invitation-read.service";
+import { KafkaConsumerService } from "../../messaging/kafka-consumer.service";
+import { KafkaProducerService } from "../../messaging/kafka-producer.service";
+import { LoggerService } from "../../logger/logger.service";
+import { LoggerPlus } from "../../logger/logger-plus";
+import { getKafkaTopicsBy } from "../../messaging/kafka-topic.properties";
+import { trace, Tracer, context as otelContext } from "@opentelemetry/api";
+import { TraceContextProvider } from "../../trace/trace-context.provider";
+import { handleSpanError } from "../utils/error.util";
+import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
+import { Invitation } from '../models/entity/invitation.entity';
 
 @Injectable()
 export class InvitationWriteService {
-  constructor(private readonly prisma: PrismaService) {}
+  readonly #kafkaConsumerService: KafkaConsumerService;
+  readonly #kafkaProducerService: KafkaProducerService;
+  readonly #loggerService: LoggerService;
+  readonly #logger: LoggerPlus;
+  readonly #tracer: Tracer;
+  readonly #traceContextProvider: TraceContextProvider;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly readService: InvitationReadService,
+    kafkaConsumerService: KafkaConsumerService,
+    kafkaProducerService: KafkaProducerService,
+    loggerService: LoggerService,
+    traceContextProvider: TraceContextProvider,
+  ) {
+    this.#kafkaConsumerService = kafkaConsumerService;
+    this.#loggerService = loggerService;
+    this.#logger = this.#loggerService.getLogger(InvitationWriteService.name);
+    this.#kafkaProducerService = kafkaProducerService;
+    this.#tracer = trace.getTracer(InvitationWriteService.name);
+    this.#traceContextProvider = traceContextProvider;
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(["user"]),
+    });
+  }
+
+  async addUserId({
+    userId,
+    invitationId,
+  }: {
+    userId: string;
+    invitationId: string;
+  }) {
+    return await this.#tracer.startActiveSpan(
+      "invitation.accept-rsvp",
+      async (span) => {
+        try {
+          return await otelContext.with(
+            trace.setSpan(otelContext.active(), span),
+            async () => {
+              this.#logger.debug("accept");
+
+              await this.ensureExists(invitationId);
+
+              const updated = await this.prisma.invitation.update({
+                where: { id: invitationId },
+                data: {
+                  guestProfileId: userId,
+                },
+              });
+              return updated;
+            },
+          );
+        } catch (error) {
+          handleSpanError(span, error, this.#logger, "addItem");
+        } finally {
+          span.end();
+        }
+      },
+    );
+  }
+
+  /**
+   * RSVP "accept" – setzt rsvpChoice=YES, status=ACCEPTED, rsvpAt=jetzt.
+   * Optional könnte hier ein Profil-/Ticket-Workflow über Events gestartet werden.
+   */
+  async accept({ id, input }: { id: string; input: AcceptRSVPInput }) {
+    const Invitation = await this.readService.findOne(id)
+    
+    if (Invitation.rsvpChoice === RsvpChoice.YES) throw new Error('already Accepted')
+    return await this.#tracer.startActiveSpan(
+      "invitation.accept-rsvp",
+      async (span) => {
+        try {
+          return await otelContext.with(
+            trace.setSpan(otelContext.active(), span),
+            async () => {
+              this.#logger.debug("accept");
+
+              await this.ensureExists(id);
+
+              const updated = await this.prisma.invitation.update({
+                where: { id },
+                data: {
+                  rsvpChoice: RsvpChoice.YES,
+                  status: InvitationStatus.ACCEPTED,
+                },
+              });
+
+              const trace = this.#traceContextProvider.getContext();
+
+              this.#kafkaProducerService.approved(
+                {
+                  invitationId: id,
+                  firstName: input.firstName,
+                  lastName: input.lastName,
+                  emailData: input.email,
+                },
+                "invitation.write-service",
+                trace,
+              );
+              return updated;
+            },
+          );
+        } catch (error) {
+          handleSpanError(span, error, this.#logger, "addItem");
+        } finally {
+          span.end();
+        }
+      },
+    );
+  }
 
   async create(input: InvitationCreateInput) {
     if (!input.eventId) throw new BadRequestException("eventId is required");
@@ -91,6 +216,8 @@ export class InvitationWriteService {
     await this.ensureExists(id);
 
     const data: Record<string, any> = {};
+
+    data.status = InvitationStatus.ACCEPTED;
 
     if (typeof input.maxInvitees === "number") {
       if (input.maxInvitees < 0)

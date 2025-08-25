@@ -1,12 +1,12 @@
 // checkpoint/services/invitation/src/graphql/inputs/create-invitation.input.ts
-import { Field, InputType, Int } from "@nestjs/graphql";
+import { Field, ID, InputType, Int } from "@nestjs/graphql";
 
 @InputType({
   description:
     "Create-Input für Einladungen: nur Event-Bezug, Plus-Ones und ggf. Invite-Chain. Gastprofil wird erst bei Ticketausgabe erzeugt.",
 })
 export class InvitationCreateInput {
-  @Field(() => String, { description: "Event-ID (String)." })
+  @Field(() => ID, { description: "Event-ID (String)." })
   eventId!: string;
 
   @Field(() => Int, {

@@ -4,6 +4,7 @@ import { Invitation } from "../models/entity/invitation.entity";
 import { InvitationWriteService } from "../service/invitation-write.service";
 import { InvitationCreateInput } from "../models/input/create-invitation.input";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
+import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
 
 @Resolver(() => Invitation)
 export class InvitationMutationResolver {
@@ -29,6 +30,14 @@ export class InvitationMutationResolver {
     @Args("id") id: string,
   ): Promise<Invitation> {
     return this.service.update(id, input) as Promise<Invitation>;
+  }
+
+  @Mutation(() => Invitation)
+  async acceptInvitation(
+    @Args("id") id: string,
+    @Args("input") input: AcceptRSVPInput,
+  ): Promise<Invitation> {
+    return this.service.accept({ id, input }) as Promise<Invitation>;
   }
 
   @Mutation(() => Invitation)

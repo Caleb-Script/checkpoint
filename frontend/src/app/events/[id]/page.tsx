@@ -23,6 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
 import {
@@ -248,6 +249,14 @@ export default function EventDetailPage() {
               </Typography>
               <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
                 {toLocal(ev.startsAt)} — {toLocal(ev.endsAt)}
+                {' • Rotation: '}
+                {ev.rotateSeconds}s
+                {typeof ev.maxSeats === 'number' &&
+                  ` • Max Seats: ${ev.maxSeats}`}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Erstellt: {toLocal(ev.createdAt)} / Letzte Änderung:{' '}
+                {toLocal(ev.updatedAt)}
               </Typography>
 
               <Divider sx={{ my: 2 }} />
@@ -289,6 +298,33 @@ export default function EventDetailPage() {
                     }}
                   >
                     Event löschen
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm="auto">
+                  <Button
+                    component={Link}
+                    href={`/events/${eventId}/invitations`}
+                    variant="outlined"
+                  >
+                    Zu den Einladungen
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm="auto">
+                  <Button
+                    component={Link}
+                    href={`/events/${eventId}/responses`}
+                    variant="outlined"
+                  >
+                    Zu den Responses
+                  </Button>
+                </Grid>
+                <Grid>
+                  <Button
+                    component={Link}
+                    href={`/events/${eventId}/invite`}
+                    variant="contained"
+                  >
+                    Gäste einladen
                   </Button>
                 </Grid>
               </Grid>

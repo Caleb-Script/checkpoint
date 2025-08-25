@@ -146,7 +146,7 @@ export class LoginResolver {
       throw new BadUserInputError('Falscher Token');
     }
 
-    this.#logger.debug('refresh: result=%o', result);
+    // this.#logger.debug('refresh: result=%o', result);
     return result;
   }
 
@@ -156,12 +156,12 @@ export class LoginResolver {
   async signIn(@Args('input') input: SignIn) {
     this.#logger.debug('signIn: input=%o', input);
 
-    const result = await this.#keycloakService.signIn(input);
+    const result = await this.#keycloakService.signUp(input);
     if (result === undefined) {
       throw new BadUserInputError('Falscher Token');
     }
 
-    this.#logger.debug('signIn: result=%o', result);
+    // this.#logger.debug('signIn: result=%o', result);
     return result;
   }
 

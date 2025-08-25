@@ -1,5 +1,4 @@
 import { keycloakConnectOptions, paths } from '../../config/keycloak.js';
-import { getLogger } from '../../logger/logger.js';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import axios, {
   type AxiosInstance,
@@ -12,6 +11,14 @@ import {
 } from 'nest-keycloak-connect';
 import { BadUserInputError } from './errors.js';
 import * as jose from 'jose';
+import { LoggerPlus } from '../../logger/logger-plus.js';
+import { KafkaConsumerService } from '../../messaging/kafka-consumer.service.js';
+import { KafkaProducerService } from '../../messaging/kafka-producer.service.js';
+import { getKafkaTopicsBy } from '../../messaging/kafka-topic.properties.js';
+import { TraceContextProvider } from '../../trace/trace-context.provider.js';
+import { LoggerService } from '../../logger/logger.service.js';
+import { trace, Tracer, context as otelContext } from '@opentelemetry/api';
+import { handleSpanError } from '../../error.util.js';
 
 const { authServerUrl, clientId, secret } = keycloakConnectOptions;
 
@@ -24,6 +31,7 @@ export interface SignIn {
   readonly firstName: string;
   readonly lastName: string;
   readonly emailData?: string;
+  readonly invitationId: string;
 }
 
 export type UpdateUserInput = {
@@ -93,12 +101,23 @@ type RealmPayload = jose.JWTPayload & {
 export class KeycloakService implements KeycloakConnectOptionsFactory {
   readonly #loginHeaders: RawAxiosRequestHeaders;
   readonly #keycloakClient: AxiosInstance;
-  readonly #logger = getLogger(KeycloakService.name);
 
   // JWKS Cache pro Issuer (robuster gegen Port/Host-Änderungen)
   #jwksCache = new Map<string, ReturnType<typeof jose.createRemoteJWKSet>>();
 
-  constructor() {
+  readonly #kafkaConsumerService: KafkaConsumerService;
+  readonly #kafkaProducerService: KafkaProducerService;
+  readonly #loggerService: LoggerService;
+  readonly #logger: LoggerPlus;
+  readonly #tracer: Tracer;
+  readonly #traceContextProvider: TraceContextProvider;
+
+  constructor(
+    kafkaConsumerService: KafkaConsumerService,
+    kafkaProducerService: KafkaProducerService,
+    loggerService: LoggerService,
+    traceContextProvider: TraceContextProvider,
+  ) {
     const authorization = Buffer.from(`${clientId}:${secret}`, 'utf8').toString(
       'base64',
     );
@@ -110,7 +129,19 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
     this.#keycloakClient = axios.create({
       baseURL: authServerUrl,
     });
-    this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
+    this.#kafkaConsumerService = kafkaConsumerService;
+    this.#loggerService = loggerService;
+    this.#logger = this.#loggerService.getLogger(KeycloakService.name);
+    this.#kafkaProducerService = kafkaProducerService;
+    this.#tracer = trace.getTracer(KeycloakService.name);
+    this.#traceContextProvider = traceContextProvider;
+    // this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(['user']),
+    });
   }
 
   createKeycloakConnectOptions(): KeycloakConnectOptions {
@@ -215,48 +246,78 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
   // ================================================= User anlegen ======================================================
 
-  async signIn({ firstName, lastName, emailData }: SignIn) {
-    this.#logger.debug('signIn: name %s %s', firstName, lastName);
+  async signUp({ invitationId, firstName, lastName, emailData }: SignIn) {
+    return await this.#tracer.startActiveSpan('auth.signUp', async (span) => {
+      try {
+        return await otelContext.with(
+          trace.setSpan(otelContext.active(), span),
+          async () => {
+            this.#logger.debug('signIn: name %s %s', firstName, lastName);
 
-    const { username, email, password } =
-      await this.#createUsernameAndEmailAndPassword({
-        firstName,
-        lastName,
-        email: emailData,
-      });
+            const { username, email, password } =
+              await this.#createUsernameAndEmailAndPassword({
+                firstName,
+                lastName,
+                email: emailData,
+              });
 
-    const signInHeaders = {
-      Authorization: `Bearer ${await this.#getAdminToken()}`,
-      'Content-Type': 'application/json',
-    };
+            const signInHeaders = {
+              Authorization: `Bearer ${await this.#getAdminToken()}`,
+              'Content-Type': 'application/json',
+            };
 
-    const signInBody = {
-      username,
-      enabled: true,
-      firstName,
-      lastName,
-      email,
-      credentials: [
-        {
-          type: 'password',
-          value: password,
-          temporary: false,
-        },
-      ],
-    };
+            const signInBody = {
+              username,
+              enabled: true,
+              firstName,
+              lastName,
+              email,
+              credentials: [
+                {
+                  type: 'password',
+                  value: password,
+                  temporary: false,
+                },
+              ],
+            };
 
-    let response: AxiosResponse<Record<string, number | string>>;
-    try {
-      response = await this.#keycloakClient.post(paths.users, signInBody, {
-        headers: signInHeaders,
-      });
-    } catch {
-      this.#logger.warn('login: Fehler bei %s', paths.accessToken);
-      return null;
-    }
+            let response: AxiosResponse<Record<string, number | string>>;
+            try {
+              response = await this.#keycloakClient.post(
+                paths.users,
+                signInBody,
+                {
+                  headers: signInHeaders,
+                },
+              );
+            } catch {
+              this.#logger.warn('login: Fehler bei %s', paths.accessToken);
+              return null;
+            }
 
-    this.#logger.debug('User erstellt, Status: %s', response.status);
-    return { username, password };
+            const trace = this.#traceContextProvider.getContext();
+
+            const adminToken = await this.#getAdminToken();
+            const id = await this.#resolveUserId(username, adminToken);
+
+            this.#kafkaProducerService.addUser(
+              {
+                userId: id,
+                invitationId,
+              },
+              'auth.signUp',
+              trace,
+            );
+            this.#logger.debug('User erstellt, Status: %s', response.status);
+            return { username, password };
+          },
+        );
+      } catch (error) {
+        handleSpanError(span, error, this.#logger, 'addItem');
+      } finally {
+        span.end();
+      }
+    });
   }
 
   //
