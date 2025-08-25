@@ -20,4 +20,6 @@ export type KeycloakUserInfo = {
   familyName?: string;
   email?: string;
   roles: string[];
+  ticketId?: string[];
+  invitationId?: string;
 };

@@ -36,9 +36,13 @@ const handleAuth = ({ req }: { req: Request }) => {
 // Hilfsfunktion: Cookies setzen (auf Gateway-Origin)
 function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     console.log('appendCookieHeaders called on gateway');
-    console.log('Context keys:', Object.keys(ctx));
-    console.log('Response:', (ctx as any).response);
-    console.log('Request:', (ctx as any).request);
+    // console.log('Context keys:', Object.keys(ctx));
+    // console.log('Response:', (ctx as any).response);
+    if ((ctx as any).response.body.singleResult.errors) {
+        console.error('Response:', (ctx as any).response.body.singleResult);
+        console.log('Request:', (ctx as any).request);
+    }
+
     // Safety
     const res = (ctx as any).response;
     const http = (res as any).http;

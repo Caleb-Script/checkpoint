@@ -18,28 +18,69 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
+
+import { useAuth } from '@/context/AuthContext'; // liefert den Keycloak-User (siehe Projekt) :contentReference[oaicite:1]{index=1}
+import { EVENT_BY_ID } from '../../graphql/event/query';
 import {
+  ACCEPT_INVITATION,
   CREATE_PLUS_ONES_INVITATION,
   UPDATE_INVITATION,
 } from '../../graphql/invitation/mutation';
 import { INVITATION } from '../../graphql/invitation/query';
 
+function getClaim<T = any>(user: any, key: string): T | null {
+  if (!user) return null;
+  // 1) direkter Claim (so wie im Beispiel-JWT)
+  if (key in user) return (user as any)[key] as T;
+  // 2) evtl. in attributes (Keycloak UserInfo-Variante)
+  if (user.attributes && key in user.attributes)
+    return (user.attributes as any)[key] as T;
+  return null;
+}
+
 export default function RsvpPage() {
   const sp = useSearchParams();
-  const invId = sp.get('inv') ?? '';
+  const { user, isAuthenticated, loading: authLoading } = useAuth(); // :contentReference[oaicite:2]{index=2}
+
+  // 1) Query-Param → Vorrang
+  const invFromQuery = sp.get('inv') ?? '';
+
+  // 2) Falls kein Query-Param: aus Keycloak-Token
+  //    invitationId ist laut Beispiel ein String
+  const invFromTokenRaw = getClaim<string | string[]>(user, 'invitationId');
+  const invFromToken = Array.isArray(invFromTokenRaw)
+    ? (invFromTokenRaw[0] ?? '')
+    : (invFromTokenRaw ?? '');
+
+  const invId = invFromQuery || invFromToken || '';
 
   const { data, loading, error, refetch } = useQuery(INVITATION, {
     variables: { id: invId },
     skip: !invId,
     fetchPolicy: 'cache-and-network',
   });
-
   const invitation = data?.invitation ?? null;
 
+  // Event-Infos separat (optional, schönere Überschrift)
+  const { data: evData } = useQuery(EVENT_BY_ID, {
+    variables: { id: invitation?.eventId ?? '' },
+    skip: !invitation?.eventId,
+    fetchPolicy: 'cache-first',
+  });
+  const event = evData?.event ?? null;
+
+  // acceptInvitation (E-Mail optional)
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+
+  const [acceptInvitation, { loading: accepting }] =
+    useMutation(ACCEPT_INVITATION);
   const [updateInvitation, { loading: savingRsvp }] =
     useMutation(UPDATE_INVITATION);
   const [createPlusOne, { loading: creatingPlusOne }] = useMutation(
@@ -53,13 +94,49 @@ export default function RsvpPage() {
   const used = invitation?.plusOnes?.length ?? 0;
   const free = Math.max(0, max - used);
 
-  async function submitRsvp(choice: 'YES' | 'NO') {
+  function toLocal(dt?: string) {
+    if (!dt) return '';
+    try {
+      return new Date(dt).toLocaleString();
+    } catch {
+      return dt;
+    }
+  }
+
+  async function onAccept() {
     setErr(null);
     setMsg(null);
-    await updateInvitation({ variables: { id: invId, rsvpChoice: choice } });
+    if (!invId) {
+      setErr('Fehlende Invitation-ID.');
+      return;
+    }
+    if (!firstName.trim() || !lastName.trim()) {
+      setErr('Bitte Vorname und Nachname angeben.');
+      return;
+    }
+    await acceptInvitation({
+      variables: {
+        id: invId,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim() || null, // optional
+      },
+    });
     setMsg(
-      choice === 'YES' ? 'Danke für deine Zusage.' : 'Absage gespeichert.',
+      'Danke für deine Zusage! Dein Profil wurde gespeichert bzw. erstellt.',
     );
+    await refetch();
+  }
+
+  async function onDecline() {
+    setErr(null);
+    setMsg(null);
+    if (!invId) {
+      setErr('Fehlende Invitation-ID.');
+      return;
+    }
+    await updateInvitation({ variables: { id: invId, rsvpChoice: 'NO' } });
+    setMsg('Absage gespeichert.');
     await refetch();
   }
 
@@ -77,23 +154,17 @@ export default function RsvpPage() {
         invitedByInvitationId: invitation.id,
       },
     });
-    setMsg('Plus-One angelegt.');
+    setMsg(
+      'Zusätzliche Einladung (Plus-One) angelegt. Freigabe erfolgt durch das Event-Team.',
+    );
     await refetch();
   }
 
-  async function approveChild(childId: string) {
-    setErr(null);
-    setMsg(null);
-    await updateInvitation({ variables: { id: childId, approved: true } });
-    setMsg('Plus-One bestätigt.');
-    await refetch();
-  }
-
-  if (!invId) {
+  if (authLoading) {
     return (
-      <Alert severity="warning" sx={{ my: 2 }}>
-        Ungültiger Link: Es fehlt die Invitation-ID (<code>?inv=...</code>).
-      </Alert>
+      <Box sx={{ p: { xs: 2, md: 4 } }}>
+        <CircularProgress size={20} />
+      </Box>
     );
   }
 
@@ -103,16 +174,33 @@ export default function RsvpPage() {
         Einladung
       </Typography>
 
-      {loading && (
+      {!isAuthenticated && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Du bist nicht eingeloggt. Bitte anmelden, damit wir deine Einladung
+          zuordnen können.
+        </Alert>
+      )}
+
+      {!invId && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Keine <code>invitationId</code> gefunden. Entweder per Link{' '}
+          <code>?inv=…</code> öffnen oder im Keycloak-Profil muss{' '}
+          <code>invitationId</code> hinterlegt sein.
+        </Alert>
+      )}
+
+      {loading && invId && (
         <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
           <CircularProgress />
         </Stack>
       )}
-      {!loading && error && (
+
+      {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {String(error.message || error)}
         </Alert>
       )}
+
       {msg && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {msg}
@@ -124,18 +212,53 @@ export default function RsvpPage() {
         </Alert>
       )}
 
-      {!loading && invitation && (
+      {invitation && (
         <Card>
           <CardHeader
-            title={`Invitation ${invitation.id}`}
+            title={
+              event
+                ? `Einladung zu „${event.name}“`
+                : `Invitation ${invitation.id}`
+            }
             subheader={
-              <span>
-                Event-ID: <code>{invitation.eventId}</code>
-              </span>
+              event ? (
+                <span>
+                  {toLocal(event.startsAt)} – {toLocal(event.endsAt)}
+                </span>
+              ) : (
+                <span>
+                  Event-ID: <code>{invitation.eventId}</code>
+                </span>
+              )
             }
           />
           <CardContent>
-            {/* RSVP */}
+            {/* Eigene Angaben für ACCEPT */}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Deine Angaben
+            </Typography>
+            <Stack spacing={2} sx={{ mb: 2 }}>
+              <TextField
+                label="Vorname"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+              <TextField
+                label="Nachname"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+              <TextField
+                label="E-Mail (optional)"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                helperText="Falls leer, wird serverseitig eine E-Mail/Username generiert."
+              />
+            </Stack>
+
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Teilnahme
             </Typography>
@@ -146,16 +269,16 @@ export default function RsvpPage() {
             >
               <Button
                 variant="contained"
-                disabled={savingRsvp}
-                onClick={() => submitRsvp('YES')}
+                disabled={!invId || accepting}
+                onClick={onAccept}
               >
                 👍 ZUSAGEN
               </Button>
               <Button
                 variant="outlined"
                 color="inherit"
-                disabled={savingRsvp}
-                onClick={() => submitRsvp('NO')}
+                disabled={!invId || savingRsvp}
+                onClick={onDecline}
               >
                 👎 ABSAGEN
               </Button>
@@ -176,10 +299,23 @@ export default function RsvpPage() {
               />
             </Stack>
 
+            {invitation.rsvpChoice === 'YES' && !invitation.approved && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Deine Zusage bedeutet noch kein Ticket. Das Team prüft &amp;
+                schaltet frei.
+              </Alert>
+            )}
+            {invitation.approved && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Du bist bestätigt – dein Ticket ist (oder wird gleich)
+                verfügbar.
+              </Alert>
+            )}
+
             <Divider sx={{ my: 2 }} />
 
-            {/* Plus-Ones */}
-            {max > 0 && (
+            {/* Plus-Ones (nur anlegen & Status einsehen) */}
+            {(invitation.maxInvitees ?? 0) > 0 && (
               <>
                 <Typography variant="subtitle1" sx={{ mb: 1 }}>
                   Zusätzliche Gäste (Plus-Ones)
@@ -211,7 +347,6 @@ export default function RsvpPage() {
                         <TableCell>Status</TableCell>
                         <TableCell>RSVP</TableCell>
                         <TableCell>Approved</TableCell>
-                        <TableCell align="right">Aktionen</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -227,15 +362,6 @@ export default function RsvpPage() {
                               color={c.approved ? 'success' : 'default'}
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            <Button
-                              size="small"
-                              onClick={() => approveChild(c.id)}
-                              disabled={c.approved}
-                            >
-                              Bestätigen
-                            </Button>
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -245,6 +371,10 @@ export default function RsvpPage() {
                     Noch keine Plus-Ones angelegt.
                   </Typography>
                 )}
+
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Hinweis: Plus-Ones müssen vom Event-Team freigegeben werden.
+                </Alert>
               </>
             )}
           </CardContent>

@@ -5,23 +5,19 @@ import { KafkaEventDispatcherService } from './kafka-event-dispatcher.service.js
 import { KafkaProducerService } from './kafka-producer.service.js';
 import { KafkaHeaderBuilder } from './kafka-header-builder.js';
 import { TraceModule } from '../trace/trace.module.js';
-import { UserHandler } from './handlers/user.handler.js';
-import { KeycloakModule } from '../security/keycloak/keycloak.module.js';
-import { UserAttributesHandler } from './handlers/user-attributes.handler.js';
+import { TicketModule } from '../ticket/ticket.module.js';
 
 @Module({
   imports: [
     DiscoveryModule,
+    forwardRef(() => TicketModule),
     forwardRef(() => TraceModule),
-    forwardRef(() => KeycloakModule),
   ],
   providers: [
     KafkaProducerService,
     KafkaConsumerService,
     KafkaEventDispatcherService,
-    UserHandler,
     KafkaHeaderBuilder,
-    UserAttributesHandler,
   ],
   exports: [KafkaProducerService, KafkaConsumerService],
 })

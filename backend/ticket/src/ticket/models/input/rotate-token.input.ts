@@ -1,9 +1,9 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field, Int, ID } from '@nestjs/graphql';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 @InputType()
 export class RotateTicketInput {
-  @Field()
+  @Field(() => ID)
   @IsString()
   ticketId!: string;
 

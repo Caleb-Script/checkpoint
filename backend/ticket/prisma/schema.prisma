@@ -23,6 +23,7 @@ model Ticket {
   eventId        String
   invitationId   String @unique
   seatId         String?  @unique
+  guestProfileId String?  @unique
   currentState   PresenceState @default(OUTSIDE)
   deviceBoundKey String?
   revoked        Boolean       @default(false)

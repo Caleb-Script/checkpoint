@@ -1,5 +1,10 @@
 import { keycloakConnectOptions, paths } from '../../config/keycloak.js';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import axios, {
   type AxiosInstance,
   type AxiosResponse,
@@ -82,6 +87,8 @@ export interface KeycloakUserInfo {
   familyName?: string;
   email?: string;
   roles: string[];
+  ticketId?: string[];
+  invitationId?: string;
 }
 
 type RealmPayload = jose.JWTPayload & {
@@ -93,6 +100,8 @@ type RealmPayload = jose.JWTPayload & {
   email?: string;
   email_verified?: boolean;
   realm_access?: { roles?: string[] };
+  ticketId?: string[];
+  invitationId?: string;
   iss?: string; // issuer
   azp?: string; // authorized party (client)
 };
@@ -152,6 +161,7 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
   async getUserInfo(token: string): Promise<KeycloakUserInfo> {
     const decoded = jose.decodeJwt(token) as RealmPayload;
+    this.#logger.debug('decoded=%o', decoded);
     const iss = decoded.iss;
     if (!iss) throw new UnauthorizedException('Missing issuer');
 
@@ -172,6 +182,8 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
       familyName: p.family_name,
       email: p.email,
       roles: p.realm_access?.roles ?? [],
+      invitationId: p.invitationId,
+      ticketId: p.ticketId ?? [],
     };
   }
 
@@ -246,6 +258,11 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
   // ================================================= User anlegen ======================================================
 
+  /**
+   * 🔥 signUp – erstellt (oder holt) einen Keycloak-User und setzt Attributes inklusive invitationId.
+   * - Falls User bereits existiert (username/email), werden Attribute gemerged (mode "append" für Arrays; "set" für einzelne Werte).
+   * - invitationId wird als String-Array gespeichert (Keycloak-Konvention).
+   */
   async signUp({ invitationId, firstName, lastName, emailData }: SignIn) {
     return await this.#tracer.startActiveSpan('auth.signUp', async (span) => {
       try {
@@ -254,12 +271,36 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
           async () => {
             this.#logger.debug('signIn: name %s %s', firstName, lastName);
 
+            const adminToken = await this.#getAdminToken();
+            let userId;
+
+            // Attribute vorbereiten (merge invitationId hinein)
+            const initialAttrs: Record<string, string[]> = {};
+            if (invitationId) {
+              initialAttrs['invitationId'] = this.#normalizeAttr(invitationId);
+            }
+
+            const baseUser = {
+              username: 'N/A',
+              email: emailData,
+              firstName: firstName ?? undefined,
+              lastName: lastName ?? undefined,
+              enabled: true,
+              attributes: Object.keys(initialAttrs).length
+                ? initialAttrs
+                : undefined,
+            };
+
+            // Neu anlegen
             const { username, email, password } =
               await this.#createUsernameAndEmailAndPassword({
                 firstName,
                 lastName,
                 email: emailData,
               });
+
+            baseUser.username = username;
+            baseUser.email = email;
 
             const signInHeaders = {
               Authorization: `Bearer ${await this.#getAdminToken()}`,
@@ -281,23 +322,60 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
               ],
             };
 
-            let response: AxiosResponse<Record<string, number | string>>;
+            let res: AxiosResponse<Record<string, number | string>>;
             try {
-              response = await this.#keycloakClient.post(
-                paths.users,
-                signInBody,
-                {
-                  headers: signInHeaders,
-                },
-              );
+              res = await this.#keycloakClient.post(paths.users, signInBody, {
+                headers: signInHeaders,
+              });
+
+              if (res.status === 201 || res.status === 204) {
+                // Location-Header enthält id
+                const location: string | undefined = res.headers?.location;
+                if (location) {
+                  userId = location.split('/').pop() || null;
+                }
+                // Fallback: nachschlagen
+                if (!userId) {
+                  userId = await this.#findUserByUsername(username, adminToken);
+                }
+              } else if (res.status === 409) {
+                // Conflict → existiert bereits, lookup
+                userId = await this.#findUserByUsername(username, adminToken);
+
+                if (!userId)
+                  throw new BadRequestException(
+                    'User exists but cannot resolve id',
+                  );
+              } else {
+                throw new BadRequestException(
+                  `Keycloak user create failed: ${res.status} ${JSON.stringify(res.data)}`,
+                );
+              }
             } catch {
               this.#logger.warn('login: Fehler bei %s', paths.accessToken);
               return null;
             }
 
+            if (!userId) {
+              throw new NotFoundException(
+                'User id could not be resolved after signUp',
+              );
+            }
+
+            await this.addAttribute({
+              userId,
+              attributes: initialAttrs, // bereits als string[] aufbereitet
+              mode: 'append',
+            });
+
+            await this.assignRealmRoleToUsername(username, 'GUEST');
+
+            this.#logger.debug(
+              `signUp: userId=${userId} created=true attributes=${JSON.stringify(initialAttrs)}`,
+            );
+
             const trace = this.#traceContextProvider.getContext();
 
-            const adminToken = await this.#getAdminToken();
             const id = await this.#resolveUserId(username, adminToken);
 
             this.#kafkaProducerService.addUser(
@@ -308,7 +386,12 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
               'auth.signUp',
               trace,
             );
-            this.#logger.debug('User erstellt, Status: %s', response.status);
+            this.#logger.debug('User erstellt, Status: %s', res.status);
+            this.#logger.debug(
+              'new username: %s and password: %s',
+              username,
+              password,
+            );
             return { username, password };
           },
         );
@@ -322,6 +405,111 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
   //
   // =================================== User updaten / Passwort setzen / löschen  ======================================================================
+
+  /**
+   * Fügt/aktualisiert/entfernt Keycloak-User-Attribute.
+   * - Identifikation über userId | username | email (mind. eins davon)
+   * - mode:
+   *   - "set" (default): setzt/überschreibt Werte; leere/null → Attribut löschen
+   *   - "append": hängt Werte an bestehende Arrays an (keine Duplikate)
+   *   - "remove": entfernt gezielt Werte aus Arrays; bei leer → Attribut löschen
+   *
+   * Keycloak speichert Attribute als String-Arrays.
+   */
+  async addAttribute(input: {
+    userId?: string;
+    attributes: Record<string, unknown>;
+    mode?: 'set' | 'append' | 'remove';
+  }): Promise<void> {
+    this.#logger.debug('addAttribute: input=%o', input);
+
+    if (!input || typeof input !== 'object' || !input.attributes) {
+      throw new BadUserInputError('attributes is required');
+    }
+
+    const adminToken = await this.#getAdminToken();
+
+    // ---------- User-ID auflösen ----------
+    const targetUserId = input.userId?.trim();
+    const headers = { Authorization: `Bearer ${adminToken}` };
+
+    if (!targetUserId) {
+      throw new BadUserInputError(
+        'User not found (provide userId or username or email)',
+      );
+    }
+
+    // ---------- Vorhandenen User holen ----------
+    const { data: user } = await this.#keycloakClient.get(
+      `${paths.users}/${encodeURIComponent(targetUserId)}`,
+      { headers },
+    );
+
+    const current =
+      (user?.attributes as Record<string, unknown>) ??
+      ({} as Record<string, unknown>);
+
+    const normalize = (v: unknown): string[] => {
+      if (v === null || v === undefined) return [];
+      if (Array.isArray(v)) return v.map((x) => String(x));
+      return [String(v)];
+    };
+
+    // aktuelles Attribute-Objekt in string[] mappen
+    const updated: Record<string, string[]> = {};
+    for (const [k, v] of Object.entries(current)) {
+      updated[k] = normalize(v);
+    }
+
+    const mode = input.mode ?? 'set';
+
+    // set: invitationId setzen
+    // append: mehrere ticketIds anhängen
+    // remove: ticketId "tkt_1" entfernen
+
+    if (mode === 'set') {
+      for (const [k, v] of Object.entries(input.attributes)) {
+        const arr = normalize(v);
+        if (!arr.length) delete updated[k];
+        else updated[k] = arr;
+      }
+    } else if (mode === 'append') {
+      for (const [k, v] of Object.entries(input.attributes)) {
+        const arr = normalize(v);
+        if (!arr.length) continue;
+        const existing = new Set(updated[k] ?? []);
+        for (const s of arr) existing.add(s);
+        updated[k] = Array.from(existing);
+      }
+    } else if (mode === 'remove') {
+      for (const [k, v] of Object.entries(input.attributes)) {
+        if (v === null || (Array.isArray(v) && v.length === 0)) {
+          delete updated[k];
+          continue;
+        }
+        const toRemove = new Set(normalize(v));
+        const remaining = (updated[k] ?? []).filter((s) => !toRemove.has(s));
+        if (remaining.length) updated[k] = remaining;
+        else delete updated[k];
+      }
+    } else {
+      throw new BadUserInputError(`Unsupported mode: ${mode}`);
+    }
+
+    const payload = { ...user, attributes: updated };
+
+    await this.#keycloakClient.put(
+      `${paths.users}/${encodeURIComponent(targetUserId)}`,
+      payload,
+      { headers },
+    );
+
+    this.#logger.debug(
+      'addAttribute: updated attributes for %s -> %o',
+      targetUserId,
+      updated,
+    );
+  }
 
   /**
    * Aktualisiert firstName/lastName/email. `password` wird ignoriert (dafür `setUserPassword`).
@@ -456,6 +644,12 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
   }
 
   // ============================================================================ Utils ============================================================================
+
+  #normalizeAttr(v: unknown): string[] {
+    if (v === null || v === undefined) return [];
+    if (Array.isArray(v)) return v.map((x) => String(x));
+    return [String(v)];
+  }
 
   async #getRealmRole(
     roleName: Role | string,

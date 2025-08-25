@@ -39,7 +39,7 @@ export const CREATE_PLUS_ONES_INVITATION = gql /* GraphQL */ `
   }
 `;
 
-/** Ein generisches Update – du kannst approved, rsvpChoice, maxInvitees usw. setzen */
+/** generisches Update (approved, rsvpChoice, maxInvitees ...) */
 export const UPDATE_INVITATION = gql /* GraphQL */ `
   mutation UpdateInvitation(
     $id: ID!
@@ -63,6 +63,30 @@ export const UPDATE_INVITATION = gql /* GraphQL */ `
       maxInvitees
       rsvpChoice
       status
+    }
+  }
+`;
+
+/** ▶️ RSVP-ACCEPT: erstellt bei Bedarf GuestProfile (E-Mail ist optional) */
+export const ACCEPT_INVITATION = gql /* GraphQL */ `
+  mutation AcceptInvitation(
+    $id: ID!
+    $firstName: String!
+    $lastName: String!
+    $email: String
+  ) {
+    acceptInvitation(
+      id: $id
+      input: { firstName: $firstName, lastName: $lastName, email: $email }
+    ) {
+      id
+      eventId
+      guestProfileId
+      status
+      rsvpChoice
+      maxInvitees
+      invitedByInvitationId
+      approved
     }
   }
 `;

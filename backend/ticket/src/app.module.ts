@@ -8,6 +8,7 @@ import {
 } from '@nestjs/apollo';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuard } from './ticket/utils/auth.guard.js';
+import { KafkaModule } from './messaging/kafka.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuthGuard } from './ticket/utils/auth.guard.js';
         introspection: true,
       }),
     }),
+    KafkaModule,
     TicketModule,
     LoggerModule,
   ],

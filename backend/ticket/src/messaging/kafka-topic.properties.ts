@@ -5,8 +5,8 @@
 
 export const KafkaTopics = {
   user: {
-    create: 'auth.create.user',
     addUser: 'invitation.add.user',
+    approve: 'auth.create.user',
     addAttribute: 'auth.add-attribute.user',
     setAttribute: 'auth.set-attribute.user',
   },
@@ -19,7 +19,7 @@ export const KafkaTopics = {
 export type KafkaTopicsType = typeof KafkaTopics;
 
 /**
- * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z. B. für Subscriptions).
+ * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z.B. für Subscriptions).
  */
 export function getAllKafkaTopics(): string[] {
   const flatten = (obj: any): string[] =>

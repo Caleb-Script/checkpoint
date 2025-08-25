@@ -15,7 +15,7 @@ export class InvitationCreateInput {
   })
   maxInvitees: number = 0;
 
-  @Field(() => String, {
+  @Field(() => ID, {
     nullable: true,
     description:
       "Optional: Eltern-Einladung (Invite-Chain), falls diese Einladung von einer anderen abgeleitet wurde.",

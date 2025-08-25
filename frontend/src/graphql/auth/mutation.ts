@@ -24,6 +24,8 @@ export const ME = gql`
       familyName
       email
       roles
+      ticketId
+      invitationId
     }
   }
 `;

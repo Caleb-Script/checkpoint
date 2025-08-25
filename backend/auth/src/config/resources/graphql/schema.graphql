@@ -35,6 +35,7 @@ input UserInput {
   firstName: String!
   lastName: String!
   email: String
+  invitationId: String
 }
 
 input SetPasswordInput {
@@ -72,6 +73,9 @@ type UserInfo {
   familyName: String
   email: String
   roles: [String!]!
+         ticketId: [String]
+          invitationId: String
+
 }
 
 # Ergebnis des Logins

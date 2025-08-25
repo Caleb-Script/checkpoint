@@ -11,6 +11,6 @@ export class AcceptRSVPInput {
   @Field(() => String, { description: "Nachname" })
   lastName!: string;
 
-  @Field(() => String, { description: "Email addresse", nullable: true, })
+  @Field(() => String, { description: "Email addresse", nullable: true })
   email?: string;
 }

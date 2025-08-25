@@ -20,7 +20,7 @@ import { trace, Tracer, context as otelContext } from "@opentelemetry/api";
 import { TraceContextProvider } from "../../trace/trace-context.provider";
 import { handleSpanError } from "../utils/error.util";
 import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
-import { Invitation } from '../models/entity/invitation.entity';
+import { Invitation } from "../models/entity/invitation.entity";
 
 @Injectable()
 export class InvitationWriteService {
@@ -94,9 +94,10 @@ export class InvitationWriteService {
    * Optional könnte hier ein Profil-/Ticket-Workflow über Events gestartet werden.
    */
   async accept({ id, input }: { id: string; input: AcceptRSVPInput }) {
-    const Invitation = await this.readService.findOne(id)
-    
-    if (Invitation.rsvpChoice === RsvpChoice.YES) throw new Error('already Accepted')
+    const Invitation = await this.readService.findOne(id);
+
+    if (Invitation.rsvpChoice === RsvpChoice.YES)
+      throw new Error("already Accepted");
     return await this.#tracer.startActiveSpan(
       "invitation.accept-rsvp",
       async (span) => {

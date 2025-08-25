@@ -18,25 +18,89 @@ import {
   verifyTicketJwt,
 } from '../utils/jwt.util.js';
 import { Ticket } from '../models/entity/ticket.entity.js';
+import { getKafkaTopicsBy } from '../../messaging/kafka-topic.properties.js';
+import { TraceContextProvider } from '../../trace/trace-context.provider.js';
+import { LoggerService } from '../../logger/logger.service.js';
+import { KafkaProducerService } from '../../messaging/kafka-producer.service.js';
+import { KafkaConsumerService } from '../../messaging/kafka-consumer.service.js';
+import { LoggerPlus } from '../../logger/logger-plus.js';
+import { trace, Tracer, context as otelContext } from '@opentelemetry/api';
+import { handleSpanError } from '../utils/error.util.js';
 
 @Injectable()
 export class TicketWriteService {
+  readonly #kafkaConsumerService: KafkaConsumerService;
+  readonly #kafkaProducerService: KafkaProducerService;
+  readonly #loggerService: LoggerService;
+  readonly #logger: LoggerPlus;
+  readonly #tracer: Tracer;
+  readonly #traceContextProvider: TraceContextProvider;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ticketReadService: TicketReadService,
-  ) {}
+    kafkaConsumerService: KafkaConsumerService,
+    kafkaProducerService: KafkaProducerService,
+    loggerService: LoggerService,
+    traceContextProvider: TraceContextProvider,
+  ) {
+    this.#kafkaConsumerService = kafkaConsumerService;
+    this.#loggerService = loggerService;
+    this.#logger = this.#loggerService.getLogger(TicketWriteService.name);
+    this.#kafkaProducerService = kafkaProducerService;
+    this.#tracer = trace.getTracer(TicketWriteService.name);
+    this.#traceContextProvider = traceContextProvider;
+  }
 
-  create(input: CreateTicketInput) {
-    const data = {
-      event: input.eventId,
-      invitation: input.invitationId,
-      currentState: 'OUTSIDE',
-      deviceBoundKey: null,
-      revoked: false,
-      seat: input.seatId,
-      lastRotatedAt: null,
-    };
-    return (this.prisma as any).ticket.create({ data: input });
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(['user']),
+    });
+  }
+
+  async create(input: CreateTicketInput) {
+    return await this.#tracer.startActiveSpan('ticket.create', async (span) => {
+      try {
+        return await otelContext.with(
+          trace.setSpan(otelContext.active(), span),
+          async () => {
+            void this.#logger.debug('input=%o', input);
+
+            const data = {
+              event: input.eventId,
+              invitation: input.invitationId,
+              currentState: 'OUTSIDE',
+              deviceBoundKey: null,
+              revoked: false,
+              seat: input.seatId,
+              lastRotatedAt: null,
+            };
+
+            const ticket = await this.prisma.ticket.create({ data: input });
+            this.#logger.debug('ticket=%o', ticket);
+
+            const trace = this.#traceContextProvider.getContext();
+
+            void this.#kafkaProducerService.addAttribute(
+              {
+                guestProfileId: input.guestProfileId,
+                attribute: 'ticketId',
+                value: ticket.id,
+                mode: 'set',
+              },
+              'ticket.write-service',
+              trace,
+            );
+
+            return ticket;
+          },
+        );
+      } catch (error) {
+        handleSpanError(span, error, this.#logger, 'addItem');
+      } finally {
+        span.end();
+      }
+    });
   }
 
   delete(id: string) {

@@ -1,7 +1,6 @@
 // /web/src/app/scan/page.tsx
 'use client';
 
-import { useMutation } from '@apollo/client';
 import FlashOffIcon from '@mui/icons-material/FlashOff';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import {
@@ -22,7 +21,6 @@ import {
   Typography,
 } from '@mui/material';
 import * as React from 'react';
-import { HANDLE_SCAN } from '../../graphql/ticket/mutation';
 
 // Optional Fallback: @zxing/browser – wird nur dynamisch importiert, wenn BarcodeDetector fehlt
 type ZXingReader = {
@@ -42,11 +40,13 @@ async function doHaptic(kind: 'success' | 'error' | 'impact' = 'impact') {
     const { Haptics, ImpactStyle, NotificationType } = await import(
       '@capacitor/haptics'
     );
-    if (kind === 'success')
+    if (kind === 'success') {
       await Haptics.notification({ type: NotificationType.SUCCESS });
-    else if (kind === 'error')
+    } else if (kind === 'error') {
       await Haptics.notification({ type: NotificationType.ERROR });
-    else await Haptics.impact({ style: ImpactStyle.Medium });
+    } else {
+      await Haptics.impact({ style: ImpactStyle.Medium });
+    }
   } catch {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       if (kind === 'success') navigator.vibrate?.(30);
@@ -56,7 +56,7 @@ async function doHaptic(kind: 'success' | 'error' | 'impact' = 'impact') {
   }
 }
 
-// Akustik util: WebAudio-Beep (keine zusätzlichen Assets nötig)
+// Akustik util: WebAudio‑Beep (keine zusätzlichen Assets nötig)
 async function playBeep(kind: 'success' | 'error' | 'scan' = 'scan') {
   try {
     const Ctx =
@@ -65,6 +65,7 @@ async function playBeep(kind: 'success' | 'error' | 'scan' = 'scan') {
     const ctx = new Ctx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
+    // unterschiedliche Tonhöhen/Längen
     const conf = {
       scan: { freq: 900, dur: 0.08, vol: 0.03 },
       success: { freq: 720, dur: 0.12, vol: 0.035 },
@@ -76,27 +77,30 @@ async function playBeep(kind: 'success' | 'error' | 'scan' = 'scan') {
     osc.connect(gain).connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + conf.dur);
+    // Auto‑close nach kurzer Zeit
     setTimeout(() => ctx.close().catch(() => {}), (conf.dur + 0.05) * 1000);
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 
-// einfache Hash-Funktion für Dedupe (Text → Zahl)
+// einfache Hash‑Funktion für Dedupe (Text → Zahl)
 function hashCode(s: string): number {
   let h = 0;
-  for (let i = 0; i < s.length; i++)
+  for (let i = 0; i < s.length; i++) {
     h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
   return h;
 }
 
 export default function ScanPage() {
   const [token, setToken] = React.useState('');
   const [gate, setGate] = React.useState('MAIN');
+  const [result, setResult] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
   const [direction, setDirection] = React.useState<'INSIDE' | 'OUTSIDE'>(
     'INSIDE',
   );
-
-  const [result, setResult] = React.useState<any | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
 
   // Kamera / Decoder
   const [cameraActive, setCameraActive] = React.useState(false);
@@ -110,11 +114,9 @@ export default function ScanPage() {
   const [torchSupported, setTorchSupported] = React.useState(false);
   const [torchOn, setTorchOn] = React.useState(false);
 
-  // Dedupe-Cache: QR-Text-Hash → timestamp ms
-  const RECENT_WINDOW_MS = 3000;
+  // Dedupe‑Cache: QR‑Text‑Hash → timestamp ms
+  const RECENT_WINDOW_MS = 3000; // 3s: in diesem Zeitfenster gleiche Codes ignorieren
   const recentMapRef = React.useRef<Map<number, number>>(new Map());
-
-  const [handleScanMutation] = useMutation(HANDLE_SCAN);
 
   const stopCamera = React.useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -134,21 +136,26 @@ export default function ScanPage() {
     setTorchSupported(false);
   }, []);
 
-  React.useEffect(() => () => stopCamera(), [stopCamera]);
+  React.useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
 
-  // periodisch alten Dedupe-Cache aufräumen
+  // periodisch alten Dedupe‑Cache aufräumen
   React.useEffect(() => {
     const id = setInterval(() => {
       const now = Date.now();
-      for (const [k, ts] of recentMapRef.current)
-        if (now - ts > RECENT_WINDOW_MS) recentMapRef.current.delete(k);
+      const map = recentMapRef.current;
+      for (const [k, ts] of map) {
+        if (now - ts > RECENT_WINDOW_MS) map.delete(k);
+      }
     }, 1000);
     return () => clearInterval(id);
   }, []);
 
   const getVideoTrack = () => {
     const stream = streamRef.current;
-    const tracks = stream?.getVideoTracks?.() ?? [];
+    if (!stream) return null;
+    const tracks = stream.getVideoTracks();
     return tracks.length ? tracks[0] : null;
   };
 
@@ -169,7 +176,7 @@ export default function ScanPage() {
     const track = getVideoTrack();
     if (!track) return;
     try {
-      // @ts-ignore torch constraint (experimentell)
+      // @ts-ignore - TS kennt torch (noch) nicht
       await track.applyConstraints({ advanced: [{ torch: on }] });
       setTorchOn(on);
     } catch {
@@ -177,20 +184,23 @@ export default function ScanPage() {
     }
   };
 
-  // zentrale Dedupe-Prüfung
+  // zentrale Dedupe‑Prüfung
   const shouldIgnore = (qrText: string): boolean => {
     const now = Date.now();
     const key = hashCode(qrText);
     const last = recentMapRef.current.get(key);
-    if (last && now - last < RECENT_WINDOW_MS) return true;
+    if (last && now - last < RECENT_WINDOW_MS) {
+      return true; // innerhalb des Fensters: ignorieren
+    }
     recentMapRef.current.set(key, now);
     return false;
   };
 
   const trySubmit = async (jwt: string) => {
     if (!jwt?.trim()) return;
+    // Dedupe vor dem Request
     if (shouldIgnore(jwt)) {
-      setResult({ _info: 'Duplikat innerhalb 3 Sek. ignoriert' });
+      setResult('Duplikat innerhalb 3 Sek. ignoriert');
       setError(null);
       return;
     }
@@ -198,39 +208,31 @@ export default function ScanPage() {
     setError(null);
     setResult(null);
 
-    // kurzes Scan-Beep bei Erkennung
+    // kurzes Scan‑Beep bei Erkennung (auch wenn Request noch läuft)
     playBeep('scan').catch(() => {});
-    await doHaptic('impact');
 
     try {
-      // ⬇️ eigentlicher Call zum Backend
-      const res = await handleScanMutation({ variables: { token: jwt } });
-      const data = res.data?.handleScan ?? null;
-      setResult(data);
+      setResult(data?.verdict ?? 'OK');
       await doHaptic('success');
       await playBeep('success');
       setToken('');
     } catch (e: any) {
-      const msg = e?.message || 'Scan fehlgeschlagen.';
-      setResult(null);
-      setError(msg);
-      await doHaptic('error');
-      await playBeep('error');
+      setError(e.message);
     }
   };
 
   const startWithBarcodeDetector = async (video: HTMLVideoElement) => {
-    // @ts-expect-error: experimentell
+    // @ts-expect-error: experimental global
     const Supported =
       typeof window !== 'undefined' && 'BarcodeDetector' in window;
     if (!Supported) return false;
 
-    // @ts-expect-error: experimentell
+    // @ts-expect-error: experimental global
     const formats = await (
       window.BarcodeDetector as any
     ).getSupportedFormats?.();
     const canQR = formats?.includes?.('qr_code') ?? true;
-    // @ts-expect-error: experimentell
+    // @ts-expect-error: experimental global
     const detector = new window.BarcodeDetector({
       formats: canQR ? ['qr_code'] : undefined,
     });
@@ -242,10 +244,11 @@ export default function ScanPage() {
         const text = det?.[0]?.rawValue;
         if (text) {
           await trySubmit(text);
+          // kleine Pause, um zu viele Frames nicht zu spammen
           await new Promise((r) => setTimeout(r, 300));
         }
       } catch {
-        /* kein Code im Frame */
+        // kein Code im Frame – ignorieren
       }
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -260,9 +263,12 @@ export default function ScanPage() {
       null,
       video,
       async (res, err, ctrl) => {
-        if (res?.getText) await trySubmit(res.getText());
+        if (res?.getText) {
+          const text = res.getText();
+          await trySubmit(text);
+        }
         if (err) {
-          /* kein Code – ignoriere */
+          // kein Code – ignoriere
         }
         stopZxingRef.current = () => {
           try {
@@ -319,10 +325,10 @@ export default function ScanPage() {
     <Card variant="outlined">
       <CardContent>
         <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-          QR-Scanner
+          QR‑Scanner
         </Typography>
         <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-          Scanne rotierende QR-Tokens. Bei fehlender Kamera kannst du das JWT
+          Scanne rotierende QR‑Tokens. Bei fehlender Kamera kannst du das JWT
           auch manuell einfügen.
         </Typography>
 
@@ -337,14 +343,18 @@ export default function ScanPage() {
             <ToggleButton value="OUTSIDE">Auslass</ToggleButton>
           </ToggleButtonGroup>
 
-          <Chip size="small" label="Dedupe: 3 Sek." />
+          <Chip size="small" label="Dedupe: 3 Sek." />
 
           {cameraActive && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip size="small" label={`Gate: ${gate}`} />
               {torchSupported ? (
                 <Tooltip
-                  title={torchOn ? 'Taschenlampe aus' : 'Taschenlampe an'}
+                  title={
+                    torchOn
+                      ? 'Taschenlampe ausschalten'
+                      : 'Taschenlampe einschalten'
+                  }
                 >
                   <IconButton
                     aria-label="Torch"
@@ -413,9 +423,10 @@ export default function ScanPage() {
             </Box>
           )}
 
-          {/* Guideline-Maske */}
+          {/* Guideline-Maske: dunkelt außen ab, mit hellem Rahmen + Corner-Marks */}
           {cameraActive && (
             <>
+              {/* Außenmaske */}
               <Box
                 sx={{
                   pointerEvents: 'none',
@@ -428,6 +439,7 @@ export default function ScanPage() {
                   backgroundColor: 'rgba(0,0,0,0.45)',
                 }}
               />
+              {/* Rahmen */}
               <Box
                 sx={{
                   pointerEvents: 'none',
@@ -442,6 +454,7 @@ export default function ScanPage() {
                   boxShadow: '0 0 0 1px rgba(0,0,0,0.2) inset',
                 }}
               />
+              {/* Corner-Marks */}
               {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
                 <Box
                   key={pos}
@@ -482,30 +495,9 @@ export default function ScanPage() {
           )}
         </Box>
 
-        {/* Ergebnis / Fehler */}
         {result && (
           <Alert severity="success" sx={{ mb: 1 }}>
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2">Ticket</Typography>
-              <Typography variant="body2">
-                ID: <code>{result.id}</code> · Event:{' '}
-                <code>{result.eventId}</code> · Sitz:{' '}
-                <code>{result.seatId || '—'}</code>
-              </Typography>
-              <Typography variant="body2">
-                Status: <strong>{result.currentState}</strong>
-                {result.revoked ? ' · REVOKED' : ''}
-              </Typography>
-              {result.deviceBoundKey && (
-                <Typography variant="caption" color="text.secondary">
-                  DeviceKey: <code>{result.deviceBoundKey}</code>
-                </Typography>
-              )}
-              {/* UI-only: Richtung/Gate momentan nur Anzeige (API nimmt sie noch nicht an) */}
-              <Typography variant="caption" color="text.secondary">
-                ({direction} @ {gate})
-              </Typography>
-            </Stack>
+            {result}
           </Alert>
         )}
         {error && (
@@ -523,7 +515,7 @@ export default function ScanPage() {
           sx={{ mb: 1 }}
         >
           <TextField
-            label="QR-Token (JWT)"
+            label="QR‑Token (JWT)"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             fullWidth

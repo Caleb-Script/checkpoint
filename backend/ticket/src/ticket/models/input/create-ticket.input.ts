@@ -16,4 +16,8 @@ export class CreateTicketInput {
   @Field(() => ID, { nullable: true })
   @IsString()
   seatId?: string;
+
+  @Field(() => ID)
+  @IsString()
+  guestProfileId!: string;
 }

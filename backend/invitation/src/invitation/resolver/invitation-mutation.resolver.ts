@@ -1,5 +1,5 @@
 // checkpoint/services/invitation/src/invitation-mutation.resolver.ts
-import { Resolver, Mutation, Args } from "@nestjs/graphql";
+import { Resolver, Mutation, Args, ID } from "@nestjs/graphql";
 import { Invitation } from "../models/entity/invitation.entity";
 import { InvitationWriteService } from "../service/invitation-write.service";
 import { InvitationCreateInput } from "../models/input/create-invitation.input";
@@ -27,21 +27,23 @@ export class InvitationMutationResolver {
   @Mutation(() => Invitation)
   async updateInvitation(
     @Args("input") input: InvitationUpdateInput,
-    @Args("id") id: string,
+    @Args("id", { type: () => ID }) id: string,
   ): Promise<Invitation> {
     return this.service.update(id, input) as Promise<Invitation>;
   }
 
   @Mutation(() => Invitation)
   async acceptInvitation(
-    @Args("id") id: string,
+    @Args("id", { type: () => ID }) id: string,
     @Args("input") input: AcceptRSVPInput,
   ): Promise<Invitation> {
     return this.service.accept({ id, input }) as Promise<Invitation>;
   }
 
   @Mutation(() => Invitation)
-  async removeInvitation(@Args("id") id: string): Promise<Invitation> {
+  async removeInvitation(
+    @Args("id", { type: () => ID }) id: string,
+  ): Promise<Invitation> {
     return this.service.delete(id) as Promise<Invitation>;
   }
 }
