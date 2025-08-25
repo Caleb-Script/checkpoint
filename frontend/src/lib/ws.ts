@@ -1,6 +1,6 @@
 // /Users/gentlebookpro/Projekte/checkpoint/web/src/lib/ws.ts
 /* eslint-disable no-console */
-type Channel = "security" | "admin" | "public";
+type Channel = 'security' | 'admin' | 'public';
 type WsMessage = { type: string; [k: string]: any };
 type Listener = (msg: WsMessage | string) => void;
 
@@ -20,20 +20,20 @@ declare global {
 
 const getBaseWsUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_WS_URL;
-  if (envUrl) return envUrl.replace(/^http/, "ws");
-  if (typeof window !== "undefined") {
+  if (envUrl) return envUrl.replace(/^http/, 'ws');
+  if (typeof window !== 'undefined') {
     const { protocol, host } = window.location;
-    const wsProto = protocol === "https:" ? "wss:" : "ws:";
+    const wsProto = protocol === 'https:' ? 'wss:' : 'ws:';
     return `${wsProto}//${host}`;
   }
-  return "ws://localhost:3000";
+  return 'ws://localhost:3100';
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function getWs(channel: Channel = "public"): WSClient {
-  if (typeof window === "undefined") {
-    throw new Error("WebSocket client can only be used in the browser.");
+export function getWs(channel: Channel = 'public'): WSClient {
+  if (typeof window === 'undefined') {
+    throw new Error('WebSocket client can only be used in the browser.');
   }
 
   if (!globalThis.__checkpointWS__) globalThis.__checkpointWS__ = {};
@@ -61,13 +61,13 @@ export function getWs(channel: Channel = "public"): WSClient {
 
     ws = new WebSocket(url);
 
-    ws.addEventListener("open", () => {
+    ws.addEventListener('open', () => {
       retries = 0;
       reconnecting = false;
       console.log(`[WS:${channel}] connected`);
     });
 
-    ws.addEventListener("message", (ev) => {
+    ws.addEventListener('message', (ev) => {
       let payload: any = ev.data;
       try {
         payload = JSON.parse(ev.data);
@@ -75,14 +75,14 @@ export function getWs(channel: Channel = "public"): WSClient {
       for (const cb of listeners) cb(payload);
     });
 
-    ws.addEventListener("close", () => {
+    ws.addEventListener('close', () => {
       console.log(`[WS:${channel}] closed; scheduling reconnect`);
       retries += 1;
       reconnecting = false;
       void connect();
     });
 
-    ws.addEventListener("error", (e) => {
+    ws.addEventListener('error', (e) => {
       console.warn(`[WS:${channel}] error`, e);
       try {
         ws.close();
@@ -102,7 +102,7 @@ export function getWs(channel: Channel = "public"): WSClient {
     send: (data: any) => {
       try {
         if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(typeof data === "string" ? data : JSON.stringify(data));
+          ws.send(typeof data === 'string' ? data : JSON.stringify(data));
         }
       } catch (e) {
         console.warn(`[WS:${channel}] send failed`, e);

@@ -30,7 +30,6 @@ import { ROTATE_TOKEN } from '@/graphql/ticket/mutation';
 import { GET_TICKET_BY_ID } from '@/graphql/ticket/query';
 import { Ticket } from '../../types/ticket/ticket.type';
 
-
 function secondsLeft(expireAt: number) {
   const diff = Math.floor((expireAt - Date.now()) / 1000);
   return diff > 0 ? diff : 0;

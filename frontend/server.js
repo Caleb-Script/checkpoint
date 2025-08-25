@@ -23,7 +23,7 @@ app.prepare().then(() => {
   });
 
   server.listen(PORT, HOST, () => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${HOST}:${PORT}`;
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${HOST}:3100`;
     console.log("✅ WebSocket-Server initialisiert");
     console.log(`✅ HTTP Server läuft auf http://${HOST}:${PORT}`);
     console.log(`🔌 WebSocket erreichbar über ${wsUrl} (Pfad /ws/<channel>)`);
