@@ -1,5 +1,7 @@
+// /web/src/app/security/page.tsx
 'use client';
 
+import { useQuery } from '@apollo/client';
 import {
   Alert,
   Card,
@@ -14,6 +16,17 @@ import {
 } from '@mui/material';
 import * as React from 'react';
 
+// ⚠️ Import-Pfad an dein Projekt anpassen (hier: singular "ticket")
+import { GET_TICKETS } from '@/graphql/ticket/query';
+
+type TicketRow = {
+  id: string;
+  eventId: string;
+  invitationId: string;
+  seatId?: string | null;
+  currentState: 'INSIDE' | 'OUTSIDE';
+};
+
 type ScanLog = {
   id: string;
   createdAt: string;
@@ -24,55 +37,75 @@ type ScanLog = {
 };
 
 export default function SecurityDashboardPage() {
-  const [inside, setInside] = React.useState<number>(0);
-  const [outside, setOutside] = React.useState<number>(0);
+  // Live-Logs (nur WebSocket; kein REST)
   const [logs, setLogs] = React.useState<ScanLog[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
+  const [wsError, setWsError] = React.useState<string | null>(null);
 
-  const load = async () => {
-    try {
-      setError(null);
-      const res = await fetch('/api/security/logs');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? 'Fehler');
-      setLogs(data?.logs ?? []);
-      setInside(data?.inside ?? 0);
-      setOutside(data?.outside ?? 0);
-    } catch (e: any) {
-      setError(e.message);
-    }
-  };
+  // Tickets laden → Zähler INSIDE/OUTSIDE
+  const { data, loading, error, refetch } = useQuery<{
+    getTickets: TicketRow[];
+  }>(GET_TICKETS, { fetchPolicy: 'cache-and-network' });
 
+  const tickets = data?.getTickets ?? [];
+  const inside = React.useMemo(
+    () => tickets.filter((t) => t.currentState === 'INSIDE').length,
+    [tickets],
+  );
+  const outside = React.useMemo(
+    () => tickets.filter((t) => t.currentState === 'OUTSIDE').length,
+    [tickets],
+  );
+
+  // WebSocket nur für Live-Feed + sofortiges Refetch der Zähler
   React.useEffect(() => {
-    load();
     const wsUrl =
       process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3000/api/ws-status';
     let ws: WebSocket | null = null;
     try {
       ws = new WebSocket(wsUrl);
-      ws.onmessage = (ev) => {
+      ws.onmessage = async (ev) => {
         try {
           const msg = JSON.parse(ev.data);
-          if (msg?.type === 'scan-log') load();
-        } catch {}
+          // Erwartetes Schema: { type: 'scan-log', log: { ... } }
+          if (msg?.type === 'scan-log' && msg?.log) {
+            setLogs((prev) => {
+              const next = [msg.log as ScanLog, ...prev];
+              // Liste nicht ins Unendliche wachsen lassen
+              return next.slice(0, 200);
+            });
+            // Tickets neu laden, damit die INSIDE/OUTSIDE-Zähler direkt stimmen
+            refetch?.();
+          }
+        } catch {
+          // ignore parse errors
+        }
       };
-    } catch {}
-    return () => {
-      ws?.close();
-    };
-  }, []);
+      ws.onerror = () =>
+        setWsError('WebSocket-Fehler – Live-Feed ggf. unterbrochen.');
+    } catch (e: any) {
+      setWsError(e?.message ?? 'WebSocket konnte nicht geöffnet werden.');
+    }
+    return () => ws?.close();
+  }, [refetch]);
 
   return (
     <Card variant="outlined">
       <CardContent>
         <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-          Security‑Dashboard
+          Security-Dashboard
         </Typography>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+
+        {wsError && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {wsError}
           </Alert>
         )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error.message}
+          </Alert>
+        )}
+
         <Stack
           direction="row"
           spacing={1}
@@ -80,8 +113,12 @@ export default function SecurityDashboardPage() {
           useFlexGap
           flexWrap="wrap"
         >
-          <Chip label={`Drinnen: ${inside}`} color="success" />
-          <Chip label={`Draußen: ${outside}`} />
+          <Chip
+            label={`Drinnen: ${inside}${loading ? ' …' : ''}`}
+            color="success"
+          />
+          <Chip label={`Draußen: ${outside}${loading ? ' …' : ''}`} />
+          <Chip label={`Live-Logs: ${logs.length}`} variant="outlined" />
         </Stack>
 
         <List dense sx={{ bgcolor: 'background.paper', borderRadius: 2 }}>
@@ -98,7 +135,10 @@ export default function SecurityDashboardPage() {
           ))}
           {logs.length === 0 && (
             <ListItem>
-              <ListItemText primary="Noch keine Scans" />
+              <ListItemText
+                primary="Noch keine Live-Scans"
+                secondary="Sobald ein Scan erfolgt, erscheinen die Einträge hier."
+              />
             </ListItem>
           )}
         </List>
