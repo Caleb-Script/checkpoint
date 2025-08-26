@@ -76,7 +76,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Events',
-    href: '/events',
+    href: '/event',
     icon: <EventRoundedIcon />,
     roles: ['admin'],
   },

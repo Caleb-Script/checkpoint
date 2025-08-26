@@ -1,4 +1,4 @@
-// checkpoint/web/src/app/events/[id]/page.tsx
+// checkpoint/web/src/app/event/[id]/page.tsx
 'use client';
 
 import { useMutation, useQuery } from '@apollo/client';
@@ -123,7 +123,7 @@ export default function EventDetailPage() {
     variables: { id: eventId },
     onError: (e) => setError(e.message),
     onCompleted: () => {
-      router.replace('/events');
+      router.replace('/event');
     },
     update(cache) {
       // optional: Events-Liste aus dem Cache entfernen
@@ -303,7 +303,7 @@ export default function EventDetailPage() {
                 <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     component={Link}
-                    href={`/events/${eventId}/invitations`}
+                    href={`/event/${eventId}/invitations`}
                     variant="outlined"
                   >
                     Zu den Einladungen
@@ -312,7 +312,7 @@ export default function EventDetailPage() {
                 <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     component={Link}
-                    href={`/events/${eventId}/responses`}
+                    href={`/event/${eventId}/responses`}
                     variant="outlined"
                   >
                     Zu den Responses
@@ -321,7 +321,7 @@ export default function EventDetailPage() {
                 <Grid>
                   <Button
                     component={Link}
-                    href={`/events/${eventId}/invite`}
+                    href={`/event/${eventId}/invite`}
                     variant="contained"
                   >
                     Gäste einladen
@@ -487,7 +487,7 @@ export default function EventDetailPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {seatsData.seatsByEvent.map((s) => (
+                  {seatsData.eventSeats.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>{s.section || '—'}</TableCell>
                       <TableCell>{s.row || '—'}</TableCell>

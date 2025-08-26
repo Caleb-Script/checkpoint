@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 import { useMutation } from '@apollo/client';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
@@ -26,13 +29,24 @@ import { LOGIN } from '../../graphql/auth/mutation';
 import getApolloClient from '../../lib/apolloClient';
 import { getLogger } from '../../utils/logger';
 
-export default function LoginPage() {
-  const logger = getLogger(LoginPage.name);
+export default function LoginForm() {
+  const logger = getLogger(LoginForm.name);
 
   const { refetchMe } = useAuth();
   const router = useRouter();
-  const params = useSearchParams();
-  const returnTo = params.get('returnTo') || '/';
+
+  // const params = useSearchParams();
+  // const returnTo = params.get('returnTo') || '/';
+
+  // returnTo wird manuell aus window.location gelesen
+  const [returnTo, setReturnTo] = React.useState<string>('/');
+
+    React.useEffect(() => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        setReturnTo(params.get('returnTo') || '/');
+      }
+    }, []);
 
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');

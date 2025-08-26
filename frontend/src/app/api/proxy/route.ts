@@ -1,85 +1,91 @@
-// /Users/gentlebookpro/Projekte/checkpoint/web/src/app/api/proxy/route.ts
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type ProxyMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+interface ProxyRequestBody {
+  url: string;
+  method?: ProxyMethod;
+  headers?: Record<string, string>;
+  body?: string | object | null;
+}
 
 /**
  * POST /api/proxy
  * Body:
  * {
  *   url: string,        // Ziel-URL (z. B. http://localhost:5001/graphql)
- *   method?: "GET"|"POST"|"PUT"|"DELETE",
- *   headers?: Record<string, string>,
- *   body?: any
+ *   method?: "GET"|"POST"|"PUT"|"DELETE"
+ *   headers?: Record<string, string>
+ *   body?: string | object | null
  * }
  */
-export async function POST(req: NextRequest) {
-  const { url, method = 'POST', headers: hdr = {}, body } = await req.json();
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  let parsed: ProxyRequestBody;
+  try {
+    parsed = (await req.json()) as ProxyRequestBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-  if (!url || typeof url !== 'string') {
-    return NextResponse.json({ error: 'Missing url' }, { status: 400 });
+  const { url, method = "POST", headers: hdr = {}, body } = parsed;
+
+  if (!url || typeof url !== "string") {
+    return NextResponse.json({ error: "Missing url" }, { status: 400 });
   }
 
   const accessCookieName =
-    process.env.NEXT_PUBLIC_ACCESS_COOKIE_NAME || 'kc_access_token';
-  const access = cookies().get(accessCookieName)?.value;
+    process.env.NEXT_PUBLIC_ACCESS_COOKIE_NAME || "kc_access_token";
+  const store = await cookies();
+  const access = store.get(accessCookieName)?.value;
 
   const upstreamHeaders: Record<string, string> = {
     ...hdr,
-    'Content-Type': hdr['Content-Type'] || 'application/json',
+    "Content-Type": hdr["Content-Type"] || "application/json",
   };
 
-  // Access-Token NUR serverseitig anfügen
-  if (access) upstreamHeaders['Authorization'] = `Bearer ${access}`;
+  // Access-Token nur serverseitig anfügen
+  if (access) {
+    upstreamHeaders["Authorization"] = `Bearer ${access}`;
+  }
 
-  const res = await fetch(url, {
+  const init: RequestInit = {
     method,
     headers: upstreamHeaders,
     body: body
-      ? typeof body === 'string'
+      ? typeof body === "string"
         ? body
         : JSON.stringify(body)
       : undefined,
-    cache: 'no-store',
-  });
+    cache: "no-store",
+  };
 
-  // 401? Versuche einmal Refresh über den Auth-Service und Retry
+  let res = await fetch(url, init);
+
+  // 401? Einmal Refresh über den Auth-Service und Retry
   if (res.status === 401) {
     const BACKEND =
-      process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-    // Refresh triggert Set-Cookie via Auth-Service, aber wir müssen die Antwort an den Client weitergeben.
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
     const refreshRes = await fetch(`${BACKEND}/auth/refresh`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        Cookie: cookies()
+        Cookie: store
           .getAll()
           .map((c) => `${c.name}=${encodeURIComponent(c.value)}`)
-          .join('; '),
+          .join("; "),
       },
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (refreshRes.ok) {
-      const retry = await fetch(url, {
-        method,
-        headers: upstreamHeaders,
-        body: body
-          ? typeof body === 'string'
-            ? body
-            : JSON.stringify(body)
-          : undefined,
-        cache: 'no-store',
-      });
-      return new NextResponse(retry.body, {
-        status: retry.status,
-        headers: retry.headers,
-      });
+      res = await fetch(url, init);
     }
   }
 
-  // Standard-Fall: Response 1:1 weiterreichen
   return new NextResponse(res.body, {
     status: res.status,
     headers: res.headers,

@@ -1,6 +1,9 @@
 // /web/src/app/rsvp/page.tsx
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 import { useMutation, useQuery } from '@apollo/client';
 import {
   Alert,
@@ -32,23 +35,30 @@ import {
   UPDATE_INVITATION,
 } from '../../graphql/invitation/mutation';
 import { INVITATION } from '../../graphql/invitation/query';
+import { Invitation } from '../../types/invitation/invitation.type';
 
-function getClaim<T = any>(user: any, key: string): T | null {
+// Hilfsfunktion: Claim aus Keycloak-JWT oder UserInfo
+function getClaim<T>(user: Record<string, unknown> | null, key: string): T | null {
   if (!user) return null;
-  // 1) direkter Claim (so wie im Beispiel-JWT)
-  if (key in user) return (user as any)[key] as T;
-  // 2) evtl. in attributes (Keycloak UserInfo-Variante)
-  if (user.attributes && key in user.attributes)
-    return (user.attributes as any)[key] as T;
+  if (key in user) return user[key] as T;
+  if ('attributes' in user && typeof user.attributes === 'object' && user.attributes && key in user.attributes) {
+    return (user.attributes as Record<string, unknown>)[key] as T;
+  }
   return null;
 }
 
 export default function RsvpPage() {
-  const sp = useSearchParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth(); // :contentReference[oaicite:2]{index=2}
 
+  // InvitationId aus Query oder Token
   // 1) Query-Param → Vorrang
-  const invFromQuery = sp.get('inv') ?? '';
+  const [invFromQuery, setInvFromQuery] = React.useState<string>('');
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setInvFromQuery(params.get('inv') ?? '');
+    }
+  }, []);
 
   // 2) Falls kein Query-Param: aus Keycloak-Token
   //    invitationId ist laut Beispiel ein String
@@ -350,7 +360,7 @@ export default function RsvpPage() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {invitation.plusOnes.map((c: any) => (
+                      {invitation.plusOnes.map((c: Invitation) => (
                         <TableRow key={c.id}>
                           <TableCell>{c.id}</TableCell>
                           <TableCell>{c.status}</TableCell>

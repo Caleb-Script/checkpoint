@@ -1,4 +1,4 @@
-// /web/src/app/events/page.tsx
+// /web/src/app/event/page.tsx
 'use client';
 
 import { useQuery } from '@apollo/client';
@@ -39,7 +39,7 @@ export default function EventsListPage() {
         titleTypographyProps={{ variant: 'h5', sx: { fontWeight: 800 } }}
         action={
           <Stack direction="row" spacing={1}>
-            <Button component={Link} href="/events/new" variant="contained">
+            <Button component={Link} href="/event/new" variant="contained">
               Neues Event
             </Button>
             <Button onClick={() => refetch()} variant="outlined">
@@ -85,7 +85,7 @@ export default function EventsListPage() {
                 <Stack alignItems="flex-end" gap={1}>
                   <Button
                     component={Link}
-                    href={`/events/${ev.id}`}
+                    href={`/event/${ev.id}`}
                     size="small"
                   >
                     Details
@@ -100,7 +100,7 @@ export default function EventsListPage() {
         )}
       </CardContent>
       <CardActions sx={{ justifyContent: 'flex-end' }}>
-        <Button component={Link} href="/events/new" variant="contained">
+        <Button component={Link} href="/event/new" variant="contained">
           Event erstellen
         </Button>
       </CardActions>

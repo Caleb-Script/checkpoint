@@ -1,4 +1,4 @@
-// checkpoint/web/src/app/events/new/page.tsx
+// checkpoint/web/src/app/event/new/page.tsx
 'use client';
 
 import { useMutation } from '@apollo/client';
@@ -63,7 +63,7 @@ export default function NewEventPage() {
     },
     onCompleted({ createEvent }) {
       if (createEvent?.id) {
-        router.replace(`/events/${createEvent.id}`);
+        router.replace(`/event/${createEvent.id}`);
       }
     },
   });

@@ -31,7 +31,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (pathname?.startsWith('/scan')) next = 1;
     else if (pathname?.startsWith('/security')) next = 2;
     else if (pathname?.startsWith('/my-qr')) next = 3;
-    else if (pathname?.startsWith('/events')) next = 4;
+    else if (pathname?.startsWith('/event')) next = 4;
     // Guard, um unnötige setState-Aufrufe zu vermeiden
     if (next !== tab) setTab(next);
   }, [pathname, tab]);
@@ -42,7 +42,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (newValue === 1) router.push('/scan');
     if (newValue === 2) router.push('/security');
     if (newValue === 3) router.push('/my-qr');
-    if (newValue === 4) router.push('/events');
+    if (newValue === 4) router.push('/event');
   };
 
   return (

@@ -18,7 +18,13 @@ export const metadata: Metadata = {
   title: 'Checkpoint',
   description: 'QR-gestützte Gästeverwaltung',
   appleWebApp: { statusBarStyle: 'default', title: 'Checkpoint' },
-  viewport: { width: 'device-width', initialScale: 1, viewportFit: 'cover' },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#000', // optional
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({

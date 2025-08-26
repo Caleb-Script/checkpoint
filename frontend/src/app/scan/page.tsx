@@ -42,19 +42,17 @@ async function doHaptic(kind: 'success' | 'error' | 'impact' = 'impact') {
     const { Haptics, ImpactStyle, NotificationType } = await import(
       '@capacitor/haptics'
     );
+
     if (kind === 'success')
-      await Haptics.notification({ type: NotificationType.SUCCESS });
+      await Haptics.notification({ type: NotificationType.Success });
     else if (kind === 'error')
-      await Haptics.notification({ type: NotificationType.ERROR });
+      await Haptics.notification({ type: NotificationType.Error });
     else await Haptics.impact({ style: ImpactStyle.Medium });
   } catch {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      if (kind === 'success') navigator.vibrate?.(30);
-      else if (kind === 'error') navigator.vibrate?.([30, 40, 30]);
-      else navigator.vibrate?.(20);
-    }
+    // fallback ...
   }
 }
+
 
 // Akustik util: WebAudio-Beep (keine zusätzlichen Assets nötig)
 async function playBeep(kind: 'success' | 'error' | 'scan' = 'scan') {
@@ -220,26 +218,28 @@ export default function ScanPage() {
   };
 
   const startWithBarcodeDetector = async (video: HTMLVideoElement) => {
-    // @ts-expect-error: experimentell
-    const Supported =
+    // check ob Browser BarcodeDetector unterstützt
+    const supported =
       typeof window !== 'undefined' && 'BarcodeDetector' in window;
-    if (!Supported) return false;
+    if (!supported) return false;
 
-    // @ts-expect-error: experimentell
-    const formats = await (
-      window.BarcodeDetector as any
-    ).getSupportedFormats?.();
-    const canQR = formats?.includes?.('qr_code') ?? true;
-    // @ts-expect-error: experimentell
+    // unterstützte Formate abfragen
+    const formats = await window.BarcodeDetector.getSupportedFormats();
+    const canQR = formats.includes('qr_code');
+
+    // Instanz erzeugen
     const detector = new window.BarcodeDetector({
       formats: canQR ? ['qr_code'] : undefined,
     });
 
+
+
     const loop = async () => {
       if (!videoRef.current) return;
       try {
-        const det = await detector.detect(videoRef.current);
-        const text = det?.[0]?.rawValue;
+        // detect()
+        const results = await detector.detect(videoRef.current!);
+        const text = results[0]?.rawValue;
         if (text) {
           await trySubmit(text);
           await new Promise((r) => setTimeout(r, 300));

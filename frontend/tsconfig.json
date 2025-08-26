@@ -22,6 +22,7 @@
       "@/*": ["./src/*"]
     }
   },
+  "types": ["node", "./src/types"],
   "include": [
     "next-env.d.ts",
     "**/*.ts",

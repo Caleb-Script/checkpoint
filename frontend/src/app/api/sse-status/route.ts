@@ -1,93 +1,129 @@
-// /web/src/app/api/sse-status/route.ts
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+import { NextResponse } from "next/server";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __SSE_CLIENTS: Set<(msg: any) => void> | undefined;
+/**
+ * Sehr schlanke, in-Memory basierte SSE-Implementation.
+ * - GET  /api/sse-status   -> verbindet den Client via EventSource
+ * - POST /api/sse-status   -> broadcastet eine Nachricht an alle Clients
+ *
+ * Hinweis: In-Memory Subscriptions sind pro Server-Prozess. Für Multi-Instance
+ * / Serverless brauchst du einen Redis-/WS-basierten Fanout. Für „dev“ & Single-Node passt es.
+ */
+
+type EventPayload = unknown; // bei Bedarf enger tippen (z. B. { type: string; data: ... })
+
+type Subscriber = {
+  id: string;
+  send: (data: string) => void;
+  close: () => void;
+};
+
+// Zentrales Registry der Abonnenten (pro Prozess)
+const subscribers = new Map<string, Subscriber>();
+
+// Hilfsfunktion: einheitliches SSE-Format
+function formatSSE(event: string, data: string): string {
+  // Mehrzeilige data-Zeilen sauber trennen
+  const safe = data.split("\n").map((l) => `data: ${l}`).join("\n");
+  return `event: ${event}\n${safe}\n\n`;
 }
-const clients: Set<(msg: any) => void> =
-  (globalThis as any).__SSE_CLIENTS ?? new Set();
-(globalThis as any).__SSE_CLIENTS = clients;
 
-function toSseChunk(obj: any) {
-  // standard: "data: <json>\n\n"
-  return `data: ${JSON.stringify(obj)}\n\n`;
-}
+/**
+ * GET: Stellt einen text/event-stream her und registriert den Client in `subscribers`.
+ */
+export async function GET(_req: Request): Promise<Response> {
+  const id = crypto.randomUUID();
 
-function broadcast(obj: any) {
-  const payload = toSseChunk(obj);
-  for (const send of Array.from(clients)) {
-    try {
-      send(payload);
-    } catch {
-      // Client ist weg; entfernen
-      clients.delete(send);
-    }
-  }
-}
-
-export async function GET(_req: Request) {
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
+  const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      // Sender-Callback für diesen Client registrieren
-      const send = (str: string) => controller.enqueue(encoder.encode(str));
-      clients.add(send);
+      const encoder = new TextEncoder();
 
-      // Begrüßung + erster Ping
-      send(`event: hello\ndata: ${Date.now()}\n\n`);
-      send(`event: ping\ndata: ${Date.now()}\n\n`);
+      // initial: „connected“-Event
+      controller.enqueue(encoder.encode(formatSSE("connected", JSON.stringify({ id }))));
 
-      // Heartbeat: Ping + Kommentar-KeepAlive (manche Proxys mögen das)
-      const pingId = setInterval(() => {
-        send(`event: ping\ndata: ${Date.now()}\n\n`);
-        send(':\n\n'); // Kommentar-Zeile hält Verbindungen frisch
-      }, 25000);
-
-      // Cleanup bei Abbruch
-      const cancel = () => {
-        clearInterval(pingId);
-        clients.delete(send);
-        try {
-          controller.close();
-        } catch {}
+      const send = (data: string) => {
+        controller.enqueue(encoder.encode(data));
       };
 
-      // Wenn der Client abbricht oder die Stream-Pipe endet
-      (controller as any)._cancel = cancel;
+      const close = () => {
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
+      };
+
+      subscribers.set(id, { id, send, close });
+
+      // Keep-Alive Ping alle 25s (verhindert idle timeouts bei Proxys)
+      const pingInterval = setInterval(() => {
+        send(formatSSE("ping", JSON.stringify({ t: Date.now() })));
+      }, 25_000);
+
+      // Wenn der Stream beendet wird: Aufräumen
+      const abort = () => {
+        clearInterval(pingInterval);
+        subscribers.delete(id);
+        try {
+          controller.close();
+        } catch {
+          /* no-op */
+        }
+      };
+
+      // Falls der Client die Verbindung abbricht
+      _req?.signal?.addEventListener?.("abort", abort);
+
+      // Fallback: schließe Verbindung nach 24h hart
+      setTimeout(abort, 24 * 60 * 60 * 1000);
     },
     cancel() {
-      // optionales Cleanup, falls oben nicht schon aufgerufen
+      // Stream durch Client beendet
+      subscribers.delete(id);
     },
   });
 
   return new Response(stream, {
+    status: 200,
     headers: {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      // WICHTIG für Next.js / Proxies:
+      "X-Accel-Buffering": "no",
     },
   });
 }
 
-// Optional: Dev-Broadcast zum Testen: curl -X POST http://localhost:3000/api/sse-status
+/**
+ * POST: broadcastet eine Nutzlast an alle verbundenen SSE-Clients.
+ * Body: { event?: string; payload?: unknown }
+ */
 export async function POST(req: Request) {
+  let body: { event?: string; payload?: EventPayload } = {};
   try {
-    const body = await req.json();
-    // erwarte z. B. { type: 'scan-log', log: {...} }
-    broadcast(body);
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (e: any) {
-    return new Response(
-      JSON.stringify({ ok: false, error: e?.message || 'bad json' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
+    body = (await req.json()) as typeof body;
+  } catch {
+    // ignore – leerer Body ist okay
   }
+
+  const eventName = body.event ?? "message";
+  const json = JSON.stringify(body.payload ?? { t: Date.now() });
+
+  const packet = formatSSE(eventName, json);
+
+  for (const [, sub] of subscribers) {
+    try {
+      sub.send(packet);
+    } catch {
+      // defekter Client – deregistrieren
+      subscribers.delete(sub.id);
+      try {
+        sub.close();
+      } catch {
+        /* no-op */
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, delivered: subscribers.size });
 }

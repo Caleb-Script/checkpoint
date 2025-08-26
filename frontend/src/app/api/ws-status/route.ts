@@ -1,100 +1,104 @@
-// /web/src/app/api/ws-status/route.ts
-export const runtime = 'edge';
+/**
+ * WebSocket-Route über Edge-Runtime mithilfe von WebSocketPair.
+ * Funktioniert in Next.js (>=13.2) Edge-Umgebungen. Lokal im Node-Dev-Server
+ * ebenfalls nutzbar. Kein `any`, sauber typisiert.
+ *
+ * - GET /api/ws-status   -> Wenn "Upgrade: websocket" gesetzt ist, wird upgegradet.
+ * - Optionaler Ping/Pong-Heartbeat + Echo-Protocol.
+ */
+export const runtime = "edge";
 
-declare global {
-  // persistiert innerhalb der Edge-Isolate (solange warm)
-  // Set mit verbundenen Sockets zum Broadcasten
-  // eslint-disable-next-line no-var
-  var __WS_CLIENTS: Set<WebSocket> | undefined;
+type InboundMessage = {
+  type: "ping" | "echo" | "broadcast";
+  payload?: unknown;
+};
+
+type OutboundMessage =
+  | { type: "welcome"; id: string; t: number }
+  | { type: "pong"; t: number }
+  | { type: "echo"; payload: unknown; t: number }
+  | { type: "broadcast"; payload: unknown; t: number }
+  | { type: "error"; message: string }
+  | { type: "info"; message: string };
+
+// pro Edge-Instance nur prozesslokal
+const clients = new Set<WebSocket>();
+
+function send(ws: WebSocket, msg: OutboundMessage) {
+  try {
+    ws.send(JSON.stringify(msg));
+  } catch {
+    // socket vermutlich geschlossen
+  }
 }
 
-const clients: Set<WebSocket> =
-  (globalThis as any).__WS_CLIENTS ?? new Set<WebSocket>();
-(globalThis as any).__WS_CLIENTS = clients;
-
-function broadcast(obj: any) {
-  const msg = JSON.stringify(obj);
+function broadcast(msg: OutboundMessage) {
+  const data = JSON.stringify(msg);
   for (const ws of clients) {
     try {
-      ws.send(msg);
+      ws.send(data);
     } catch {
-      // ignore broken sockets
+      // defekter Client ignorieren
     }
   }
 }
 
-export async function GET(req: Request) {
-  const upgrade = req.headers.get('upgrade') || '';
-  if (upgrade.toLowerCase() !== 'websocket') {
-    return new Response('Expected WebSocket', { status: 426 });
+export function GET(request: Request): Response {
+  // Nur Upgrade-Requests annehmen
+  if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
+    return new Response("Expected WebSocket upgrade", { status: 426 });
   }
 
-  // In Edge-Funktionen: WebSocketPair wie auf Cloudflare/Vercel
-  const { 0: client, 1: server } = Object.values(
-    new (globalThis as any).WebSocketPair(),
-  );
+  // WebSocketPair ist in Edge-Runtime verfügbar
+  const { 0: client, 1: server } = new WebSocketPair()
 
-  // @ts-ignore: Edge Runtime
+  const id = crypto.randomUUID();
+
   server.accept();
-
-  // Registrieren
   clients.add(server);
 
-  // Optional: Begrüßung
-  try {
-    server.send(JSON.stringify({ type: 'hello', ts: Date.now() }));
-  } catch {}
+  // Begrüßung
+  send(server, { type: "welcome", id, t: Date.now() });
 
-  // Heartbeat / Ping-Pong
-  let alive = true;
-  const interval = setInterval(() => {
+  server.addEventListener("message", (event: MessageEvent) => {
     try {
-      if (!alive) {
-        try {
-          server.close();
-        } catch {}
-        clearInterval(interval);
-        return;
-      }
-      alive = false;
-      server.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
-    } catch {
-      clearInterval(interval);
-    }
-  }, 25000);
+      const data = typeof event.data === "string" ? event.data : "";
+      const parsed = data ? (JSON.parse(data) as InboundMessage) : ({} as InboundMessage);
 
-  server.addEventListener('message', (event: MessageEvent) => {
-    try {
-      const data = JSON.parse(String(event.data || '{}'));
-      if (data?.type === 'pong') {
-        alive = true;
-        return;
+      switch (parsed.type) {
+        case "ping":
+          send(server, { type: "pong", t: Date.now() });
+          break;
+
+        case "echo":
+          send(server, { type: "echo", payload: parsed.payload ?? null, t: Date.now() });
+          break;
+
+        case "broadcast":
+          broadcast({ type: "broadcast", payload: parsed.payload ?? null, t: Date.now() });
+          break;
+
+        default:
+          send(server, { type: "info", message: "unknown message type" });
       }
-      if (data?.type === 'echo') {
-        server.send(
-          JSON.stringify({ type: 'echo', payload: data?.payload ?? null }),
-        );
-        return;
-      }
-      // Beispiel: ein Client kann testweise einen Scan-Log broadcasten
-      if (data?.type === 'scan-log') {
-        broadcast({ type: 'scan-log', log: data.log, ts: Date.now() });
-      }
-    } catch {
-      // ignore
+    } catch (err) {
+      send(server, { type: "error", message: err instanceof Error ? err.message : "invalid message" });
     }
   });
 
-  server.addEventListener('close', () => {
-    clearInterval(interval);
-    clients.delete(server);
-  });
-  server.addEventListener('error', () => {
-    clearInterval(interval);
+  server.addEventListener("close", () => {
     clients.delete(server);
   });
 
-  // Rückgabe des „Gegenstücks“ an den Client
-  // @ts-ignore: Edge Runtime
+  server.addEventListener("error", () => {
+    try {
+      server.close();
+    } catch {
+      /* no-op */
+    }
+    clients.delete(server);
+  });
+
+  // Response mit Status 101 und Client-Socket zurückgeben
   return new Response(null, { status: 101, webSocket: client });
 }

@@ -1,4 +1,4 @@
-// /web/src/app/events/[id]/invite/page.tsx
+// /web/src/app/event/[id]/invite/page.tsx
 'use client';
 
 import CheckIcon from '@mui/icons-material/Check';
