@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Checkpoint</string>
-    <string name="title_activity_main">Checkpoint</string>
-    <string name="package_name">de.checkpoint.app</string>
-    <string name="custom_url_scheme">de.checkpoint.app</string>
-</resources>
