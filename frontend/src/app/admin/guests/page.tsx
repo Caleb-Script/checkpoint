@@ -1,7 +1,7 @@
 // /web/src/app/admin/guests/page.tsx
 'use client';
 
-import { gql, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 
 import {
   Alert,
@@ -24,10 +24,10 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PeopleIcon from '@mui/icons-material/People';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-import { copyToClipboard } from '../../../lib/link';
 import { JSX } from 'react';
-import { KeycloakUser } from '../../../types/auth/auth.type';
 import { GET_USERS } from '../../../graphql/auth/mutation';
+import { copyToClipboard } from '../../../lib/link';
+import { KeycloakUser } from '../../../types/auth/auth.type';
 
 // Gemeinsamer Monospace-Style für IDs
 const monoSx = {

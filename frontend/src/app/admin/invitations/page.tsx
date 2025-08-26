@@ -37,12 +37,22 @@ import EventIcon from '@mui/icons-material/Event';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShareIcon from '@mui/icons-material/Share';
 import { EVENTS } from '../../../graphql/event/query';
-import { CREATE_INVITATION, UPDATE_INVITATION } from '../../../graphql/invitation/mutation';
+import {
+  CREATE_INVITATION,
+  UPDATE_INVITATION,
+} from '../../../graphql/invitation/mutation';
 import { INVITATIONS } from '../../../graphql/invitation/query';
-import { copyToClipboard, rsvpLinkForInvitationId, tryNativeShare, whatsappShareUrl } from '../../../lib/link';
+import {
+  copyToClipboard,
+  rsvpLinkForInvitationId,
+  tryNativeShare,
+  whatsappShareUrl,
+} from '../../../lib/link';
 import { EventsQueryResult } from '../../../types/event/event.type';
-import { InvitationsQueryResult, Invitation } from '../../../types/invitation/invitation.type';
-
+import {
+  Invitation,
+  InvitationsQueryResult,
+} from '../../../types/invitation/invitation.type';
 
 export default function InvitationsPage(): React.JSX.Element {
   const search = useSearchParams();
