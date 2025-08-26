@@ -400,7 +400,7 @@ export default function AdminHomePage(): JSX.Element {
         {/* Platzhalter: Benutzer/Rollen & Einstellungen */}
         <Grid item xs={12} sm={6}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
-            <CardActionArea component={Link} href="/admin/users">
+            <CardActionArea component={Link} href="/admin/guests">
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <GroupIcon />

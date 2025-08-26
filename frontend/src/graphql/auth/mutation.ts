@@ -30,6 +30,23 @@ export const ME = gql`
   }
 `;
 
+export const GET_USERS = gql`
+  query GetUsers {
+  getUsers {
+    id
+    username
+    firstName
+    lastName
+    attributes {
+      ticketId
+      invitationId
+    }
+  }
+}
+`;
+
+
+
 export const LOGOUT = gql`
   mutation Logout {
     logout {

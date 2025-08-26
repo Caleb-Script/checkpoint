@@ -26,7 +26,6 @@ import {
 } from '@mui/material';
 import * as React from 'react';
 
-import { useAuth } from '@/context/AuthContext'; // liefert den Keycloak-User (siehe Projekt) :contentReference[oaicite:1]{index=1}
 import { EVENT_BY_ID } from '../../graphql/event/query';
 import {
   ACCEPT_INVITATION,
@@ -34,56 +33,26 @@ import {
   UPDATE_INVITATION,
 } from '../../graphql/invitation/mutation';
 import { INVITATION } from '../../graphql/invitation/query';
-import { Invitation } from '../../types/invitation/invitation.type';
+import type { Invitation } from '../../types/invitation/invitation.type';
 
-// Hilfsfunktion: Claim aus Keycloak-JWT oder UserInfo
-function getClaim<T>(
-  user: Record<string, unknown> | null,
-  key: string,
-): T | null {
-  if (!user) return null;
-  if (key in user) return user[key] as T;
-  if (
-    'attributes' in user &&
-    typeof user.attributes === 'object' &&
-    user.attributes &&
-    key in user.attributes
-  ) {
-    return (user.attributes as Record<string, unknown>)[key] as T;
-  }
-  return null;
-}
-
-export default function RsvpPage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth(); // :contentReference[oaicite:2]{index=2}
-
-  // InvitationId aus Query oder Token
-  // 1) Query-Param → Vorrang
-  const [invFromQuery, setInvFromQuery] = React.useState<string>('');
+export default function RsvpPage(): JSX.Element {
+  // Invitation-ID aus URL (?inv=…)
+  const [invId, setInvId] = React.useState<string>('');
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      setInvFromQuery(params.get('inv') ?? '');
-    }
+    const params = new URLSearchParams(window.location.search);
+    setInvId(params.get('inv') ?? '');
   }, []);
 
-  // 2) Falls kein Query-Param: aus Keycloak-Token
-  //    invitationId ist laut Beispiel ein String
-  const invFromTokenRaw = getClaim<string | string[]>(user, 'invitationId');
-  const invFromToken = Array.isArray(invFromTokenRaw)
-    ? (invFromTokenRaw[0] ?? '')
-    : (invFromTokenRaw ?? '');
-
-  const invId = invFromQuery || invFromToken || '';
-
-  const { data, loading, error, refetch } = useQuery(INVITATION, {
+  const { data, loading, error, refetch } = useQuery<{
+    invitation: Invitation | null;
+  }>(INVITATION, {
     variables: { id: invId },
     skip: !invId,
     fetchPolicy: 'cache-and-network',
   });
   const invitation = data?.invitation ?? null;
 
-  // Event-Infos separat (optional, schönere Überschrift)
+  // Event-Infos (schönere Überschrift)
   const { data: evData } = useQuery(EVENT_BY_ID, {
     variables: { id: invitation?.eventId ?? '' },
     skip: !invitation?.eventId,
@@ -91,11 +60,7 @@ export default function RsvpPage() {
   });
   const event = evData?.event ?? null;
 
-  // acceptInvitation (E-Mail optional)
-  const [firstName, setFirstName] = React.useState('');
-  const [lastName, setLastName] = React.useState('');
-  const [email, setEmail] = React.useState('');
-
+  // Mutations
   const [acceptInvitation, { loading: accepting }] =
     useMutation(ACCEPT_INVITATION);
   const [updateInvitation, { loading: savingRsvp }] =
@@ -104,8 +69,19 @@ export default function RsvpPage() {
     CREATE_PLUS_ONES_INVITATION,
   );
 
+  // Accept-Form Felder
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+
+  // UI-Status
   const [msg, setMsg] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
+
+  // Der einfache Lock:
+  const isLocked = Boolean(
+    invitation?.approved || invitation?.rsvpChoice != null,
+  );
 
   const max = invitation?.maxInvitees ?? 0;
   const used = invitation?.plusOnes?.length ?? 0;
@@ -120,6 +96,7 @@ export default function RsvpPage() {
     }
   }
 
+  // Actions
   async function onAccept() {
     setErr(null);
     setMsg(null);
@@ -136,12 +113,10 @@ export default function RsvpPage() {
         id: invId,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim() || null, // optional
+        email: email.trim() || null,
       },
     });
-    setMsg(
-      'Danke für deine Zusage! Dein Profil wurde gespeichert bzw. erstellt.',
-    );
+    setMsg('Danke! Deine Zusage wurde gespeichert.');
     await refetch();
   }
 
@@ -171,53 +146,43 @@ export default function RsvpPage() {
         invitedByInvitationId: invitation.id,
       },
     });
-    setMsg(
-      'Zusätzliche Einladung (Plus-One) angelegt. Freigabe erfolgt durch das Event-Team.',
-    );
+    setMsg('Plus-One Einladung angelegt. Freigabe durch das Team folgt.');
     await refetch();
   }
 
-  if (authLoading) {
+  // Rendering
+  if (!invId) {
+    return (
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: 'auto' }}>
+        <Alert severity="warning">
+          Keine <code>inv</code>-Query in der URL. Öffne diese Seite mit{' '}
+          <code>?inv=&lt;InvitationID&gt;</code>.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (loading) {
     return (
       <Box sx={{ p: { xs: 2, md: 4 } }}>
-        <CircularProgress size={20} />
+        <Stack alignItems="center" sx={{ py: 6 }}>
+          <CircularProgress />
+        </Stack>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1000, mx: 'auto' }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: 'auto' }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>
         Einladung
       </Typography>
 
-      {!isAuthenticated && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Du bist nicht eingeloggt. Bitte anmelden, damit wir deine Einladung
-          zuordnen können.
-        </Alert>
-      )}
-
-      {!invId && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Keine <code>invitationId</code> gefunden. Entweder per Link{' '}
-          <code>?inv=…</code> öffnen oder im Keycloak-Profil muss{' '}
-          <code>invitationId</code> hinterlegt sein.
-        </Alert>
-      )}
-
-      {loading && invId && (
-        <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-          <CircularProgress />
-        </Stack>
-      )}
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {String(error.message || error)}
+          {String(error.message)}
         </Alert>
       )}
-
       {msg && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {msg}
@@ -230,7 +195,7 @@ export default function RsvpPage() {
       )}
 
       {invitation && (
-        <Card>
+        <Card variant="outlined" sx={{ borderRadius: 3 }}>
           <CardHeader
             title={
               event
@@ -238,83 +203,102 @@ export default function RsvpPage() {
                 : `Invitation ${invitation.id}`
             }
             subheader={
-              event ? (
-                <span>
-                  {toLocal(event.startsAt)} – {toLocal(event.endsAt)}
-                </span>
-              ) : (
-                <span>
-                  Event-ID: <code>{invitation.eventId}</code>
-                </span>
-              )
+              event
+                ? `${toLocal(event.startsAt)} – ${toLocal(event.endsAt)}`
+                : `Event: ${invitation.eventId}`
             }
           />
           <CardContent>
-            {/* Eigene Angaben für ACCEPT */}
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Deine Angaben
-            </Typography>
-            <Stack spacing={2} sx={{ mb: 2 }}>
-              <TextField
-                label="Vorname"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <TextField
-                label="Nachname"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-              <TextField
-                label="E-Mail (optional)"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                helperText="Falls leer, wird serverseitig eine E-Mail/Username generiert."
-              />
-            </Stack>
+            {/* Vor dem ersten RSVP: Hinweis auf Endgültigkeit */}
+            {!isLocked && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <strong>Wichtig:</strong> Sobald du hier eine RSVP abgibst
+                (Zusage oder Absage), kannst du deine Entscheidung nicht mehr
+                ändern, <em>bis</em> dein Account zugewiesen ist.
+              </Alert>
+            )}
 
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Teilnahme
-            </Typography>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2}
-              sx={{ mb: 2 }}
-            >
-              <Button
-                variant="contained"
-                disabled={!invId || accepting}
-                onClick={onAccept}
-              >
-                👍 ZUSAGEN
-              </Button>
-              <Button
-                variant="outlined"
-                color="inherit"
-                disabled={!invId || savingRsvp}
-                onClick={onDecline}
-              >
-                👎 ABSAGEN
-              </Button>
-            </Stack>
+            {/* RSVP Sektion */}
+            {!isLocked ? (
+              <>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
+                  Deine Angaben
+                </Typography>
+                <Stack spacing={2} sx={{ mb: 2 }}>
+                  <TextField
+                    label="Vorname"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                  <TextField
+                    label="Nachname"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                  <TextField
+                    label="E-Mail (optional)"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    helperText="Du kannst diese Angabe leer lassen."
+                  />
+                </Stack>
 
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ mb: 2 }}
-              useFlexGap
-              flexWrap="wrap"
-            >
-              <Chip label={`Status: ${invitation.status}`} />
-              <Chip label={`RSVP: ${invitation.rsvpChoice ?? '—'}`} />
-              <Chip
-                label={`Approved: ${invitation.approved ? 'Ja' : 'Nein'}`}
-                color={invitation.approved ? 'success' : 'default'}
-              />
-            </Stack>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
+                  Teilnahme
+                </Typography>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  sx={{ mb: 2 }}
+                >
+                  <Button
+                    variant="contained"
+                    onClick={onAccept}
+                    disabled={accepting}
+                  >
+                    👍 Zusagen
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    onClick={onDecline}
+                    disabled={savingRsvp}
+                  >
+                    👎 Absagen
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <>
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Deine RSVP wurde gespeichert
+                  {invitation.approved
+                    ? ' und du bist bereits bestätigt.'
+                    : '.'}
+                </Alert>
+
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
+                  Zusammenfassung
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  flexWrap="wrap"
+                  sx={{ mb: 2 }}
+                >
+                  <Chip label={`Status: ${invitation.status}`} />
+                  <Chip label={`RSVP: ${invitation.rsvpChoice ?? '—'}`} />
+                  <Chip
+                    label={`Approved: ${invitation.approved ? 'Ja' : 'Nein'}`}
+                    color={invitation.approved ? 'success' : 'default'}
+                  />
+                </Stack>
+              </>
+            )}
 
             {invitation.rsvpChoice === 'YES' && !invitation.approved && (
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -331,13 +315,20 @@ export default function RsvpPage() {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* Plus-Ones (nur anlegen & Status einsehen) */}
+            {/* Plus-Ones — können auch nach Lock verwaltet/angelegt werden */}
             {(invitation.maxInvitees ?? 0) > 0 && (
               <>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
                   Zusätzliche Gäste (Plus-Ones)
                 </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ mb: 2 }}
+                  useFlexGap
+                  flexWrap="wrap"
+                >
                   <Chip label={`Max: ${max}`} />
                   <Chip label={`Belegt: ${used}`} />
                   <Chip
@@ -346,7 +337,11 @@ export default function RsvpPage() {
                   />
                 </Stack>
 
-                <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  sx={{ mb: 2 }}
+                >
                   <Button
                     variant="contained"
                     onClick={addPlusOne}
@@ -367,7 +362,7 @@ export default function RsvpPage() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {invitation.plusOnes.map((c: Invitation) => (
+                      {invitation.plusOnes.map((c) => (
                         <TableRow key={c.id}>
                           <TableCell>{c.id}</TableCell>
                           <TableCell>{c.status}</TableCell>
@@ -388,10 +383,6 @@ export default function RsvpPage() {
                     Noch keine Plus-Ones angelegt.
                   </Typography>
                 )}
-
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Hinweis: Plus-Ones müssen vom Event-Team freigegeben werden.
-                </Alert>
               </>
             )}
           </CardContent>

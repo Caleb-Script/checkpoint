@@ -23,3 +23,16 @@ export type KeycloakUserInfo = {
   ticketId?: string[];
   invitationId?: string;
 };
+
+export type UserAttributes = {
+  ticketId?: string[];
+  invitationId?: string[];
+};
+
+export type KeycloakUser = {
+  id: string;
+  username: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  attributes: UserAttributes;
+};

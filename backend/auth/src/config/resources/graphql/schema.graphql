@@ -6,7 +6,7 @@ schema {
 
 type Query {
   me(token: String): UserInfo
-  getUsers():String
+  getUsers: [UserListPayload]
 }
 
 # Mutation-Typ
@@ -46,6 +46,19 @@ input SetPasswordInput {
 
 
 # ===== Payloads =====
+type attribute {
+  ticketId: [String]
+  invitationId: [String]
+
+}
+type UserListPayload {
+  id: ID!
+  username: String!
+  firstName: String!
+  lastName: String!
+  attributes: attribute
+}
+
 type SignInPayload {
   username: String!
   password: String!

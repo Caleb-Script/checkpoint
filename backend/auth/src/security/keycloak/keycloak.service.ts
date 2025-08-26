@@ -106,6 +106,17 @@ type RealmPayload = jose.JWTPayload & {
   azp?: string; // authorized party (client)
 };
 
+type UserListPayload = {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  attributes: {
+    ticketId?: string[];
+    invitationId: string[];
+  };
+};
+
 @Injectable()
 export class KeycloakService implements KeycloakConnectOptionsFactory {
   readonly #loginHeaders: RawAxiosRequestHeaders;
@@ -144,14 +155,14 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
     this.#kafkaProducerService = kafkaProducerService;
     this.#tracer = trace.getTracer(KeycloakService.name);
     this.#traceContextProvider = traceContextProvider;
-    // this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
+    this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
   }
 
-  // async onModuleInit(): Promise<void> {
-  //   await this.#kafkaConsumerService.consume({
-  //     topics: getKafkaTopicsBy(['user']),
-  //   });
-  // }
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(['user']),
+    });
+  }
 
   createKeycloakConnectOptions(): KeycloakConnectOptions {
     return keycloakConnectOptions;
@@ -162,12 +173,14 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
 
     const adminToken = await this.#getAdminToken();
 
-    const users = this.#keycloakClient.get(`${paths.users}`, {
+    const res = await this.#keycloakClient.get(`${paths.users}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
 
+    const users: UserListPayload[] = res.data;
+
     this.#logger.debug('users=%o', users);
-    return undefined;
+    return users;
   }
 
   // ================================================= Auth ========================================================================

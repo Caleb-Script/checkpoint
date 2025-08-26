@@ -1,155 +1,228 @@
 // /web/src/app/admin/guests/page.tsx
 'use client';
 
+import { gql, useQuery } from '@apollo/client';
+
 import {
   Alert,
   Avatar,
   Box,
-  Button,
   Card,
   CardContent,
   CardHeader,
-  Chip,
-  CircularProgress,
+  Grid,
   IconButton,
+  InputAdornment,
+  Skeleton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import PersonOffIcon from '@mui/icons-material/PersonOff';
-import * as React from 'react';
-import { useQuery } from '@apollo/client'; // oder fetch() gegen deine /api/admin/users
 
-type KeycloakUser = {
-  id: string;
-  username: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  enabled: boolean;
-  roles: string[];
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import PeopleIcon from '@mui/icons-material/People';
+import RefreshIcon from '@mui/icons-material/Refresh';
+
+import { copyToClipboard } from '../../../lib/link';
+import { JSX } from 'react';
+import { KeycloakUser } from '../../../types/auth/auth.type';
+import { GET_USERS } from '../../../graphql/auth/mutation';
+
+// Gemeinsamer Monospace-Style für IDs
+const monoSx = {
+  fontFamily:
+    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  fontSize: '0.9rem',
+  letterSpacing: '0.01em',
 };
 
-export default function AdminGuestsPage() {
-  // TODO: echten Hook bauen, der Keycloak-User lädt
-  const { data, loading, error, refetch } = useQuery<{ users: KeycloakUser[] }>(
-    // Query gegen deinen API-Endpoint
-    /* USERS_QUERY */,
-    { fetchPolicy: 'cache-and-network' },
-  );
+// ------------------------------------------------------------------
+// Page
+// ------------------------------------------------------------------
+export default function AdminGuestsPage(): JSX.Element {
+  const { data, loading, error, refetch } = useQuery<{
+    getUsers: KeycloakUser[];
+  }>(GET_USERS, {
+    fetchPolicy: 'cache-and-network',
+  });
 
-  const users = data?.users ?? [];
+  const users = data?.getUsers ?? [];
+
+  async function copy(text: string, label: string) {
+    const ok = await copyToClipboard(text);
+    if (!ok) alert(`Konnte ${label} nicht kopieren.`);
+  }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Card>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: 'auto' }}>
+      <Card variant="outlined" sx={{ mb: 2 }}>
         <CardHeader
-          title="Alle Gäste (Keycloak User)"
+          avatar={<PeopleIcon />}
+          titleTypographyProps={{ variant: 'h5', sx: { fontWeight: 800 } }}
+          title="Gäste (Keycloak)"
           action={
-            <IconButton onClick={() => refetch()}>
-              <RefreshIcon />
-            </IconButton>
+            <Tooltip title="Neu laden">
+              <span>
+                <IconButton onClick={() => refetch()} disabled={loading}>
+                  <RefreshIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
           }
         />
-        <CardContent>
-          {loading && (
-            <Stack alignItems="center" sx={{ py: 4 }}>
-              <CircularProgress />
-            </Stack>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {String(error)}
-            </Alert>
-          )}
-
-          {!loading && users.length === 0 && (
-            <Typography>Keine Gäste gefunden.</Typography>
-          )}
-
-          {users.length > 0 && (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>User</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Rollen</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Aktionen</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Avatar>
-                          {(u.firstName?.[0] ??
-                            u.username?.[0] ??
-                            'U').toUpperCase()}
-                        </Avatar>
-                        <div>
-                          <Typography fontWeight={600}>
-                            {u.firstName} {u.lastName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {u.username}
-                          </Typography>
-                        </div>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>{u.email ?? '—'}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {u.roles.map((r) => (
-                          <Chip
-                            key={r}
-                            size="small"
-                            label={r}
-                            color={
-                              r.toLowerCase() === 'admin'
-                                ? 'error'
-                                : r.toLowerCase() === 'security'
-                                ? 'warning'
-                                : 'default'
-                            }
-                          />
-                        ))}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={u.enabled ? 'Aktiv' : 'Deaktiviert'}
-                        color={u.enabled ? 'success' : 'default'}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Rolle ändern">
-                        <IconButton>
-                          <AdminPanelSettingsIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="User sperren">
-                        <IconButton>
-                          <PersonOffIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
       </Card>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {String(error.message)}
+        </Alert>
+      )}
+
+      {loading && (
+        <Stack spacing={1.25}>
+          {[1, 2, 3].map((k) => (
+            <Card key={k} variant="outlined">
+              <CardContent>
+                <Skeleton width="40%" />
+                <Skeleton width="60%" />
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      )}
+
+      {!loading && users.length === 0 && (
+        <Alert severity="info">Keine Gäste gefunden.</Alert>
+      )}
+
+      <Stack spacing={1.5}>
+        {users.map((u) => {
+          const name =
+            [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username;
+          const invitation = u.attributes?.invitationId?.[0] ?? '';
+          const tickets = u.attributes?.ticketId ?? [];
+
+          return (
+            <Card key={u.id} variant="outlined" sx={{ borderRadius: 12 }}>
+              <CardContent>
+                {/* Kopf: Avatar + Name */}
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
+                  <Avatar>{(name[0] || 'U').toUpperCase()}</Avatar>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700 }}
+                      noWrap
+                    >
+                      {name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {u.username}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Grid container spacing={1}>
+                  {/* User-ID */}
+                  <Grid item xs={12}>
+                    <TextField
+                      label="User ID"
+                      value={u.id}
+                      size="small"
+                      fullWidth
+                      InputProps={{
+                        readOnly: true,
+                        sx: monoSx,
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Tooltip title="User-ID kopieren">
+                              <IconButton onClick={() => copy(u.id, 'User ID')}>
+                                <ContentCopyIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  {/* Invitation-ID */}
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Invitation ID"
+                      value={invitation}
+                      size="small"
+                      fullWidth
+                      placeholder="—"
+                      InputProps={{
+                        readOnly: true,
+                        sx: monoSx,
+                        endAdornment: invitation ? (
+                          <InputAdornment position="end">
+                            <Tooltip title="Invitation-ID kopieren">
+                              <IconButton
+                                onClick={() =>
+                                  copy(invitation, 'Invitation ID')
+                                }
+                              >
+                                <ContentCopyIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </InputAdornment>
+                        ) : undefined,
+                      }}
+                    />
+                  </Grid>
+
+                  {/* Ticket-IDs */}
+                  <Grid item xs={12}>
+                    <Stack spacing={0.75}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Ticket IDs
+                      </Typography>
+                      {tickets.length > 0 ? (
+                        tickets.map((tid) => (
+                          <TextField
+                            key={tid}
+                            value={tid}
+                            size="small"
+                            fullWidth
+                            InputProps={{
+                              readOnly: true,
+                              sx: monoSx,
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Ticket-ID kopieren">
+                                    <IconButton
+                                      onClick={() => copy(tid, 'Ticket ID')}
+                                    >
+                                      <ContentCopyIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </Stack>
     </Box>
   );
 }

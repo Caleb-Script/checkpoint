@@ -36,30 +36,15 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import EventIcon from '@mui/icons-material/Event';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShareIcon from '@mui/icons-material/Share';
+import { EVENTS } from '../../../graphql/event/query';
+import { CREATE_INVITATION, UPDATE_INVITATION } from '../../../graphql/invitation/mutation';
+import { INVITATIONS } from '../../../graphql/invitation/query';
+import { copyToClipboard, rsvpLinkForInvitationId, tryNativeShare, whatsappShareUrl } from '../../../lib/link';
+import { EventsQueryResult } from '../../../types/event/event.type';
+import { InvitationsQueryResult, Invitation } from '../../../types/invitation/invitation.type';
 
-import { EVENTS } from '../../graphql/event/query';
-import {
-  CREATE_INVITATION,
-  UPDATE_INVITATION,
-} from '../../graphql/invitation/mutation';
-import { INVITATIONS } from '../../graphql/invitation/query';
-import type {
-  EventsQueryResult,
-  Event as EventType,
-} from '../../types/event/event.type';
-import type {
-  Invitation,
-  InvitationsQueryResult,
-} from '../../types/invitation/invitation.type';
 
-import {
-  copyToClipboard,
-  rsvpLinkForInvitationId,
-  tryNativeShare,
-  whatsappShareUrl,
-} from '../../lib/link';
-
-export default function InvitationsPage(): JSX.Element {
+export default function InvitationsPage(): React.JSX.Element {
   const search = useSearchParams();
   const router = useRouter();
   const selectedEventId = search.get('eventId') ?? '';
