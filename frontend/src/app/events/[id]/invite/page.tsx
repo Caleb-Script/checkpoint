@@ -469,7 +469,7 @@ export default function EventAdminInvitePage() {
         />
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={4}>
+            <Grid sx={{ xs: 12, sm: 4 }}>
               <TextField
                 label="Default maxInvitees"
                 type="number"
@@ -481,7 +481,7 @@ export default function EventAdminInvitePage() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} sm="auto">
+            <Grid sx={{ xs: 12, sm: 'auto' }}>
               <Button component="label" variant="outlined">
                 CSV-Datei wählen
                 <input

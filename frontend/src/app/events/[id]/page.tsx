@@ -39,7 +39,7 @@ type EventDto = {
   name: string;
   startsAt: string;
   endsAt: string;
-  allowReEntry: boolean;
+  allowReEntry: string;
   rotateSeconds: number;
   maxSeats: number;
   createdAt: string;
@@ -85,7 +85,7 @@ export default function EventDetailPage() {
     EVENT_BY_ID,
     {
       variables: { id: eventId },
-      onCompleted: (res) => setAllow(res.event.allowReEntry),
+      onCompleted: (res) => setAllow(res.event.allowReEntry === 'true'),
       onError: (e) => setError(e.message),
       fetchPolicy: 'cache-and-network',
     },
@@ -262,7 +262,7 @@ export default function EventDetailPage() {
               <Divider sx={{ my: 2 }} />
 
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm="auto">
+                <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -273,7 +273,7 @@ export default function EventDetailPage() {
                     label="Re-Entry erlauben"
                   />
                 </Grid>
-                <Grid item xs={12} sm="auto">
+                <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     variant="contained"
                     onClick={() => updateEvent()}
@@ -282,7 +282,7 @@ export default function EventDetailPage() {
                     Änderungen speichern
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm="auto">
+                <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     color="error"
                     variant="outlined"
@@ -300,7 +300,7 @@ export default function EventDetailPage() {
                     Event löschen
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm="auto">
+                <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     component={Link}
                     href={`/events/${eventId}/invitations`}
@@ -309,7 +309,7 @@ export default function EventDetailPage() {
                     Zu den Einladungen
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm="auto">
+                <Grid sx={{ xs: 12, sm: 'auto' }}>
                   <Button
                     component={Link}
                     href={`/events/${eventId}/responses`}
@@ -341,7 +341,7 @@ export default function EventDetailPage() {
           </Typography>
           <Box component="form" onSubmit={onCreateSeat}>
             <Grid container spacing={1}>
-              <Grid item xs={6} sm={2}>
+              <Grid sx={{ xs: 6, sm: 2 }}>
                 <TextField
                   size="small"
                   label="Section"
@@ -352,7 +352,7 @@ export default function EventDetailPage() {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={6} sm={2}>
+              <Grid sx={{ xs: 6, sm: 2 }}>
                 <TextField
                   size="small"
                   label="Row"
@@ -363,7 +363,7 @@ export default function EventDetailPage() {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={6} sm={2}>
+              <Grid sx={{ xs: 6, sm: 2 }}>
                 <TextField
                   size="small"
                   label="Number"
@@ -374,7 +374,7 @@ export default function EventDetailPage() {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={6} sm={2}>
+              <Grid sx={{ xs: 6, sm: 2 }}>
                 <TextField
                   size="small"
                   label="Table"
@@ -385,7 +385,7 @@ export default function EventDetailPage() {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid sx={{ xs: 12, sm: 4 }}>
                 <TextField
                   size="small"
                   label="Note"
@@ -396,7 +396,7 @@ export default function EventDetailPage() {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={12} sm="auto">
+              <Grid sx={{ xs: 12, sm: 'auto' }}>
                 <Button
                   type="submit"
                   variant="contained"

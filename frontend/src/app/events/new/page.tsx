@@ -106,7 +106,7 @@ export default function NewEventPage() {
 
         <Box component="form" onSubmit={submit}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <TextField
                 label="Name"
                 value={form.name}
@@ -118,7 +118,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Start"
                 type="datetime-local"
@@ -132,7 +132,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Ende"
                 type="datetime-local"
@@ -146,7 +146,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Token-Rotation (Sek.)"
                 type="number"
@@ -163,7 +163,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Max. Seats (optional)"
                 type="number"
@@ -176,7 +176,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <FormControlLabel
                 control={
                   <Switch
@@ -190,7 +190,7 @@ export default function NewEventPage() {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <Button type="submit" variant="contained" disabled={loading}>
                 Event erstellen
               </Button>

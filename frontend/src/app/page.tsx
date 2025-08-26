@@ -13,7 +13,7 @@ export default function Page() {
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12}>
+        <Grid sx={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               👤 Gast
@@ -35,7 +35,7 @@ export default function Page() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid sx={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               🛡️ Security
@@ -54,7 +54,7 @@ export default function Page() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid sx={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               👨‍💼 Admin

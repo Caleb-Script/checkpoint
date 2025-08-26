@@ -119,7 +119,7 @@ export default function InvitationsPage() {
         {/* Create Form */}
         <form onSubmit={onCreate}>
           <Grid container spacing={1} alignItems="center" sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={4}>
+            <Grid sx={{ xs: 12, sm: 4 }}>
               <TextField
                 label="Event ID"
                 value={form.eventId}
@@ -130,7 +130,7 @@ export default function InvitationsPage() {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid sx={{ xs: 12, sm: 3 }}>
               <TextField
                 label="maxInvitees"
                 type="number"
@@ -144,7 +144,7 @@ export default function InvitationsPage() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} sm="auto">
+            <Grid sx={{ xs: 12, sm: 'auto' }}>
               <Button type="submit" variant="contained" disabled={creating}>
                 Invitation erstellen
               </Button>
