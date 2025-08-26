@@ -5,4 +5,7 @@ export type Ticket = {
   seatId?: string | null;
   currentState: 'INSIDE' | 'OUTSIDE';
   deviceBoundKey?: string | null;
+  revoked?: boolean | null;
 };
+
+export type GetTicketsResult = { getTickets: Ticket[] };

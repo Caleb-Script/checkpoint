@@ -147,14 +147,27 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
     // this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(['user']),
-    });
-  }
+  // async onModuleInit(): Promise<void> {
+  //   await this.#kafkaConsumerService.consume({
+  //     topics: getKafkaTopicsBy(['user']),
+  //   });
+  // }
 
   createKeycloakConnectOptions(): KeycloakConnectOptions {
     return keycloakConnectOptions;
+  }
+
+  async findAllUsers() {
+    this.#logger.debug('finde alle User');
+
+    const adminToken = await this.#getAdminToken();
+
+    const users = this.#keycloakClient.get(`${paths.users}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+
+    this.#logger.debug('users=%o', users);
+    return undefined;
   }
 
   // ================================================= Auth ========================================================================

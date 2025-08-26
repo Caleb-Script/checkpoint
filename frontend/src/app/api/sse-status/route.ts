@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 /**
  * Sehr schlanke, in-Memory basierte SSE-Implementation.
@@ -23,7 +23,10 @@ const subscribers = new Map<string, Subscriber>();
 // Hilfsfunktion: einheitliches SSE-Format
 function formatSSE(event: string, data: string): string {
   // Mehrzeilige data-Zeilen sauber trennen
-  const safe = data.split("\n").map((l) => `data: ${l}`).join("\n");
+  const safe = data
+    .split('\n')
+    .map((l) => `data: ${l}`)
+    .join('\n');
   return `event: ${event}\n${safe}\n\n`;
 }
 
@@ -38,7 +41,9 @@ export async function GET(_req: Request): Promise<Response> {
       const encoder = new TextEncoder();
 
       // initial: „connected“-Event
-      controller.enqueue(encoder.encode(formatSSE("connected", JSON.stringify({ id }))));
+      controller.enqueue(
+        encoder.encode(formatSSE('connected', JSON.stringify({ id }))),
+      );
 
       const send = (data: string) => {
         controller.enqueue(encoder.encode(data));
@@ -56,7 +61,7 @@ export async function GET(_req: Request): Promise<Response> {
 
       // Keep-Alive Ping alle 25s (verhindert idle timeouts bei Proxys)
       const pingInterval = setInterval(() => {
-        send(formatSSE("ping", JSON.stringify({ t: Date.now() })));
+        send(formatSSE('ping', JSON.stringify({ t: Date.now() })));
       }, 25_000);
 
       // Wenn der Stream beendet wird: Aufräumen
@@ -71,7 +76,7 @@ export async function GET(_req: Request): Promise<Response> {
       };
 
       // Falls der Client die Verbindung abbricht
-      _req?.signal?.addEventListener?.("abort", abort);
+      _req?.signal?.addEventListener?.('abort', abort);
 
       // Fallback: schließe Verbindung nach 24h hart
       setTimeout(abort, 24 * 60 * 60 * 1000);
@@ -85,11 +90,11 @@ export async function GET(_req: Request): Promise<Response> {
   return new Response(stream, {
     status: 200,
     headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
       // WICHTIG für Next.js / Proxies:
-      "X-Accel-Buffering": "no",
+      'X-Accel-Buffering': 'no',
     },
   });
 }
@@ -106,7 +111,7 @@ export async function POST(req: Request) {
     // ignore – leerer Body ist okay
   }
 
-  const eventName = body.event ?? "message";
+  const eventName = body.event ?? 'message';
   const json = JSON.stringify(body.payload ?? { t: Date.now() });
 
   const packet = formatSSE(eventName, json);

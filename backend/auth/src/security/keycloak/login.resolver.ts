@@ -61,6 +61,12 @@ export class LoginResolver {
 
   @Query()
   @Public()
+  async getUsers() {
+    return this.#keycloakService.findAllUsers();
+  }
+
+  @Query()
+  @Public()
   async me(
     @Args('token') token: string,
     @Context() ctx: { req: Request; res: Response },

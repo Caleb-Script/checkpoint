@@ -28,9 +28,9 @@ import * as React from 'react';
 // Du verwendest bereits "ticket" (Singular) – daran halte ich mich hier:
 import { ROTATE_TOKEN } from '@/graphql/ticket/mutation';
 import { GET_TICKET_BY_ID } from '@/graphql/ticket/query';
+import { digestSHA256, randomHex, toHex } from '../../lib/crypto';
 import { Ticket } from '../../types/ticket/ticket.type';
 import { getLogger } from '../../utils/logger';
-import { digestSHA256, randomHex, toHex } from '../../lib/crypto';
 
 type RotateTokenPayload = {
   rotateToken: {
@@ -47,7 +47,8 @@ function secondsLeft(expireAt: number) {
 /** Gerätestabiler Hash: (UA | persistenter Salz) → SHA-256 → 32 Hex */
 async function computeDeviceHash(): Promise<string> {
   const saltKey = 'cp_device_salt';
-  let salt = typeof localStorage !== 'undefined' ? localStorage.getItem(saltKey) : null;
+  let salt =
+    typeof localStorage !== 'undefined' ? localStorage.getItem(saltKey) : null;
   if (!salt) {
     // 16 Bytes → 32 Hex-Zeichen
     salt = randomHex(16);

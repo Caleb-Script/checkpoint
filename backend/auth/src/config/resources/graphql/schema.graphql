@@ -6,6 +6,7 @@ schema {
 
 type Query {
   me(token: String): UserInfo
+  getUsers():String
 }
 
 # Mutation-Typ

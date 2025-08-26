@@ -30,6 +30,7 @@ import {
 } from '@mui/material';
 import * as React from 'react';
 import { HANDLE_SCAN } from '../../graphql/ticket/mutation';
+import './scan.css';
 
 /* ──────────────────────────────────────────────────────────────────────────────
    Zusätzliche DOM/Media-Typen (ohne any)

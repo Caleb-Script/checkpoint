@@ -1,11 +1,11 @@
 import {
   ApolloClient,
   ApolloLink,
+  createHttpLink,
   DefaultOptions,
+  from,
   InMemoryCache,
   NormalizedCacheObject,
-  createHttpLink,
-  from,
   split,
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
@@ -13,9 +13,9 @@ import { onError } from '@apollo/client/link/error';
 import type { DefinitionNode, OperationDefinitionNode } from 'graphql';
 
 // Subscriptions: graphql-ws + Link
-import { createClient, Client as GraphQLWSClient } from 'graphql-ws';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
+import { createClient, Client as GraphQLWSClient } from 'graphql-ws';
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Singleton-Verwaltung (separat für HTTP+WS, abhängig vom Token)
@@ -40,7 +40,7 @@ const isBrowser = typeof window !== 'undefined';
  */
 function buildHttpLink(uri: string) {
   return createHttpLink({
-    uri,                    // GraphQL-Endpunkt
+    uri, // GraphQL-Endpunkt
     credentials: 'include', // HttpOnly-Cookies mitnehmen
   });
 }
@@ -71,39 +71,45 @@ function buildAuthLink(token: string | undefined) {
 // ---- Error Link (korrekt statt .catch auf Observable) -----------------------------
 // Loggt GraphQL- und Netzwerkfehler und leitet sie weiter.
 function buildErrorLink() {
-  return onError(({ graphQLErrors, networkError, operation }) => {
-    const opName = operation.operationName ?? 'unknown';
-    if (graphQLErrors && graphQLErrors.length > 0) {
-      console.error(
-        '[Apollo][GraphQL]',
-        opName,
-        graphQLErrors.map((e) => ({
-          message: e.message,
-          path: e.path,
-          locations: e.locations,
-          extensions: e.extensions,
-        })),
-      );
-    }
-    if (networkError) {
-      console.error('[Apollo][Network]', opName, {
-        name: networkError.name,
-        message: networkError.message,
-      });
-    }
-  }
-  
-  // Beispiel: bei UNAUTHENTICATED könnte man hier refreshen/retryen
-  // return forward(operation); // Weiterreichen (optional Retry-Logik));
-)}
+  return onError(
+    ({ graphQLErrors, networkError, operation }) => {
+      const opName = operation.operationName ?? 'unknown';
+      if (graphQLErrors && graphQLErrors.length > 0) {
+        console.error(
+          '[Apollo][GraphQL]',
+          opName,
+          graphQLErrors.map((e) => ({
+            message: e.message,
+            path: e.path,
+            locations: e.locations,
+            extensions: e.extensions,
+          })),
+        );
+      }
+      if (networkError) {
+        console.error('[Apollo][Network]', opName, {
+          name: networkError.name,
+          message: networkError.message,
+        });
+      }
+    },
 
+    // Beispiel: bei UNAUTHENTICATED könnte man hier refreshen/retryen
+    // return forward(operation); // Weiterreichen (optional Retry-Logik));
+  );
+}
 
 // ---- Logging (Request/Response) ----------------------------------------------
 // Request-Logger (hilft auf iOS)
 function buildLogLink(uri: string) {
   return new ApolloLink((operation, forward) => {
     // sichtbares Logging im Xcode Output
-    console.log('[Apollo] →', operation.operationName, uri, operation.variables);
+    console.log(
+      '[Apollo] →',
+      operation.operationName,
+      uri,
+      operation.variables,
+    );
     return forward(operation).map((data) => {
       console.log('[Apollo] ←', operation.operationName, data);
       return data;
@@ -111,8 +117,14 @@ function buildLogLink(uri: string) {
   });
 }
 
-function isSubscription(def: DefinitionNode | null): def is OperationDefinitionNode {
-  return !!def && def.kind === 'OperationDefinition' && def.operation === 'subscription';
+function isSubscription(
+  def: DefinitionNode | null,
+): def is OperationDefinitionNode {
+  return (
+    !!def &&
+    def.kind === 'OperationDefinition' &&
+    def.operation === 'subscription'
+  );
 }
 
 function inferWsUrlFromHttp(httpUrl: string): string {
@@ -127,7 +139,7 @@ function inferWsUrlFromHttp(httpUrl: string): string {
 /**
  * Erstellt oder gibt eine existierende Apollo Client Instanz (HTTP + WS) zurück.
  * Re-Creation erfolgt, wenn sich der Token ändert.
- * 
+ *
  * Erstellt oder gibt eine existierende Apollo Client Instanz zurück.
  * @param {string} token - Der Authentifizierungstoken.
  * @returns {ApolloClient<NormalizedCacheObject>} Die Singleton Apollo Client Instanz.
@@ -141,14 +153,16 @@ const getApolloClient = (
 
   const httpUri = process.env.NEXT_PUBLIC_BACKEND_SERVER_URL;
   if (!httpUri) {
-    throw new Error('Setze NEXT_PUBLIC_BACKEND_SERVER_URL (HTTP GraphQL Endpoint).');
+    throw new Error(
+      'Setze NEXT_PUBLIC_BACKEND_SERVER_URL (HTTP GraphQL Endpoint).',
+    );
   }
 
   const wsUri =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GRAPHQL_WS_URL) ||
+    (typeof process !== 'undefined' &&
+      process.env.NEXT_PUBLIC_GRAPHQL_WS_URL) ||
     (isBrowser ? inferWsUrlFromHttp(httpUri) : undefined);
 
-  
   // ── Links: Error + Log + Auth + HTTP
   const errorLink = buildErrorLink();
   const logLink = buildLogLink(httpUri);
@@ -229,7 +243,6 @@ const getApolloClient = (
     },
   };
 
-  
   // Apollo Client erstellen
   client = new ApolloClient({
     link,

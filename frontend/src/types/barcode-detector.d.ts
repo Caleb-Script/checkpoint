@@ -2,39 +2,39 @@
 // Eine zentrale, globale Deklaration für den experimentellen BarcodeDetector.
 // Keine Duplikate in Komponenten anlegen!
 
-export { };
+export {};
 
 declare global {
-    interface DetectedBarcode {
-        rawValue: string;
-        // optionale Felder (werden von manchen Browsern geliefert)
-        // format?: string;
-        // boundingBox?: DOMRectReadOnly;
-        // cornerPoints?: Array<{ x: number; y: number }>;
-    }
+  interface DetectedBarcode {
+    rawValue: string;
+    // optionale Felder (werden von manchen Browsern geliefert)
+    // format?: string;
+    // boundingBox?: DOMRectReadOnly;
+    // cornerPoints?: Array<{ x: number; y: number }>;
+  }
 
-    interface BarcodeDetectorOptions {
-        formats?: string[];
-    }
+  interface BarcodeDetectorOptions {
+    formats?: string[];
+  }
 
-    interface BarcodeDetector {
-        detect(
-            source:
-                | HTMLVideoElement
-                | HTMLImageElement
-                | HTMLCanvasElement
-                | ImageBitmap
-                | ImageData
-                | OffscreenCanvas
-        ): Promise<DetectedBarcode[]>;
-    }
+  interface BarcodeDetector {
+    detect(
+      source:
+        | HTMLVideoElement
+        | HTMLImageElement
+        | HTMLCanvasElement
+        | ImageBitmap
+        | ImageData
+        | OffscreenCanvas,
+    ): Promise<DetectedBarcode[]>;
+  }
 
-    interface BarcodeDetectorConstructor {
-        new(options?: BarcodeDetectorOptions): BarcodeDetector;
-        getSupportedFormats(): Promise<string[]>;
-    }
+  interface BarcodeDetectorConstructor {
+    new (options?: BarcodeDetectorOptions): BarcodeDetector;
+    getSupportedFormats(): Promise<string[]>;
+  }
 
-    interface Window {
-        BarcodeDetector?: BarcodeDetectorConstructor;
-    }
+  interface Window {
+    BarcodeDetector?: BarcodeDetectorConstructor;
+  }
 }

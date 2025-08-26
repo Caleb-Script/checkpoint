@@ -5,17 +5,46 @@ import { NextResponse } from 'next/server';
 const ACCESS_COOKIE =
   process.env.NEXT_PUBLIC_ACCESS_COOKIE_NAME || 'kc_access_token';
 
-// Welche Pfade Login brauchen:
-const PROTECTED_PREFIXES = [
-  '/api',
-  '/dashboard',
-  '/invitations',
-  '/scan',
-  '/my-qr',
-  '/debug',
+// ---------------------------------------------------------------------------
+// Rollen & Pfad-Regeln
+// ---------------------------------------------------------------------------
+
+type Role = 'ADMIN' | 'SECURITY' | 'GUEST';
+
+type Rule = {
+  prefix: string;
+  // Wenn roles gesetzt → diese Rollen sind erlaubt
+  // Wenn roles nicht gesetzt → nur eingeloggt sein reicht
+  roles?: Role[];
+};
+
+// Reihenfolge: spezifische Pfade zuerst
+const RULES: Rule[] = [
+  // Admin-Only
+  { prefix: '/admin', roles: ['ADMIN'] },
+  { prefix: '/admin/event', roles: ['ADMIN'] },
+  { prefix: '/admin/invitations', roles: ['ADMIN'] },
+  { prefix: '/admin/tickets', roles: ['ADMIN'] },
+
+  // Security & Admin
+  { prefix: '/security', roles: ['ADMIN', 'SECURITY'] },
+  { prefix: '/scan', roles: ['ADMIN', 'SECURITY'] },
+
+  // Auth: alle Rollen
+  { prefix: '/my-qr' }, // authentifiziert, Rolle egal
+  { prefix: '/api' }, // authentifiziert, Rolle egal
+
+  // Debug bleibt unten zusätzlich hart geprüft (ADMIN-only)
+  { prefix: '/debug', roles: ['ADMIN'] },
+
+  // ggf. weitere Bereiche:
+  // { prefix: '/dashboard' }, // authentifiziert, Rolle egal (falls genutzt)
 ];
 
-// --- JWKS Caching pro Issuer ---
+// ---------------------------------------------------------------------------
+// JWKS Caching pro Issuer
+// ---------------------------------------------------------------------------
+
 const jwksCache = new Map<string, ReturnType<typeof jose.createRemoteJWKSet>>();
 
 function getJwks(issuer: string) {
@@ -28,9 +57,15 @@ function getJwks(issuer: string) {
   return jwks;
 }
 
+// ---------------------------------------------------------------------------
+// Token-Validierung & Rollen-Ermittlung
+// ---------------------------------------------------------------------------
+
 type RealmPayload = jose.JWTPayload & {
   realm_access?: { roles?: string[] };
-  azp?: string;
+  resource_access?: Record<string, { roles?: string[] }>;
+  azp?: string; // authorized party (Client)
+  iss?: string;
 };
 
 async function verifyToken(token: string): Promise<RealmPayload | null> {
@@ -59,15 +94,42 @@ async function verifyToken(token: string): Promise<RealmPayload | null> {
   }
 }
 
-function hasAdminRole(payload: RealmPayload): boolean {
-  const roles = payload.realm_access?.roles ?? [];
-  return roles.some((r) => r?.toLowerCase() === 'admin');
+function normalizeRole(r?: string): Role | null {
+  if (!r) return null;
+  const up = r.toUpperCase();
+  if (up === 'ADMIN') return 'ADMIN';
+  if (up === 'SECURITY') return 'SECURITY';
+  if (up === 'GUEST') return 'GUEST';
+  return null;
 }
 
-export async function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
+function extractRoles(payload: RealmPayload): Role[] {
+  const out = new Set<Role>();
 
-  // Öffentliche/statische Ressourcen durchlassen
+  // Realm-Rollen
+  const realmRoles = payload.realm_access?.roles ?? [];
+  for (const r of realmRoles) {
+    const nr = normalizeRole(r);
+    if (nr) out.add(nr);
+  }
+
+  // Client-/Ressource-Rollen (z. B. Keycloak: resource_access[clientId].roles)
+  const clientRolesGroups = payload.resource_access ?? {};
+  for (const group of Object.values(clientRolesGroups)) {
+    const roles = group?.roles ?? [];
+    for (const r of roles) {
+      const nr = normalizeRole(r);
+      if (nr) out.add(nr);
+    }
+  }
+
+  // Falls keine definierte Rolle im Token → implizit „GUEST“, wenn eingeloggt
+  if (out.size === 0) out.add('GUEST');
+  return Array.from(out);
+}
+
+function isProtectedPath(pathname: string): Rule | null {
+  // statische/öffentliche Ressourcen: nie schützen
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||
@@ -76,40 +138,67 @@ export async function middleware(req: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml'
   ) {
-    return NextResponse.next();
+    return null;
   }
+  // passende Regel finden
+  for (const rule of RULES) {
+    if (pathname === rule.prefix || pathname.startsWith(rule.prefix + '/')) {
+      return rule;
+    }
+  }
+  return null;
+}
 
-  const token = req.cookies.get(ACCESS_COOKIE)?.value;
+// ---------------------------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------------------------
 
-  // Bereits eingeloggt? Dann /login sperren
+export async function middleware(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+
+  // Bereits eingeloggt? → /login sperren
+  const token = req.cookies.get(ACCESS_COOKIE)?.value ?? null;
   if (token && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  // Braucht Auth?
-  const needsAuth = PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + '/'),
-  );
+  // Nicht-geschützte Pfade durchlassen
+  const matchedRule = isProtectedPath(pathname);
+  if (!matchedRule) {
+    return NextResponse.next();
+  }
 
-  if (needsAuth) {
-    // Nicht eingeloggt → auf /login (mit returnTo)
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      url.search = `?returnTo=${encodeURIComponent(pathname + (search || ''))}`;
-      return NextResponse.redirect(url);
-    }
+  // Ab hier: auth erforderlich
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = `?returnTo=${encodeURIComponent(pathname + (search || ''))}`;
+    return NextResponse.redirect(url);
+  }
 
-    // Token kryptografisch verifizieren
-    const payload = await verifyToken(token);
-    if (!payload) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
+  // Token prüfen
+  const payload = await verifyToken(token);
+  if (!payload) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = `?returnTo=${encodeURIComponent(pathname + (search || ''))}`;
+    return NextResponse.redirect(url);
+  }
 
-    // /debug nur für Admins
-    if (pathname.startsWith('/debug') && !hasAdminRole(payload)) {
+  // Rollen ermitteln
+  const roles = extractRoles(payload);
+
+  // „/debug“ redundant absichern (ADMIN-only)
+  if (pathname.startsWith('/debug') && !roles.includes('ADMIN')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/forbidden';
+    return NextResponse.redirect(url);
+  }
+
+  // Rollen-Regel prüfen (falls die Regel Rollen verlangt)
+  if (matchedRule.roles && matchedRule.roles.length > 0) {
+    const allowed = matchedRule.roles.some((r) => roles.includes(r));
+    if (!allowed) {
       const url = req.nextUrl.clone();
       url.pathname = '/forbidden';
       return NextResponse.redirect(url);
@@ -118,6 +207,10 @@ export async function middleware(req: NextRequest) {
 
   return NextResponse.next();
 }
+
+// ---------------------------------------------------------------------------
+// Matcher
+// ---------------------------------------------------------------------------
 
 export const config = {
   matcher: [

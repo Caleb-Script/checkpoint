@@ -24,7 +24,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { useAuth } from '@/context/AuthContext'; // liefert den Keycloak-User (siehe Projekt) :contentReference[oaicite:1]{index=1}
@@ -38,10 +37,18 @@ import { INVITATION } from '../../graphql/invitation/query';
 import { Invitation } from '../../types/invitation/invitation.type';
 
 // Hilfsfunktion: Claim aus Keycloak-JWT oder UserInfo
-function getClaim<T>(user: Record<string, unknown> | null, key: string): T | null {
+function getClaim<T>(
+  user: Record<string, unknown> | null,
+  key: string,
+): T | null {
   if (!user) return null;
   if (key in user) return user[key] as T;
-  if ('attributes' in user && typeof user.attributes === 'object' && user.attributes && key in user.attributes) {
+  if (
+    'attributes' in user &&
+    typeof user.attributes === 'object' &&
+    user.attributes &&
+    key in user.attributes
+  ) {
     return (user.attributes as Record<string, unknown>)[key] as T;
   }
   return null;

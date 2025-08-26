@@ -22,7 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LOGIN } from '../../graphql/auth/mutation';
@@ -41,12 +41,12 @@ export default function LoginForm() {
   // returnTo wird manuell aus window.location gelesen
   const [returnTo, setReturnTo] = React.useState<string>('/');
 
-    React.useEffect(() => {
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        setReturnTo(params.get('returnTo') || '/');
-      }
-    }, []);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setReturnTo(params.get('returnTo') || '/');
+    }
+  }, []);
 
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');

@@ -59,3 +59,17 @@ export const HANDLE_SCAN = gql /* GraphQL */ `
     }
   }
 `;
+
+export const DELETE_TICKET = gql /* GraphQL */ `
+  mutation DeleteTicket($id: ID!) {
+    deleteTicket(id: $id) {
+      id
+      eventId
+      invitationId
+      seatId
+      currentState
+      deviceBoundKey
+      revoked
+    }
+  }
+`;
