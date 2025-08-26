@@ -6,6 +6,7 @@ export const corsOptions: CorsOptions = {
         'http://localhost:3000',
         'https://omnixys.com',
         'https://omnixys-sphere-ihh4dk9zv-omnixys.vercel.app',
+        'http://192.168.178.102:3000',
     ],
     credentials: true,
     // Access-Control-Allow-Methods (hier: default)

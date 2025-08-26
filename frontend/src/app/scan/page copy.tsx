@@ -4,7 +4,7 @@
 import { useMutation } from '@apollo/client';
 import {
   BarcodeFormat,
-  // LensFacing, // optional
+  LensFacing,
   BarcodeScanner as MLKitScanner,
   type ScanResult as MLKitScanResult,
 } from '@capacitor-mlkit/barcode-scanning';
@@ -31,39 +31,6 @@ import {
 import * as React from 'react';
 import { HANDLE_SCAN } from '../../graphql/ticket/mutation';
 
-/* ──────────────────────────────────────────────────────────────────────────────
-   Zusätzliche DOM/Media-Typen (ohne any)
-   ────────────────────────────────────────────────────────────────────────────── */
-declare global {
-  interface BarcodeDetectorOptions {
-    formats?: string[];
-  }
-  interface DetectedBarcode {
-    rawValue: string;
-  }
-  interface BarcodeDetector {
-    detect(
-      source:
-        | HTMLVideoElement
-        | HTMLImageElement
-        | ImageBitmap
-        | HTMLCanvasElement,
-    ): Promise<DetectedBarcode[]>;
-  }
-  interface BarcodeDetectorConstructor {
-    new (options?: BarcodeDetectorOptions): BarcodeDetector;
-    getSupportedFormats(): Promise<string[]>;
-  }
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor;
-  }
-  // Torch-Fähigkeit für Kameras
-  interface MediaTrackCapabilities {
-    torch?: boolean;
-  }
-}
-
-// Präsenz-Status wie im Prisma-Model
 type PresenceState = 'INSIDE' | 'OUTSIDE';
 type ScanResult = {
   id: string;
@@ -75,9 +42,7 @@ type ScanResult = {
 };
 type HandleScanPayload = { handleScan: ScanResult };
 
-/* ──────────────────────────────────────────────────────────────────────────────
-   Haptik & Beep
-   ────────────────────────────────────────────────────────────────────────────── */
+// Haptik & Beep
 async function doHaptic(
   kind: 'success' | 'error' | 'impact' = 'impact',
 ): Promise<void> {
@@ -90,20 +55,21 @@ async function doHaptic(
     else if (kind === 'error')
       await Haptics.notification({ type: NotificationType.Error });
     else await Haptics.impact({ style: ImpactStyle.Medium });
-  } catch {
-    /* no-op */
-  }
+  } catch {}
 }
-
 async function playBeep(
   kind: 'success' | 'error' | 'scan' = 'scan',
 ): Promise<void> {
   try {
-    const win = window as unknown as {
-      AudioContext?: typeof AudioContext;
-      webkitAudioContext?: typeof AudioContext;
-    };
-    const Ctx = win.AudioContext ?? win.webkitAudioContext;
+    const Ctx =
+      (
+        window as unknown as {
+          AudioContext?: typeof AudioContext;
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const osc = ctx.createOscillator();
@@ -123,14 +89,10 @@ async function playBeep(
       () => void ctx.close().catch(() => undefined),
       Math.ceil((conf.dur + 0.05) * 1000),
     );
-  } catch {
-    /* no-op */
-  }
+  } catch {}
 }
 
-/* ──────────────────────────────────────────────────────────────────────────────
-   Web-Capabilities & Utils
-   ────────────────────────────────────────────────────────────────────────────── */
+// Web-Capabilities
 function hasMediaDevices(): boolean {
   return (
     typeof navigator !== 'undefined' &&
@@ -139,7 +101,11 @@ function hasMediaDevices(): boolean {
   );
 }
 function hasBarcodeDetector(): boolean {
-  return typeof window !== 'undefined' && !!window.BarcodeDetector;
+  return (
+    typeof window !== 'undefined' &&
+    !!window.BarcodeDetector &&
+    typeof window.BarcodeDetector.getSupportedFormats === 'function'
+  );
 }
 function hashCode(s: string): number {
   let h = 0;
@@ -148,9 +114,6 @@ function hashCode(s: string): number {
   return h;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────────
-   React-Komponente
-   ────────────────────────────────────────────────────────────────────────────── */
 export default function ScanPage(): React.JSX.Element {
   const [token, setToken] = React.useState('');
   const [gate, _setGate] = React.useState('MAIN');
@@ -221,12 +184,13 @@ export default function ScanPage(): React.JSX.Element {
     }
   };
 
-  /* =================== A) Nativ (iOS/Android) via ML Kit =================== */
+  // =============== A) Nativ (iOS/Android) via ML Kit =================
   const isNativeApp = Capacitor.getPlatform() !== 'web';
 
   const startNativeScan = async (): Promise<void> => {
     setError(null);
     try {
+      // Fertige native UI, kein WebView-Hide nötig
       const res: MLKitScanResult = await MLKitScanner.scan({
         formats: [BarcodeFormat.QrCode],
         // lensFacing: LensFacing.Back,
@@ -249,12 +213,14 @@ export default function ScanPage(): React.JSX.Element {
     }
   };
 
-  /* =================== B) Web-Livekamera (Browser/PWA) ===================== */
+  // =============== B) Web-Livekamera (nur Browser/PWA) ===============
   function detectTorchSupport(): boolean {
     const track = streamRef.current?.getVideoTracks?.()[0];
     try {
-      const caps = track?.getCapabilities?.();
-      const supported = !!(caps && typeof caps.torch !== 'undefined');
+      const caps = (
+        track as unknown as { getCapabilities?: () => MediaTrackCapabilities }
+      )?.getCapabilities?.();
+      const supported = !!(caps && 'torch' in caps);
       setTorchSupported(supported);
       return supported;
     } catch {
@@ -262,17 +228,12 @@ export default function ScanPage(): React.JSX.Element {
       return false;
     }
   }
-
   const setTorch = async (on: boolean): Promise<void> => {
     const track = streamRef.current?.getVideoTracks?.()[0];
     if (!track) return;
     try {
-      // ohne @ts-expect-error: sauberer Typ via Intersection
-      const torchAdvanced: MediaTrackConstraintSet & { torch?: boolean } = {
-        torch: on,
-      };
-      const constraints: MediaTrackConstraints = { advanced: [torchAdvanced] };
-      await track.applyConstraints(constraints);
+      // @ts-expect-error: torch ist experimentell
+      await track.applyConstraints({ advanced: [{ torch: on }] });
       setTorchOn(on);
     } catch {
       setTorchOn(false);
@@ -313,10 +274,10 @@ export default function ScanPage(): React.JSX.Element {
   const startWithBarcodeDetector = async (
     video: HTMLVideoElement,
   ): Promise<boolean> => {
-    if (!hasBarcodeDetector() || !window.BarcodeDetector) return false;
-    const formats = await window.BarcodeDetector.getSupportedFormats();
+    if (!hasBarcodeDetector()) return false;
+    const formats = await window.BarcodeDetector!.getSupportedFormats();
     const canQR = formats.includes('qr_code');
-    const detector = new window.BarcodeDetector({
+    const detector = new window.BarcodeDetector!({
       formats: canQR ? ['qr_code'] : undefined,
     });
 
@@ -324,14 +285,12 @@ export default function ScanPage(): React.JSX.Element {
       if (!video) return;
       try {
         const det = await detector.detect(video);
-        const text = det.length > 0 ? det[0].rawValue : undefined;
+        const text = det?.[0]?.rawValue;
         if (text) {
           await trySubmit(text);
           await new Promise((r) => window.setTimeout(r, 300));
         }
-      } catch {
-        /* frame ohne Code */
-      }
+      } catch {}
       rafRef.current = requestAnimationFrame(loop);
     };
     void loop();
@@ -380,9 +339,7 @@ export default function ScanPage(): React.JSX.Element {
     streamRef.current?.getTracks()?.forEach((t) => {
       try {
         t.stop();
-      } catch {
-        /* no-op */
-      }
+      } catch {}
     });
     streamRef.current = null;
     setTorchOn(false);
@@ -392,9 +349,7 @@ export default function ScanPage(): React.JSX.Element {
 
   React.useEffect(() => () => stopWebCamera(), []);
 
-  /* ──────────────────────────────────────────────────────────────────────────
-     Render
-     ────────────────────────────────────────────────────────────────────────── */
+  // Render
   return (
     <Card variant="outlined">
       <CardContent>

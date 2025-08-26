@@ -1,0 +1,5 @@
+/* /Users/gentlebookpro/Projekte/checkpoint/web/src/app/scan/scan.css */
+html, body { height: 100%; }
+body.scanner-active {
+  background: transparent !important;
+}

@@ -73,7 +73,21 @@ export default function LoginForm() {
       router.push(returnTo);
     } catch (err) {
       logger.error(err);
-      setError('Netzwerk-/Serverfehler.');
+      // bessere Fehlerdiagnose
+      const anyErr = err as {
+        message?: string;
+        networkError?: unknown;
+        graphQLErrors?: Array<{ message: string }>;
+      };
+      logger.error('[Login] ApolloError', {
+        message: anyErr?.message,
+        networkError: anyErr?.networkError,
+        graphQLErrors: anyErr?.graphQLErrors,
+        uri: process.env.NEXT_PUBLIC_GRAPHQL_URL,
+        usingProxy: process.env.NEXT_PUBLIC_USE_GRAPHQL_PROXY === '1',
+        origin: typeof window !== 'undefined' ? window.location.origin : 'ssr',
+      });
+      setError(anyErr?.message || 'Netzwerk-/Serverfehler.');
     }
   }
 
