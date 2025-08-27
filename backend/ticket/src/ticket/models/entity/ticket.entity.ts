@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Field, GraphQLISODateTime, ID, ObjectType } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
 import { PresenceState } from '../enums/presenceState.enum.js';
@@ -29,7 +30,6 @@ export class Ticket {
 
   @Field(() => Boolean)
   revoked!: boolean;
-
 
   @Field(() => GraphQLISODateTime) createdAt!: Date;
   @Field(() => GraphQLISODateTime) updatedAt!: Date;

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Args, ID, Query, Resolver } from '@nestjs/graphql';
 import { Ticket } from '../models/entity/ticket.entity.js';
 import { TicketReadService } from '../service/ticket-read.service.js';
@@ -16,5 +14,25 @@ export class TicketQueryResolver {
   @Query(() => [Ticket], { name: 'getTickets' })
   getTickets() {
     return this.read.find();
+  }
+
+  @Query(() => Ticket, { name: 'getTicketsByInvitation' })
+  getTicketByInvitation(@Args('id', { type: () => ID }) id: string) {
+    return this.read.findByInvitation(id);
+  }
+
+  @Query(() => Ticket, { name: 'getTicketsByDeviceKey' })
+  getTicketByDeviceKey(@Args('id', { type: () => ID }) id: string) {
+    return this.read.findTicketByDeviceKey(id);
+  }
+
+  @Query(() => [Ticket], { name: 'getTicketsByGuest' })
+  getTicketByGuest(@Args('id', { type: () => ID }) id: string) {
+    return this.read.findByGuest(id);
+  }
+
+  @Query(() => [Ticket], { name: 'getTicketsByEvent' })
+  getTicketsByEvent(@Args('id', { type: () => ID }) id: string) {
+    return this.read.findByEvent(id);
   }
 }

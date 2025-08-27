@@ -34,7 +34,7 @@ export class TicketMutationResolver {
   }
 
   @Mutation(() => Ticket, { name: 'handleScan' })
-  async handleScan(@Args('token') token: string): Promise<Ticket> {
+  async handleScan(@Args('token') token: string) {
     const result = await this.write.handleScan(token);
 
     if (!result) {
