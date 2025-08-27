@@ -1,0 +1,5 @@
+packages:
+  - "apps/*"
+  - "backend/*"
+  - "!backend/template"
+  - "packages/*"

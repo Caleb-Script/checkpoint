@@ -1,16 +1,26 @@
 {
   "name": "checkpoint",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
   "workspaces": [
-    "apps/*"
+    "backend/*",
+    "frontend"
   ],
   "scripts": {
-    "build": "npm -ws run build",
-    "dev": "concurrently -n API,ADMIN -c auto \"npm --workspace @checkpoint/api run start:dev\" \"npm --workspace @checkpoint/admin-web run dev\"",
+    "build": "pnpm -w -r run build",
+    "dev": "pnpm -w -r --parallel --filter \"./backend/event\" --filter \"./backend/invitation\" --filter \"./backend/ticket\" --filter \"./backend/auth\" run dev",
     "lint": "npm -ws run lint",
     "test": "npm -ws run test",
-     "prettier": "prettier --cache --write \"**/src/**/*.{ts,tsx}\""
+    "prettier": "prettier --cache --write \"**/src/**/*.{ts,tsx}\"",
+
+    "prisma:gen": "prisma generate --schema backend/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema backend/prisma/schema.prisma",
+    "prisma:deploy": "prisma migrate deploy --schema backend/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema backend/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema backend/prisma/schema.prisma",
+
+     "ios:add": "pnpm -w --filter ./frontend run ios:add || echo '⏭️  frontend nicht vorhanden'",
+    "ios:update": "pnpm -w --filter ./frontend run ios:update || echo '⏭️  frontend nicht vorhanden'"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

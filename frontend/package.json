@@ -9,8 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "prettier": "prettier --cache --write \"src/**/*.{ts,tsx}\"",
-    "update:ios": "npx cap sync ios && npx cap open ios",
-    "add:ios": "npx cap add ios"
+    "ios:fix": "node scripts/fix-ios-target.js",
+    "ios:update": "npx cap sync ios && npx cap open ios",
+    "ios:add": "bash -lc 'npx cap add ios || true; pnpm run ios:fix; pnpm run ios:update'"
   },
   "dependencies": {
     "@apollo/client": "^3.13.9",
