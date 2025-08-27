@@ -1,5 +1,5 @@
 // checkpoint/services/invitation/src/graphql/entities/invitation.entity.ts
-import { Field, ID, Int, ObjectType } from "@nestjs/graphql";
+import { Field, GraphQLISODateTime, ID, Int, ObjectType } from "@nestjs/graphql";
 import { InvitationStatus } from "../enums/invitation-status.enum";
 import { RsvpChoice } from "../enums/rsvp-choice.enum";
 import { IsBoolean, IsOptional } from "class-validator";
@@ -12,25 +12,42 @@ export class Invitation {
   @Field(() => ID, { description: "ID der Einladung (cuid)." })
   id!: string;
 
-  @Field({ description: "ID des Events (String, FK im Zielsystem)." })
+  @Field(() => ID, { description: "ID des Events (String, FK im Zielsystem)." })
   eventId!: string;
 
-  @Field({
+  @Field(() => ID, {
     nullable: true,
     description: "ID des Gast-Profils (String, FK im Zielsystem).",
   })
-  guestProfileId: string;
+  guestProfileId?: string;
 
   @Field(() => InvitationStatus, {
     description: "Aktueller Status der Einladung.",
   })
   status!: InvitationStatus;
 
+
+  @Field(() => GraphQLISODateTime) createdAt!: Date;
+  @Field(() => GraphQLISODateTime) updatedAt!: Date;
+
+
   @Field(() => RsvpChoice, {
     nullable: true,
     description: "RSVP-Antwort (YES/NO), optional.",
   })
   rsvpChoice?: RsvpChoice;
+
+  @Field(() => GraphQLISODateTime, { nullable: true }) rsvpAt?: Date | null;
+  @Field(() => Boolean, {
+    nullable: true,
+    description:
+      "Admin-Approval. Wenn das DB-Schema dieses Feld enthält, wird es hier gespiegelt.",
+  })
+  approved?: boolean;
+
+  @Field(() => GraphQLISODateTime, { nullable: true }) approvedAt?: Date | null;
+  @Field({ nullable: true }) approvedById?: string | null;
+
 
   @Field(() => Int, {
     description:
@@ -49,16 +66,13 @@ export class Invitation {
     nullable: true,
     description: "Liste der IDs der Plus-Ones, die dieser Gast eingeladen hat.",
   })
+    
+    
   @IsOptional()
   @IsBoolean({ each: true })
   plusOnes?: Invitation[];
 
-  @Field(() => Boolean, {
-    nullable: true,
-    description:
-      "Admin-Approval. Wenn das DB-Schema dieses Feld enthält, wird es hier gespiegelt.",
-  })
-  approved?: boolean;
+
   // Zeitstempel sind in deinem Minimal-Schema nicht enthalten;
   // falls du createdAt/updatedAt hinzufügst, ergänzen wir:
   // @Field(() => Date) createdAt!: Date;

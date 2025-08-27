@@ -19,7 +19,7 @@ export class EventMutationResolver {
     return this.service.update(id, rest);
   }
 
-  @Mutation(() => Event, { name: 'deleteEvent' })
+  @Mutation(() => Boolean, { name: 'deleteEvent' })
   delete(@Args('id', { type: () => ID }) id: string) {
     return this.service.remove(id);
   }

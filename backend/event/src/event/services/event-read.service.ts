@@ -1,5 +1,6 @@
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Event } from '../models/entities/event.entity.js';
 
 @Injectable()
 export class EventReadService {

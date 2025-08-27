@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, GraphQLISODateTime, ID, ObjectType } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
 import { PresenceState } from '../enums/presenceState.enum.js';
 
@@ -17,6 +15,8 @@ export class Ticket {
   @IsString()
   invitationId!: string;
 
+  @Field(() => ID, { nullable: true }) guestProfileId?: string;
+
   @Field(() => ID)
   @IsString()
   seatId?: string;
@@ -29,4 +29,8 @@ export class Ticket {
 
   @Field(() => Boolean)
   revoked!: boolean;
+
+
+  @Field(() => GraphQLISODateTime) createdAt!: Date;
+  @Field(() => GraphQLISODateTime) updatedAt!: Date;
 }

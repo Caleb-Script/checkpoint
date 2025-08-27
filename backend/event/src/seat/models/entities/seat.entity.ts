@@ -5,7 +5,7 @@ export class Seat {
   @Field(() => ID)
   id!: string;
 
-  @Field()
+  @Field(() => ID)
   eventId!: string;
 
   @Field(() => String, { nullable: true })

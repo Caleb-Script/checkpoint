@@ -6,25 +6,39 @@
     "backend/*",
     "frontend"
   ],
+  "prisma": {
+    "seed": "tsx backend/prisma/seed.ts"
+  },
   "scripts": {
     "build": "pnpm -w -r run build",
     "dev": "pnpm -w -r --parallel --filter \"./backend/event\" --filter \"./backend/invitation\" --filter \"./backend/ticket\" --filter \"./backend/auth\" run dev",
     "lint": "npm -ws run lint",
     "test": "npm -ws run test",
     "prettier": "prettier --cache --write \"**/src/**/*.{ts,tsx}\"",
+     "event:gen": "pnpm -w --filter ./backend/event run gen",
+    "event:migrate": "pnpm -w --filter ./backend/event run migrate",
+    "event:reset": "pnpm -w --filter ./backend/event run reset",
+    "event:seed": "pnpm -w --filter ./backend/event run seed",
 
-    "prisma:gen": "prisma generate --schema backend/prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema backend/prisma/schema.prisma",
-    "prisma:deploy": "prisma migrate deploy --schema backend/prisma/schema.prisma",
-    "prisma:studio": "prisma studio --schema backend/prisma/schema.prisma",
-    "prisma:reset": "prisma migrate reset --schema backend/prisma/schema.prisma",
+    "invitation:gen": "pnpm -w --filter ./backend/invitation run gen",
+    "invitation:migrate": "pnpm -w --filter ./backend/invitation run migrate",
+    "invitation:reset": "pnpm -w --filter ./backend/invitation run reset",
+    "invitation:seed": "pnpm -w --filter ./backend/invitation run seed",
 
-     "ios:add": "pnpm -w --filter ./frontend run ios:add || echo '⏭️  frontend nicht vorhanden'",
-    "ios:update": "pnpm -w --filter ./frontend run ios:update || echo '⏭️  frontend nicht vorhanden'"
+    "ticket:gen": "pnpm -w --filter ./backend/ticket run gen",
+    "ticket:migrate": "pnpm -w --filter ./backend/ticket run migrate",
+    "ticket:reset": "pnpm -w --filter ./backend/ticket run reset",
+    "ticket:seed": "pnpm -w --filter ./backend/ticket run seed"
   },
   "devDependencies": {
+    "@prisma/client": "^6.14.0",
+    "@types/node": "^24.3.0",
     "concurrently": "^9.0.0",
     "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0"
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "prisma": "^6.14.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6"
   }
 }
