@@ -1,6 +1,6 @@
-import { PrismaModule } from './prisma/prisma.module.js';
 import { EventModule } from './event/event.module.js';
 import { LoggerModule } from './logger/logger.module.js';
+import { PrismaModule } from './prisma/prisma.module.js';
 import { SeatModule } from './seat/seat.module.js';
 import {
   ApolloFederationDriver,

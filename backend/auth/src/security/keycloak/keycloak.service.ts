@@ -155,7 +155,7 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
     this.#kafkaProducerService = kafkaProducerService;
     this.#tracer = trace.getTracer(KeycloakService.name);
     this.#traceContextProvider = traceContextProvider;
-    this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
+    // this.#logger.debug('keycloakClient=%o', this.#keycloakClient.defaults);
   }
 
   async onModuleInit(): Promise<void> {

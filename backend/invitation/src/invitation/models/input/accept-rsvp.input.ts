@@ -1,5 +1,6 @@
 // checkpoint/services/invitation/src/graphql/inputs/create-invitation.input.ts
 import { Field, ID, InputType, Int } from "@nestjs/graphql";
+import { RsvpChoice } from "../enums/rsvp-choice.enum";
 
 @InputType({
   description: "",
@@ -16,4 +17,15 @@ export class AcceptRSVPInput {
 
   @Field(() => String, { description: "Telefonnummer", nullable: true })
   mobile?: string;
+}
+
+@InputType({
+  description: "",
+})
+export class RSVPReply {
+  @Field(() => RsvpChoice)
+  reply!: RsvpChoice;
+
+  @Field(() => AcceptRSVPInput, { nullable: true })
+  input?: AcceptRSVPInput;
 }

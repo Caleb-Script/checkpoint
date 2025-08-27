@@ -18,7 +18,9 @@ export class InvitationQueryResolver {
   }
 
   @Query(() => [Invitation], { name: "plusOnesByInvitationId" })
-  getMyInvitationsByInvitationId(@Args("id", { type: () => ID }) invitationId: string) {
+  getMyInvitationsByInvitationId(
+    @Args("id", { type: () => ID }) invitationId: string,
+  ) {
     return this.service.findAllPlusOnes(invitationId);
   }
 }

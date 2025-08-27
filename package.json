@@ -31,14 +31,8 @@
     "ticket:seed": "pnpm -w --filter ./backend/ticket run seed"
   },
   "devDependencies": {
-    "@prisma/client": "^6.14.0",
-    "@types/node": "^24.3.0",
     "concurrently": "^9.0.0",
     "prettier": "^3.5.3",
-    "prettier-plugin-organize-imports": "^4.1.0",
-    "prisma": "^6.14.0"
-  },
-  "dependencies": {
-    "@nestjs/common": "^11.1.6"
+    "prettier-plugin-organize-imports": "^4.1.0"
   }
 }

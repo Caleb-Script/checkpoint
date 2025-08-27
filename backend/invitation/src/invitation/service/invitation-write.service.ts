@@ -18,7 +18,7 @@ import { getKafkaTopicsBy } from "../../messaging/kafka-topic.properties";
 import { trace, Tracer, context as otelContext } from "@opentelemetry/api";
 import { TraceContextProvider } from "../../trace/trace-context.provider";
 import { handleSpanError } from "../utils/error.util";
-import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
+import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input";
 import { Invitation } from "../models/entity/invitation.entity";
 import { PrismaService } from "../../prisma/prisma.service";
 
@@ -47,11 +47,11 @@ export class InvitationWriteService {
     this.#traceContextProvider = traceContextProvider;
   }
 
-  // async onModuleInit(): Promise<void> {
-  //   await this.#kafkaConsumerService.consume({
-  //     topics: getKafkaTopicsBy(["user"]),
-  //   });
-  // }
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(["user"]),
+    });
+  }
 
   async addUserId({
     userId,
@@ -87,6 +87,25 @@ export class InvitationWriteService {
         }
       },
     );
+  }
+
+  async reply(arg0: { id: string; reply: RSVPReply }) {
+    this.#logger.debug("Replay:");
+    const { id, reply } = arg0;
+    const { reply: reply1, input } = reply;
+
+    if (reply1 === RsvpChoice.NO) {
+      return await this.prisma.invitation.update({
+        where: { id },
+        data: {
+          rsvpChoice: reply1,
+          status: InvitationStatus.DECLINED,
+        },
+      });
+    } else {
+      if (!input) throw new Error("keine Input Daten gegeben");
+      return await this.accept({ id, input });
+    }
   }
 
   /**
@@ -147,10 +166,14 @@ export class InvitationWriteService {
 
   async create(input: InvitationCreateInput) {
     const { eventId, firstName, lastName } = input;
-    this.#logger.debug('create: input=%o', input);
-    this.#logger.debug('Einladung für %s %s', firstName, lastName);
+    this.#logger.debug("create: input=%o", input);
+    this.#logger.debug("Einladung für %s %s", firstName, lastName);
 
-    if(input.invitedByInvitationId) this.#logger.debug('eingeladen von der ID: %s', input.invitedByInvitationId)
+    if (input.invitedByInvitationId)
+      this.#logger.debug(
+        "eingeladen von der ID: %s",
+        input.invitedByInvitationId,
+      );
 
     if (!input.eventId) throw new BadRequestException("eventId is required");
     if (typeof input.maxInvitees === "number" && input.maxInvitees < 0) {
@@ -172,7 +195,7 @@ export class InvitationWriteService {
 
   async createPlusOne(input) {
     const { eventId, invitedByInvitationId, firstName, lastName } = input;
-    this.#logger.debug('createPlusOne: input=%o', input);
+    this.#logger.debug("createPlusOne: input=%o", input);
     if (!eventId) throw new BadRequestException("eventId is required");
     if (!invitedByInvitationId) {
       throw new BadRequestException(
@@ -201,9 +224,7 @@ export class InvitationWriteService {
         });
 
         if (!exists) {
-          throw new NotFoundException(
-            "Keine Einladung für dieses Event!",
-          );
+          throw new NotFoundException("Keine Einladung für dieses Event!");
         }
         // Existiert, aber keine Plus-Ones mehr frei
         throw new BadRequestException(
@@ -231,7 +252,6 @@ export class InvitationWriteService {
           plusOnes: { push: created.id },
         },
       });
-
 
       return created;
     });
@@ -320,8 +340,8 @@ export class InvitationWriteService {
   }
 
   /**
- * Löscht ein einzelnes Plus-One (Child) und erhöht das maxInvitees der Parent-Einladung um 1.
- */
+   * Löscht ein einzelnes Plus-One (Child) und erhöht das maxInvitees der Parent-Einladung um 1.
+   */
   async deletePlusOne(id: string) {
     return await this.prisma.$transaction(async (tx) => {
       // Child holen
@@ -343,7 +363,9 @@ export class InvitationWriteService {
         select: { id: true, plusOnes: true },
       });
       if (!parent) {
-        throw new NotFoundException("Parent invitation (invitedByInvitationId) not found for this event");
+        throw new NotFoundException(
+          "Parent invitation (invitedByInvitationId) not found for this event",
+        );
       }
 
       // Child löschen
@@ -358,7 +380,11 @@ export class InvitationWriteService {
       if (parent) {
         await tx.invitation.update({
           where: { id: child.invitedByInvitationId! },
-          data: { plusOnes: { set: (parent.plusOnes ?? []).filter(id => id !== child.id) } },
+          data: {
+            plusOnes: {
+              set: (parent.plusOnes ?? []).filter((id) => id !== child.id),
+            },
+          },
         });
       }
 
@@ -418,6 +444,4 @@ export class InvitationWriteService {
       return deleted;
     });
   }
-
-
 }

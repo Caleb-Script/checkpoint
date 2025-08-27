@@ -23,8 +23,8 @@ export class InvitationCreateInput {
   invitedByInvitationId?: string;
 
   @Field(() => String, { nullable: true })
-  firstName?: string
+  firstName?: string;
 
   @Field(() => String, { nullable: true })
-  lastName?: string
+  lastName?: string;
 }

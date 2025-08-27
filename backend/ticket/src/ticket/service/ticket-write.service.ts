@@ -11,7 +11,6 @@ import {
 import { CreateTicketInput } from '../models/input/create-ticket.input.js';
 import { TicketReadService } from './ticket-read.service.js';
 import { randomUUID } from 'crypto';
-import { PresenceState } from '@prisma/client';
 import {
   signTicketJwt,
   TicketJwtPayload,
@@ -27,6 +26,7 @@ import { LoggerPlus } from '../../logger/logger-plus.js';
 import { trace, Tracer, context as otelContext } from '@opentelemetry/api';
 import { handleSpanError } from '../utils/error.util.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { PresenceState } from '../models/enums/presenceState.enum.js';
 
 @Injectable()
 export class TicketWriteService {
@@ -55,11 +55,11 @@ export class TicketWriteService {
     this.#traceContextProvider = traceContextProvider;
   }
 
-  // async onModuleInit(): Promise<void> {
-  //   await this.#kafkaConsumerService.consume({
-  //     topics: getKafkaTopicsBy(['user']),
-  //   });
-  // }
+  async onModuleInit(): Promise<void> {
+    await this.#kafkaConsumerService.consume({
+      topics: getKafkaTopicsBy(['user']),
+    });
+  }
 
   async create(input: CreateTicketInput) {
     return await this.#tracer.startActiveSpan('ticket.create', async (span) => {

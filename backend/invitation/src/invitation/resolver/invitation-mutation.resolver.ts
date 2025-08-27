@@ -4,7 +4,7 @@ import { Invitation } from "../models/entity/invitation.entity";
 import { InvitationWriteService } from "../service/invitation-write.service";
 import { InvitationCreateInput } from "../models/input/create-invitation.input";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
-import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
+import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input";
 
 @Resolver(() => Invitation)
 export class InvitationMutationResolver {
@@ -33,11 +33,11 @@ export class InvitationMutationResolver {
   }
 
   @Mutation(() => Invitation)
-  async acceptInvitation(
+  async replyInvitation(
     @Args("id", { type: () => ID }) id: string,
-    @Args("input") input: AcceptRSVPInput,
+    @Args("reply") reply: RSVPReply,
   ): Promise<Invitation> {
-    return this.service.accept({ id, input }) as Promise<Invitation>;
+    return this.service.reply({ id, reply }) as Promise<Invitation>;
   }
 
   @Mutation(() => Invitation)
@@ -58,8 +58,11 @@ export class InvitationMutationResolver {
   // 🔻 NEU: Alle Plus-Ones einer Parent-Einladung löschen (gibt alle Slots zurück)
   @Mutation(() => [Invitation])
   async removeAllPlusOnesByInvitationId(
-    @Args("invitedByInvitationId", { type: () => ID }) invitedByInvitationId: string,
+    @Args("invitedByInvitationId", { type: () => ID })
+    invitedByInvitationId: string,
   ): Promise<Invitation[]> {
-    return this.service.deleteAllPlusOnes(invitedByInvitationId) as Promise<Invitation[]>;
+    return this.service.deleteAllPlusOnes(invitedByInvitationId) as Promise<
+      Invitation[]
+    >;
   }
 }

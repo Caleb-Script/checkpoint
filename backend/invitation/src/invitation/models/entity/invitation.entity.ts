@@ -1,5 +1,11 @@
 // checkpoint/services/invitation/src/graphql/entities/invitation.entity.ts
-import { Field, GraphQLISODateTime, ID, Int, ObjectType } from "@nestjs/graphql";
+import {
+  Field,
+  GraphQLISODateTime,
+  ID,
+  Int,
+  ObjectType,
+} from "@nestjs/graphql";
 import { InvitationStatus } from "../enums/invitation-status.enum";
 import { RsvpChoice } from "../enums/rsvp-choice.enum";
 import { IsBoolean, IsOptional } from "class-validator";
@@ -31,10 +37,8 @@ export class Invitation {
   })
   status!: InvitationStatus;
 
-
   @Field(() => GraphQLISODateTime) createdAt!: Date;
   @Field(() => GraphQLISODateTime) updatedAt!: Date;
-
 
   @Field(() => RsvpChoice, {
     nullable: true,
@@ -53,11 +57,9 @@ export class Invitation {
   @Field(() => ID, {
     nullable: true,
   })
-  approvedById?: string
-
+  approvedById?: string;
 
   @Field(() => GraphQLISODateTime, { nullable: true }) approvedAt?: Date | null;
-
 
   @Field(() => Int, {
     description:
@@ -75,7 +77,7 @@ export class Invitation {
   @Field(() => ID, {
     nullable: true,
   })
-  invitedById?: string
+  invitedById?: string;
 
   @Field(() => [String], {
     nullable: true,
