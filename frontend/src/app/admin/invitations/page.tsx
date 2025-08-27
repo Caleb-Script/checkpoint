@@ -15,6 +15,7 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -48,13 +49,13 @@ import {
   tryNativeShare,
   whatsappShareUrl,
 } from '../../../lib/link';
-import { EventsQueryResult } from '../../../types/event/event.type';
+import { Event, EventsQueryResult } from '../../../types/event/event.type';
 import {
   Invitation,
   InvitationsQueryResult,
 } from '../../../types/invitation/invitation.type';
 
-export default function InvitationsPage(): React.JSX.Element {
+function InvitationsInnerPage() {
   const search = useSearchParams();
   const router = useRouter();
   const selectedEventId = search.get('eventId') ?? '';
@@ -222,7 +223,7 @@ export default function InvitationsPage(): React.JSX.Element {
 
           {/* Filter: Event-Auswahl */}
           <Grid container spacing={1} sx={{ mb: 1 }} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel id="event-select-label">Event</InputLabel>
                 <Select
@@ -235,7 +236,7 @@ export default function InvitationsPage(): React.JSX.Element {
                     <em>Alle Events</em>
                   </MenuItem>
                   {!evLoading &&
-                    events.map((ev: EventType) => (
+                    events.map((ev: Event) => (
                       <MenuItem key={ev.id} value={ev.id}>
                         {ev.name} —{' '}
                         {new Date(ev.startsAt).toLocaleDateString('de-DE')}
@@ -249,7 +250,7 @@ export default function InvitationsPage(): React.JSX.Element {
           {/* Create Form – nimmt automatisch die gewählte EventId */}
           <Box component="form" onSubmit={onCreate}>
             <Grid container spacing={1} alignItems="center">
-              <Grid item xs={12} sm={6}>
+              <Grid sx={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="event-create-select-label">
                     Event für neue Einladung
@@ -267,7 +268,7 @@ export default function InvitationsPage(): React.JSX.Element {
                     required
                   >
                     {!evLoading &&
-                      events.map((ev: EventType) => (
+                      events.map((ev: Event) => (
                         <MenuItem key={ev.id} value={ev.id}>
                           {ev.name}
                         </MenuItem>
@@ -275,7 +276,7 @@ export default function InvitationsPage(): React.JSX.Element {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={8} sm={3}>
+              <Grid sx={{ xs: 8, sm: 3 }}>
                 <TextField
                   label="maxInvitees"
                   type="number"
@@ -291,7 +292,7 @@ export default function InvitationsPage(): React.JSX.Element {
                   size="small"
                 />
               </Grid>
-              <Grid item xs={4} sm="auto">
+              <Grid sx={{ xs: 4, sm: 'auto' }}>
                 <Button
                   type="submit"
                   variant="contained"
@@ -491,5 +492,27 @@ export default function InvitationsPage(): React.JSX.Element {
         </Button>
       </CardActions>
     </Stack>
+  );
+}
+
+// Default Export mit Suspense-Wrapper
+export default function InvitationsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <Box
+          sx={{
+            minHeight: '70vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <InvitationsInnerPage />
+    </React.Suspense>
   );
 }

@@ -42,7 +42,7 @@ function toLocal(dt: string | number | Date): string {
   }
 }
 
-export default function EventsListPage(): JSX.Element {
+export default function EventsListPage() {
   const logger = getLogger(EventsListPage.name);
 
   const { data, loading, error, refetch } = useQuery<EventsQueryResult>(

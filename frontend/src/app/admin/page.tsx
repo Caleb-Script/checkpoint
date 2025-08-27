@@ -14,6 +14,7 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -40,23 +41,15 @@ import { EVENTS } from '../../graphql/event/query';
 import { INVITATIONS } from '../../graphql/invitation/query';
 import { GET_TICKETS } from '../../graphql/ticket/query';
 
+import { Suspense } from 'react';
 import type {
   EventsQueryResult,
   Event as EventType,
 } from '../../types/event/event.type';
 import type { InvitationsQueryResult } from '../../types/invitation/invitation.type';
+import { GetTicketsResult } from '../../types/ticket/ticket.type';
 
-type TicketRow = {
-  id: string;
-  eventId: string;
-  invitationId: string;
-  seatId?: string | null;
-  currentState: 'INSIDE' | 'OUTSIDE';
-};
-
-type GetTicketsResult = { getTickets: TicketRow[] };
-
-export default function AdminHomePage(): JSX.Element {
+function AdminHomePageInner() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const roles: string[] = Array.isArray(user?.roles)
     ? (user?.roles as string[])
@@ -205,7 +198,7 @@ export default function AdminHomePage(): JSX.Element {
 
           {/* Event-Filter + KPIs */}
           <Grid container spacing={1} alignItems="center">
-            <Grid item xs={12} sm={7}>
+            <Grid sx={{ xs: 12, sm: 7 }}>
               <FormControl fullWidth size="small">
                 <InputLabel id="event-select-label">Event-Kontext</InputLabel>
                 <Select
@@ -227,7 +220,7 @@ export default function AdminHomePage(): JSX.Element {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={5}>
+            <Grid sx={{ xs: 12, sm: 5 }}>
               <Stack
                 direction="row"
                 spacing={1}
@@ -248,7 +241,7 @@ export default function AdminHomePage(): JSX.Element {
 
       {/* Schnellzugriffe */}
       <Grid container spacing={1.25}>
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea component={Link} href="/admin/event">
               <CardContent>
@@ -281,7 +274,7 @@ export default function AdminHomePage(): JSX.Element {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea
               component={Link}
@@ -324,7 +317,7 @@ export default function AdminHomePage(): JSX.Element {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea
               component={Link}
@@ -368,7 +361,7 @@ export default function AdminHomePage(): JSX.Element {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea component={Link} href="/scan">
               <CardContent>
@@ -398,7 +391,7 @@ export default function AdminHomePage(): JSX.Element {
         </Grid>
 
         {/* Platzhalter: Benutzer/Rollen & Einstellungen */}
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea component={Link} href="/admin/guests">
               <CardContent>
@@ -426,7 +419,7 @@ export default function AdminHomePage(): JSX.Element {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid sx={{ xs: 12, sm: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea component={Link} href="/admin/settings">
               <CardContent>
@@ -452,7 +445,7 @@ export default function AdminHomePage(): JSX.Element {
       {/* Kontext-Aktionen */}
       <Box>
         <Grid container spacing={1.25}>
-          <Grid item xs={12} sm="auto">
+          <Grid sx={{ xs: 12, sm: 'auto' }}>
             <Button
               component={Link}
               href="/admin/event/new"
@@ -465,7 +458,7 @@ export default function AdminHomePage(): JSX.Element {
           </Grid>
           {selectedEventId && (
             <>
-              <Grid item xs={12} sm="auto">
+              <Grid sx={{ xs: 12, sm: 'auto' }}>
                 <Button
                   component={Link}
                   href={`/admin/event/${encodeURIComponent(selectedEventId)}`}
@@ -475,7 +468,7 @@ export default function AdminHomePage(): JSX.Element {
                   Zum Event
                 </Button>
               </Grid>
-              <Grid item xs={12} sm="auto">
+              <Grid sx={{ xs: 12, sm: 'auto' }}>
                 <Button
                   component={Link}
                   href={`/admin/event/${encodeURIComponent(selectedEventId)}/invite`}
@@ -491,5 +484,27 @@ export default function AdminHomePage(): JSX.Element {
         </Grid>
       </Box>
     </Stack>
+  );
+}
+
+// Default Export mit Suspense-Wrapper
+export default function AdminHomePage() {
+  return (
+    <Suspense
+      fallback={
+        <Box
+          sx={{
+            minHeight: '70vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <AdminHomePageInner />
+    </Suspense>
   );
 }

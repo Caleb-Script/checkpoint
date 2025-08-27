@@ -140,7 +140,7 @@ function rsvpChipColor(rsvp: RsvpChoice): 'default' | 'success' | 'error' {
 // Page
 // ---------------------------
 
-export default function MyPlusOnesPage(): JSX.Element {
+export default function MyPlusOnesPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const parentInvitationId = user?.invitationId ?? null;
@@ -450,7 +450,7 @@ export default function MyPlusOnesPage(): JSX.Element {
                   </Stack>
 
                   <Grid container spacing={0.75} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={8}>
+                    <Grid sx={{ xs: 12, sm: 8 }}>
                       <TextField
                         value={po.id}
                         size="small"
@@ -459,7 +459,7 @@ export default function MyPlusOnesPage(): JSX.Element {
                         inputProps={{ readOnly: true }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={4}>
+                    <Grid sx={{ xs: 12, sm: 4 }}>
                       <Stack
                         direction="row"
                         spacing={1}
@@ -495,7 +495,7 @@ export default function MyPlusOnesPage(): JSX.Element {
       {/* Footer-Actions */}
       <Box>
         <Grid container spacing={1.25}>
-          <Grid item xs={12} sm="auto">
+          <Grid sx={{ xs: 12, sm: 'auto' }}>
             <Button
               component={Link}
               href="/profile"
@@ -506,7 +506,7 @@ export default function MyPlusOnesPage(): JSX.Element {
             </Button>
           </Grid>
           {parent && (
-            <Grid item xs={12} sm="auto">
+            <Grid sx={{ xs: 12, sm: 'auto' }}>
               <Button
                 component={Link}
                 href={`/invitations?eventId=${encodeURIComponent(parent.eventId)}`}

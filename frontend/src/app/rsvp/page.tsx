@@ -35,7 +35,7 @@ import {
 import { INVITATION } from '../../graphql/invitation/query';
 import type { Invitation } from '../../types/invitation/invitation.type';
 
-export default function RsvpPage(): JSX.Element {
+export default function RsvpPage() {
   // Invitation-ID aus URL (?inv=…)
   const [invId, setInvId] = React.useState<string>('');
   React.useEffect(() => {

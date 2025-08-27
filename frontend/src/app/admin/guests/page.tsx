@@ -24,7 +24,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PeopleIcon from '@mui/icons-material/People';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-import { JSX } from 'react';
 import { GET_USERS } from '../../../graphql/auth/mutation';
 import { copyToClipboard } from '../../../lib/link';
 import { KeycloakUser } from '../../../types/auth/auth.type';
@@ -40,7 +39,7 @@ const monoSx = {
 // ------------------------------------------------------------------
 // Page
 // ------------------------------------------------------------------
-export default function AdminGuestsPage(): JSX.Element {
+export default function AdminGuestsPage() {
   const { data, loading, error, refetch } = useQuery<{
     getUsers: KeycloakUser[];
   }>(GET_USERS, {
@@ -130,7 +129,7 @@ export default function AdminGuestsPage(): JSX.Element {
 
                 <Grid container spacing={1}>
                   {/* User-ID */}
-                  <Grid item xs={12}>
+                  <Grid sx={{ xs: 12 }}>
                     <TextField
                       label="User ID"
                       value={u.id}
@@ -153,7 +152,7 @@ export default function AdminGuestsPage(): JSX.Element {
                   </Grid>
 
                   {/* Invitation-ID */}
-                  <Grid item xs={12}>
+                  <Grid sx={{ xs: 12 }}>
                     <TextField
                       label="Invitation ID"
                       value={invitation}
@@ -181,7 +180,7 @@ export default function AdminGuestsPage(): JSX.Element {
                   </Grid>
 
                   {/* Ticket-IDs */}
-                  <Grid item xs={12}>
+                  <Grid sx={{ xs: 12 }}>
                     <Stack spacing={0.75}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         Ticket IDs

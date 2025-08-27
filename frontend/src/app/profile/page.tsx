@@ -53,7 +53,7 @@ function roleColor(role: Role): 'default' | 'success' | 'warning' | 'info' {
   return 'default';
 }
 
-export default function ProfilePage(): JSX.Element {
+export default function ProfilePage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
 
@@ -202,7 +202,7 @@ export default function ProfilePage(): JSX.Element {
           {/* Basisdaten */}
           <Grid container spacing={1.25} sx={{ mt: 2 }}>
             {email && (
-              <Grid item xs={12}>
+              <Grid sx={{ xs: 12 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <BadgeIcon fontSize="small" />
                   <Typography variant="body2">
@@ -218,7 +218,7 @@ export default function ProfilePage(): JSX.Element {
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <PersonIcon fontSize="small" />
                 <Typography variant="body2">
@@ -235,7 +235,7 @@ export default function ProfilePage(): JSX.Element {
 
             {/* Rollen */}
             {Array.isArray(roles) && roles.length > 0 && (
-              <Grid item xs={12}>
+              <Grid sx={{ xs: 12 }}>
                 <Typography variant="body2" sx={{ mb: 0.5 }}>
                   <b>Rollen</b>
                 </Typography>
@@ -268,7 +268,7 @@ export default function ProfilePage(): JSX.Element {
 
           {/* Einladung & Tickets */}
           <Grid container spacing={1.25}>
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <Typography variant="body2" sx={{ mb: 0.5 }}>
                 <b>Einladung</b>
               </Typography>
@@ -307,7 +307,7 @@ export default function ProfilePage(): JSX.Element {
               </Card>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <Typography variant="body2" sx={{ mb: 0.5 }}>
                 <b>Tickets</b>
               </Typography>

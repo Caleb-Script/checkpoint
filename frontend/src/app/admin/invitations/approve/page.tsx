@@ -28,25 +28,17 @@ import {
   Typography,
 } from '@mui/material';
 import * as React from 'react';
-import { EVENT_SEATS } from '../../../graphql/event/query';
-import { UPDATE_INVITATION } from '../../../graphql/invitation/mutation';
-import { INVITATIONS } from '../../../graphql/invitation/query';
-import { CREATE_TICKET } from '../../../graphql/ticket/mutation';
-import { GET_TICKETS } from '../../../graphql/ticket/query';
+import { EVENT_SEATS } from '../../../../graphql/event/query';
+import { UPDATE_INVITATION } from '../../../../graphql/invitation/mutation';
+import { INVITATIONS } from '../../../../graphql/invitation/query';
+import { CREATE_TICKET } from '../../../../graphql/ticket/mutation';
+import { GET_TICKETS } from '../../../../graphql/ticket/query';
+import { Seat } from '../../../../types/event/seat.type';
 import {
   Invitation,
   InvitationsQueryResult,
-} from '../../../types/invitation/invitation.type';
-
-type SeatRow = {
-  id: string;
-  eventId: string;
-  section?: string | null;
-  row?: string | null;
-  number?: string | null;
-  note?: string | null;
-  table?: string | null;
-};
+} from '../../../../types/invitation/invitation.type';
+import { Ticket } from '../../../../types/ticket/ticket.type';
 
 export default function ApprovePage() {
   const { data, loading, error, refetch } = useQuery<InvitationsQueryResult>(
@@ -76,16 +68,16 @@ export default function ApprovePage() {
   const [filter, setFilter] = React.useState('');
   const [onlyFree, setOnlyFree] = React.useState(true);
 
-  function seatsForEvent(eventId: string): SeatRow[] {
+  function seatsForEvent(eventId: string): Seat[] {
     const all = seatsData?.eventSeats ?? [];
     if (!all.length) return [];
     // belegte seatIds über Tickets bestimmen:
     const taken = new Set(
       (ticketsData?.getTickets ?? [])
-        .filter((t: any) => t.eventId === eventId && t.seatId)
-        .map((t: any) => t.seatId),
+        .filter((t: Ticket) => t.eventId === eventId && t.seatId)
+        .map((t: Ticket) => t.seatId),
     );
-    let list = all as SeatRow[];
+    let list = all as Seat[];
     if (onlyFree) list = list.filter((s) => !taken.has(s.id));
     if (filter) {
       const f = filter.toLowerCase();

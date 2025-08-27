@@ -384,7 +384,7 @@ export default function EventDetailPage(): React.JSX.Element {
         <CardContent>
           <Box component="form" onSubmit={onCreateSeat}>
             <Grid container spacing={1}>
-              <Grid item xs={6} sm={3}>
+              <Grid sx={{ xs: 6, sm: 3 }}>
                 <TextField
                   size="small"
                   label="Section"
@@ -396,7 +396,7 @@ export default function EventDetailPage(): React.JSX.Element {
                   inputMode="text"
                 />
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid sx={{ xs: 6, sm: 3 }}>
                 <TextField
                   size="small"
                   label="Row"
@@ -408,7 +408,7 @@ export default function EventDetailPage(): React.JSX.Element {
                   inputMode="text"
                 />
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid sx={{ xs: 6, sm: 3 }}>
                 <TextField
                   size="small"
                   label="Number"
@@ -420,7 +420,7 @@ export default function EventDetailPage(): React.JSX.Element {
                   inputMode="numeric"
                 />
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid sx={{ xs: 6, sm: 3 }}>
                 <TextField
                   size="small"
                   label="Table"
@@ -432,7 +432,7 @@ export default function EventDetailPage(): React.JSX.Element {
                   inputMode="numeric"
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid sx={{ xs: 12 }}>
                 <TextField
                   size="small"
                   label="Note"
@@ -445,7 +445,7 @@ export default function EventDetailPage(): React.JSX.Element {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid sx={{ xs: 12 }}>
                 <Button
                   type="submit"
                   fullWidth

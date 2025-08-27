@@ -15,6 +15,7 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -36,22 +37,16 @@ import EventIcon from '@mui/icons-material/Event';
 import PersonIcon from '@mui/icons-material/Person';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import RefreshIcon from '@mui/icons-material/Refresh';
-
-import { EVENTS } from '../../graphql/event/query';
-import { DELETE_TICKET } from '../../graphql/ticket/mutation';
-import { GET_TICKETS } from '../../graphql/ticket/query';
-
-import { copyToClipboard } from '../../lib/link';
-import type {
-  EventsQueryResult,
-  Event as EventType,
-} from '../../types/event/event.type';
-import { Ticket } from '../../types/ticket/ticket.type';
-
-type GetTicketsResult = { getTickets: Ticket[] };
+import { Suspense } from 'react';
+import { EVENTS } from '../../../graphql/event/query';
+import { DELETE_TICKET } from '../../../graphql/ticket/mutation';
+import { GET_TICKETS } from '../../../graphql/ticket/query';
+import { copyToClipboard } from '../../../lib/link';
+import { Event, EventsQueryResult } from '../../../types/event/event.type';
+import { GetTicketsResult, Ticket } from '../../../types/ticket/ticket.type';
 
 const tz = 'Europe/Berlin';
-function toLocal(dt: string | number | Date): string {
+function _toLocal(dt: string | number | Date): string {
   try {
     return new Intl.DateTimeFormat('de-DE', {
       dateStyle: 'medium',
@@ -63,7 +58,7 @@ function toLocal(dt: string | number | Date): string {
   }
 }
 
-export default function TicketsPage(): React.JSX.Element {
+function TicketsInnerPage() {
   const search = useSearchParams();
   const router = useRouter();
   const selectedEventId = search.get('eventId') ?? '';
@@ -170,7 +165,7 @@ export default function TicketsPage(): React.JSX.Element {
 
           {/* Filter: Event-Auswahl */}
           <Grid container spacing={1} sx={{ mb: 1 }} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel id="event-select-label">Event</InputLabel>
                 <Select
@@ -183,7 +178,7 @@ export default function TicketsPage(): React.JSX.Element {
                     <em>Alle Events</em>
                   </MenuItem>
                   {!evLoading &&
-                    events.map((ev: EventType) => (
+                    events.map((ev: Event) => (
                       <MenuItem key={ev.id} value={ev.id}>
                         {ev.name} —{' '}
                         {new Date(ev.startsAt).toLocaleDateString('de-DE')}
@@ -334,5 +329,27 @@ export default function TicketsPage(): React.JSX.Element {
         ))}
       </Stack>
     </Stack>
+  );
+}
+
+// Default Export mit Suspense-Wrapper
+export default function TicketsPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box
+          sx={{
+            minHeight: '70vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <TicketsInnerPage />
+    </Suspense>
   );
 }

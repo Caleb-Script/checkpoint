@@ -128,11 +128,7 @@ function buildNavForRoles(roles: Role[]): NavItem[] {
   return items.sort((a, b) => order.indexOf(a.href) - order.indexOf(b.href));
 }
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}): JSX.Element {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const pathname = usePathname();
   const router = useRouter();

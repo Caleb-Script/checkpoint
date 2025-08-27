@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    "types": ["react", "react-dom", "node"],
     "incremental": true,
     "plugins": [
       {
@@ -22,7 +23,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "types": ["node", "./src/types"],
+
   "include": [
     "next-env.d.ts",
     "**/*.ts",
@@ -30,7 +31,8 @@
     ".next/types/**/*.ts",
     "src/lib/ws-server.js",
     "server.js",
-    "capacitor.config.js"
+    "capacitor.config.js",
+    "src/types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

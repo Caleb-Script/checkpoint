@@ -17,3 +17,12 @@ export type EventsQueryResult = {
 export type EventByIdQueryResult = {
   event: Event | null;
 };
+
+export type CreateEventInput = {
+  name: string;
+  startsAt: string; // datetime-local (YYYY-MM-DDTHH:mm)
+  endsAt: string; // datetime-local (YYYY-MM-DDTHH:mm)
+  allowReEntry: boolean;
+  rotateSeconds: number;
+  maxSeats: number;
+};

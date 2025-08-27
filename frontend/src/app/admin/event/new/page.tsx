@@ -27,6 +27,7 @@ import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { CREATE_EVENT } from '../../../../graphql/event/mutation';
 import { EVENTS } from '../../../../graphql/event/query';
 import type {
+  CreateEventInput,
   EventsQueryResult,
   Event as EventType,
 } from '../../../../types/event/event.type';
@@ -53,18 +54,8 @@ function localInputToISO(localStr: string): string {
   return new Date(localStr).toISOString();
 }
 
-// ---------- Types ----------
-type CreateEventInput = {
-  name: string;
-  startsAt: string; // datetime-local (YYYY-MM-DDTHH:mm)
-  endsAt: string; // datetime-local (YYYY-MM-DDTHH:mm)
-  allowReEntry: boolean;
-  rotateSeconds: number;
-  maxSeats: number;
-};
-
 // ---------- Component ----------
-export default function NewEventPage(): JSX.Element {
+export default function NewEventPage() {
   const router = useRouter();
 
   // sinnvolle Defaults: Start in +1h, Ende in +3h (lokal)
@@ -192,7 +183,7 @@ export default function NewEventPage(): JSX.Element {
 
         <Box component="form" onSubmit={submit}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <TextField
                 label="Name"
                 value={form.name}
@@ -205,7 +196,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Start"
                 type="datetime-local"
@@ -220,7 +211,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Ende"
                 type="datetime-local"
@@ -235,7 +226,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Token-Rotation (Sek.)"
                 type="number"
@@ -252,7 +243,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Max. Seats (optional)"
                 type="number"
@@ -265,7 +256,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <FormControlLabel
                 control={
                   <Switch
@@ -279,7 +270,7 @@ export default function NewEventPage(): JSX.Element {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <Stack direction="row" gap={1} flexWrap="wrap">
                 <Button
                   type="submit"

@@ -11,8 +11,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { INVITATIONS } from '../../../graphql/invitation/query';
-import { InvitationsQueryResult } from '../../../types/invitation/invitation.type';
+import { INVITATIONS } from '../../../../graphql/invitation/query';
+import { InvitationsQueryResult } from '../../../../types/invitation/invitation.type';
 
 export default function ResponsesPage() {
   const { data, loading, error, refetch } = useQuery<InvitationsQueryResult>(

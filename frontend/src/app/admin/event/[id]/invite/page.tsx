@@ -162,7 +162,7 @@ function parseCsv(text: string): CsvRow[] {
 }
 
 // ---------- Komponente ----------
-export default function EventAdminInvitePage(): JSX.Element {
+export default function EventAdminInvitePage() {
   const { id: eventId } = useParams<{ id: string }>();
 
   // Event Basisdaten
@@ -545,7 +545,7 @@ export default function EventAdminInvitePage(): JSX.Element {
         />
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid sx={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Default maxInvitees"
                 type="number"
@@ -557,7 +557,7 @@ export default function EventAdminInvitePage(): JSX.Element {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} sm="auto">
+            <Grid sx={{ xs: 12, sm: 'auto' }}>
               <input
                 ref={fileInputRef}
                 hidden
