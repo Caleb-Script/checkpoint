@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { PrismaService } from "./prisma.service";
 import { RsvpChoice } from "../models/enums/rsvp-choice.enum";
 import { InvitationStatus } from "../models/enums/invitation-status.enum";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
@@ -21,6 +20,7 @@ import { TraceContextProvider } from "../../trace/trace-context.provider";
 import { handleSpanError } from "../utils/error.util";
 import { AcceptRSVPInput } from "../models/input/accept-rsvp.input";
 import { Invitation } from "../models/entity/invitation.entity";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class InvitationWriteService {
@@ -47,11 +47,11 @@ export class InvitationWriteService {
     this.#traceContextProvider = traceContextProvider;
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(["user"]),
-    });
-  }
+  // async onModuleInit(): Promise<void> {
+  //   await this.#kafkaConsumerService.consume({
+  //     topics: getKafkaTopicsBy(["user"]),
+  //   });
+  // }
 
   async addUserId({
     userId,
@@ -94,6 +94,7 @@ export class InvitationWriteService {
    * Optional könnte hier ein Profil-/Ticket-Workflow über Events gestartet werden.
    */
   async accept({ id, input }: { id: string; input: AcceptRSVPInput }) {
+    const { lastName, firstName, email, mobile } = input;
     const Invitation = await this.readService.findOne(id);
 
     if (Invitation.rsvpChoice === RsvpChoice.YES)
@@ -114,6 +115,8 @@ export class InvitationWriteService {
                 data: {
                   rsvpChoice: RsvpChoice.YES,
                   status: InvitationStatus.ACCEPTED,
+                  lastName,
+                  firstName,
                 },
               });
 
@@ -122,9 +125,10 @@ export class InvitationWriteService {
               this.#kafkaProducerService.approved(
                 {
                   invitationId: id,
-                  firstName: input.firstName,
-                  lastName: input.lastName,
-                  emailData: input.email,
+                  firstName: firstName,
+                  lastName: lastName,
+                  emailData: email,
+                  mobile,
                 },
                 "invitation.write-service",
                 trace,
@@ -142,13 +146,21 @@ export class InvitationWriteService {
   }
 
   async create(input: InvitationCreateInput) {
+    const { eventId, firstName, lastName } = input;
+    this.#logger.debug('create: input=%o', input);
+    this.#logger.debug('Einladung für %s %s', firstName, lastName);
+
+    if(input.invitedByInvitationId) this.#logger.debug('eingeladen von der ID: %s', input.invitedByInvitationId)
+
     if (!input.eventId) throw new BadRequestException("eventId is required");
     if (typeof input.maxInvitees === "number" && input.maxInvitees < 0) {
       throw new BadRequestException("maxInvitees must be >= 0");
     }
 
     const data = {
-      eventId: input.eventId,
+      eventId,
+      firstName,
+      lastName,
       status: InvitationStatus.PENDING,
       maxInvitees: input.maxInvitees ?? 0,
       invitedByInvitationId: input.invitedByInvitationId ?? null,
@@ -159,7 +171,8 @@ export class InvitationWriteService {
   }
 
   async createPlusOne(input) {
-    const { eventId, invitedByInvitationId } = input;
+    const { eventId, invitedByInvitationId, firstName, lastName } = input;
+    this.#logger.debug('createPlusOne: input=%o', input);
     if (!eventId) throw new BadRequestException("eventId is required");
     if (!invitedByInvitationId) {
       throw new BadRequestException(
@@ -186,9 +199,10 @@ export class InvitationWriteService {
           where: { id: invitedByInvitationId, eventId },
           select: { id: true, maxInvitees: true },
         });
+
         if (!exists) {
           throw new NotFoundException(
-            "Parent invitation (invitedByInvitationId) not found for this event",
+            "Keine Einladung für dieses Event!",
           );
         }
         // Existiert, aber keine Plus-Ones mehr frei
@@ -204,8 +218,20 @@ export class InvitationWriteService {
           status: InvitationStatus.PENDING,
           maxInvitees: 0,
           invitedByInvitationId,
+          lastName,
+          firstName,
         },
       });
+
+      // 3) Child-ID zur String-Liste des Parents hinzufügen
+      //    -> benötigt in Prisma-Schema: plusOnes String[] @default([])
+      await tx.invitation.update({
+        where: { id: invitedByInvitationId },
+        data: {
+          plusOnes: { push: created.id },
+        },
+      });
+
 
       return created;
     });
@@ -292,4 +318,106 @@ export class InvitationWriteService {
     const found = await this.prisma.invitation.findUnique({ where: { id } });
     if (!found) throw new NotFoundException("Invitation not found");
   }
+
+  /**
+ * Löscht ein einzelnes Plus-One (Child) und erhöht das maxInvitees der Parent-Einladung um 1.
+ */
+  async deletePlusOne(id: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      // Child holen
+      const child = await tx.invitation.findUnique({
+        where: { id },
+        select: { id: true, eventId: true, invitedByInvitationId: true },
+      });
+
+      if (!child) {
+        throw new NotFoundException("Invitation not found");
+      }
+      if (!child.invitedByInvitationId) {
+        throw new BadRequestException("Invitation is not a Plus-One");
+      }
+
+      // Parent validieren
+      const parent = await tx.invitation.findFirst({
+        where: { id: child.invitedByInvitationId, eventId: child.eventId },
+        select: { id: true, plusOnes: true },
+      });
+      if (!parent) {
+        throw new NotFoundException("Parent invitation (invitedByInvitationId) not found for this event");
+      }
+
+      // Child löschen
+      const deleted = await tx.invitation.delete({ where: { id: child.id } });
+
+      // Parent-Slot zurückgeben
+      await tx.invitation.update({
+        where: { id: parent.id },
+        data: { maxInvitees: { increment: 1 } },
+      });
+
+      if (parent) {
+        await tx.invitation.update({
+          where: { id: child.invitedByInvitationId! },
+          data: { plusOnes: { set: (parent.plusOnes ?? []).filter(id => id !== child.id) } },
+        });
+      }
+
+      return deleted;
+    });
+  }
+
+  /**
+   * Löscht alle Plus-Ones einer Parent-Einladung und erhöht maxInvitees entsprechend um die Anzahl.
+   */
+  async deleteAllPlusOnes(invitedByInvitationId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      // Parent prüfen (+ plusOnes laden)
+      const parent = await tx.invitation.findUnique({
+        where: { id: invitedByInvitationId },
+        select: { id: true, eventId: true, plusOnes: true },
+      });
+      if (!parent) throw new NotFoundException("Invitation not found");
+
+      // Alle Children sammeln
+      const children = await tx.invitation.findMany({
+        where: { invitedByInvitationId, eventId: parent.eventId },
+        select: { id: true },
+      });
+
+      if (children.length === 0) {
+        // Nichts zu tun → sicherstellen, dass plusOnes konsistent ist
+        // (optional, kann man auch weglassen)
+        // await tx.invitation.update({ where: { id: parent.id }, data: { plusOnes: { set: [] } } });
+        return [];
+      }
+
+      // IDs-Menge für effizientes Filtern
+      const toRemove = new Set(children.map((c) => c.id));
+
+      // Alle Children löschen
+      const deleted = await Promise.all(
+        children.map((c) => tx.invitation.delete({ where: { id: c.id } })),
+      );
+
+      // Slots auf Parent zurückbuchen
+      await tx.invitation.update({
+        where: { id: parent.id },
+        data: { maxInvitees: { increment: children.length } },
+      });
+
+      // plusOnes-Liste des Parents bereinigen (nur die gelöschten IDs entfernen)
+      await tx.invitation.update({
+        where: { id: parent.id },
+        data: {
+          plusOnes: {
+            set: (parent.plusOnes ?? []).filter((id) => !toRemove.has(id)),
+          },
+        },
+      });
+
+      return deleted;
+    });
+  }
+
+
 }

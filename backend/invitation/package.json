@@ -5,7 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "prisma": { "seed": "tsx prisma/seed.ts"},
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -19,13 +21,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-
-  "gen": "prisma generate --schema prisma/schema.prisma",
-    "migrate": "prisma migrate dev --schema prisma/schema.prisma",
-    "reset": "prisma migrate reset --schema prisma/schema.prisma --force",
-    "studio": "prisma studio --schema prisma/schema.prisma",
+    "gen": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "reset": "prisma migrate reset --force",
+    "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-
     "prettier": "prettier --cache --write \"src/**/*.ts\" \"prisma/**/*.ts\""
   },
   "dependencies": {
@@ -74,6 +74,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

@@ -46,4 +46,20 @@ export class InvitationMutationResolver {
   ): Promise<Invitation> {
     return this.service.delete(id) as Promise<Invitation>;
   }
+
+  // 🔻 NEU: Einzelnes Plus-One löschen (gibt 1 Slot an Parent zurück)
+  @Mutation(() => Invitation)
+  async removePlusOneInvitation(
+    @Args("id", { type: () => ID }) id: string,
+  ): Promise<Invitation> {
+    return this.service.deletePlusOne(id) as Promise<Invitation>;
+  }
+
+  // 🔻 NEU: Alle Plus-Ones einer Parent-Einladung löschen (gibt alle Slots zurück)
+  @Mutation(() => [Invitation])
+  async removeAllPlusOnesByInvitationId(
+    @Args("invitedByInvitationId", { type: () => ID }) invitedByInvitationId: string,
+  ): Promise<Invitation[]> {
+    return this.service.deleteAllPlusOnes(invitedByInvitationId) as Promise<Invitation[]>;
+  }
 }

@@ -21,4 +21,10 @@ export class InvitationCreateInput {
       "Optional: Eltern-Einladung (Invite-Chain), falls diese Einladung von einer anderen abgeleitet wurde.",
   })
   invitedByInvitationId?: string;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string
+
+  @Field(() => String, { nullable: true })
+  lastName?: string
 }

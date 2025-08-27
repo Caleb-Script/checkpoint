@@ -12,6 +12,11 @@ export class Invitation {
   @Field(() => ID, { description: "ID der Einladung (cuid)." })
   id!: string;
 
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+
   @Field(() => ID, { description: "ID des Events (String, FK im Zielsystem)." })
   eventId!: string;
 
@@ -45,8 +50,13 @@ export class Invitation {
   })
   approved?: boolean;
 
+  @Field(() => ID, {
+    nullable: true,
+  })
+  approvedById?: string
+
+
   @Field(() => GraphQLISODateTime, { nullable: true }) approvedAt?: Date | null;
-  @Field({ nullable: true }) approvedById?: string | null;
 
 
   @Field(() => Int, {
@@ -62,19 +72,15 @@ export class Invitation {
   })
   invitedByInvitationId?: string;
 
-  @Field(() => [Invitation], {
+  @Field(() => ID, {
+    nullable: true,
+  })
+  invitedById?: string
+
+  @Field(() => [String], {
     nullable: true,
     description: "Liste der IDs der Plus-Ones, die dieser Gast eingeladen hat.",
   })
-    
-    
   @IsOptional()
-  @IsBoolean({ each: true })
-  plusOnes?: Invitation[];
-
-
-  // Zeitstempel sind in deinem Minimal-Schema nicht enthalten;
-  // falls du createdAt/updatedAt hinzufügst, ergänzen wir:
-  // @Field(() => Date) createdAt!: Date;
-  // @Field(() => Date) updatedAt!: Date;
+  plusOnes?: string[];
 }

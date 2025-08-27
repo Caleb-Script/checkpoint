@@ -13,4 +13,7 @@ export class AcceptRSVPInput {
 
   @Field(() => String, { description: "Email addresse", nullable: true })
   email?: string;
+
+  @Field(() => String, { description: "Telefonnummer", nullable: true })
+  mobile?: string;
 }
