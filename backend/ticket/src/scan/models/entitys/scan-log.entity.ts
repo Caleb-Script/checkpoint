@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Field, GraphQLISODateTime, ID, ObjectType } from '@nestjs/graphql';
 import { PresenceState } from '../enums/presenceState.enum.js';
 

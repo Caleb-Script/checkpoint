@@ -4,8 +4,8 @@ import { hostname } from 'node:os';
 const { NODE_ENV, TEMPO_URI, PORT, SERVICE } = env;
 
 const computername = hostname();
-const port = PORT ?? 3001;
-const service = SERVICE ?? 'event';
+const port = PORT ?? 9999;
+const service = SERVICE ?? 'N/A';
 
 export const nodeConfig = {
   host: computername,

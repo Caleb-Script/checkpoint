@@ -22,13 +22,16 @@ export class UserHandler implements KafkaEventHandler {
     this.keycloakService = KeycloakService;
   }
 
-  @KafkaEvent(KafkaTopics.user.create)
+  @KafkaEvent(KafkaTopics.user.create, KafkaTopics.user.delete)
   async handle(topic: string, data: any): Promise<void> {
     this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
       case KafkaTopics.user.create:
         await this.#create(data);
+        break;
+      case KafkaTopics.user.delete:
+        await this.#delete(data);
         break;
     }
   }
@@ -43,5 +46,11 @@ export class UserHandler implements KafkaEventHandler {
       emailData,
       invitationId,
     });
+  }
+
+  async #delete(username: string): Promise<void> {
+    this.#logger.debug('DeleteUserHandler: username=%s', username);
+
+    await this.keycloakService.deleteUser(username);
   }
 }

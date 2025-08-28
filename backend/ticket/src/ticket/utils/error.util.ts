@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { Span } from '@opentelemetry/api';
-import { LoggerPlus } from '../../logger/logger-plus';
+import { LoggerPlus } from '../../logger/logger-plus.js';
 
 export function handleSpanError(
   span: Span,

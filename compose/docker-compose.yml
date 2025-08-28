@@ -103,7 +103,18 @@ services:
     networks:
       - checkpoint-net
 
-
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - type: bind
+        source: ../volumes/redis/data
+        target: /data
+    networks:
+      - checkpoint-net
 
 networks:
   checkpoint-net:

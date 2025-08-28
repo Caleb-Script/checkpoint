@@ -6,6 +6,7 @@
 export const KafkaTopics = {
   user: {
     create: 'auth.create.user',
+    delete: 'auth.delete.user',
     addUser: 'invitation.add.user',
     addAttribute: 'auth.add-attribute.user',
     setAttribute: 'auth.set-attribute.user',

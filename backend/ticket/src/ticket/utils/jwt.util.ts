@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify, importPKCS8, importSPKI } from 'jose';
+import { SignJWT, jwtVerify, importPKCS8, importSPKI, CryptoKey } from 'jose';
 import { UUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 

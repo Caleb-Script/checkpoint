@@ -12,7 +12,9 @@ import { KafkaModule } from './messaging/kafka.module.js';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     GraphQLModule.forRootAsync<ApolloFederationDriverConfig>({
       driver: ApolloFederationDriver,
       inject: [ConfigService],

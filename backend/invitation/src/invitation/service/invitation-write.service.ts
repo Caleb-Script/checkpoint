@@ -303,6 +303,7 @@ export class InvitationWriteService {
   async delete(id: string) {
     await this.ensureExists(id);
     const deleted = await this.prisma.invitation.delete({ where: { id } });
+
     return deleted;
   }
 

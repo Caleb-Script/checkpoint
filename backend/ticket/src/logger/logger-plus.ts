@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-private-class-members */
 import { getLogger } from './logger.js';
 import { KafkaProducerService } from '../messaging/kafka-producer.service.js';
 import { TraceContext } from '../trace/trace-context.util.js';
@@ -69,7 +70,7 @@ export class LoggerPlus {
       ) {
         const match = line.match(/at\s+([^\s]+)\s/);
         if (match) {
-          const fullMethod = match[1]; // z. B. InvitationWriteService.create
+          const fullMethod = match[1]; // z.B. InvitationWriteService.create
           const methodName = fullMethod.split('.').pop() ?? 'unknown';
           return `${this.#context}#${methodName}`;
         }

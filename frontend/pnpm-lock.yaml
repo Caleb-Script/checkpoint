@@ -29,6 +29,9 @@ importers:
       '@capacitor/ios':
         specifier: ^7.4.3
         version: 7.4.3(@capacitor/core@7.4.3)
+      '@capacitor/preferences':
+        specifier: ^7.0.2
+        version: 7.0.2(@capacitor/core@7.4.3)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.1.10)(react@19.1.0)
@@ -47,6 +50,9 @@ importers:
       '@zxing/library':
         specifier: ^0.21.3
         version: 0.21.3
+      capacitor-secure-storage-plugin:
+        specifier: ^0.11.0
+        version: 0.11.0(@capacitor/core@7.4.3)
       consola:
         specifier: ^3.4.2
         version: 3.4.2
@@ -207,6 +213,11 @@ packages:
     resolution: {integrity: sha512-VNm7cHODgh3KK/4ZC2rXU9gBlvHii/mYFLI+XMXwq24nhB679QxHhz+pUuI7PatYoM2q4MAL0NR/dRgehKCaSA==}
     peerDependencies:
       '@capacitor/core': ^7.4.0
+
+  '@capacitor/preferences@7.0.2':
+    resolution: {integrity: sha512-JVCy0/oc6RsRencLOZ8rMqjNxAlHs7awPJU/MXqangsJ48oO2PnYGHfCvci6WgIJlqyC0QhvWZaO1BR1lVkHWQ==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   '@emnapi/core@1.4.5':
     resolution: {integrity: sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q==}
@@ -1059,6 +1070,11 @@ packages:
 
   caniuse-lite@1.0.30001735:
     resolution: {integrity: sha512-EV/laoX7Wq2J9TQlyIXRxTJqIw4sxfXS4OYgudGxBYRuTv0q7AM6yMEpU/Vo1I94thg9U6EZ2NfZx9GJq83u7w==}
+
+  capacitor-secure-storage-plugin@0.11.0:
+    resolution: {integrity: sha512-1fs+RifRlKia+7U68Ekm+5FrX5OiWK/MBvtFdfFR2t7enh3rrIHuemA1+0Rkl3IWcQ6XOcL/6lOb5elZq9IMTA==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
@@ -2578,6 +2594,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.3
 
+  '@capacitor/preferences@7.0.2(@capacitor/core@7.4.3)':
+    dependencies:
+      '@capacitor/core': 7.4.3
+
   '@emnapi/core@1.4.5':
     dependencies:
       '@emnapi/wasi-threads': 1.0.4
@@ -3460,6 +3480,10 @@ snapshots:
   callsites@3.1.0: {}
 
   caniuse-lite@1.0.30001735: {}
+
+  capacitor-secure-storage-plugin@0.11.0(@capacitor/core@7.4.3):
+    dependencies:
+      '@capacitor/core': 7.4.3
 
   chalk@4.1.2:
     dependencies:

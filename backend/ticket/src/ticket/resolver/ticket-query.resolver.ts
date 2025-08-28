@@ -8,6 +8,7 @@ export class TicketQueryResolver {
 
   @Query(() => Ticket, { name: 'getTicketById', nullable: true })
   getTicketById(@Args('id', { type: () => ID }) id: string) {
+    console.log('TEST');
     return this.read.findById(id);
   }
 

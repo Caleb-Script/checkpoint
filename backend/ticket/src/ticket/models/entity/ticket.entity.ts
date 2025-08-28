@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Field, GraphQLISODateTime, ID, ObjectType } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
-import { PresenceState } from '../enums/presenceState.enum.js';
+import { PresenceState } from '../../../scan/models/enums/presenceState.enum.js';
 
 @ObjectType()
 export class Ticket {
