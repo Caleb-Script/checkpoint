@@ -31,6 +31,7 @@ import type {
   EventsQueryResult,
   Event as EventType,
 } from '../../../../types/event/event.type';
+import { getLogger } from '../../../../utils/logger';
 
 // ---------- Helpers: lokale Datums-/Zeitwerte für <input type="datetime-local"> ----------
 /**
@@ -56,6 +57,8 @@ function localInputToISO(localStr: string): string {
 
 // ---------- Component ----------
 export default function NewEventPage() {
+  const logger = getLogger(NewEventPage.name);
+
   const router = useRouter();
 
   // sinnvolle Defaults: Start in +1h, Ende in +3h (lokal)
@@ -114,7 +117,7 @@ export default function NewEventPage() {
     },
     onCompleted({ createEvent }) {
       if (createEvent?.id) {
-        router.replace(`/event/${createEvent.id}`);
+        router.replace(`/admin/event/${createEvent.id}`);
       }
     },
   });
@@ -141,6 +144,16 @@ export default function NewEventPage() {
       return;
     }
 
+    logger.debug({
+          name: trimmedName,
+          startsAt: startISO,
+          endsAt: endISO,
+          allowReEntry: form.allowReEntry,
+          rotateSeconds: Number(form.rotateSeconds),
+          maxSeats: Number(form.maxSeats) || 0,
+        },)
+    
+    
     await createEvent({
       variables: {
         input: {

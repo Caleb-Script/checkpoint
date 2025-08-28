@@ -84,7 +84,7 @@ export default function EventsListPage() {
               </IconButton>
               <Button
                 component={Link}
-                href="/event/new"
+                href="/admin/event/new"
                 variant="contained"
                 startIcon={<AddCircleIcon />}
                 sx={{ borderRadius: 2 }}
@@ -130,7 +130,7 @@ export default function EventsListPage() {
               </Typography>
               <Button
                 component={Link}
-                href="/event/new"
+                href="/admin/event/new"
                 variant="contained"
                 startIcon={<AddCircleIcon />}
                 sx={{ borderRadius: 2 }}
@@ -195,7 +195,7 @@ export default function EventsListPage() {
                 <CardActions sx={{ pt: 0, pb: 1.5, px: 2 }}>
                   <Button
                     component={Link}
-                    href={`/event/${ev.id}`}
+                    href={`/admin/event/${ev.id}`}
                     size="medium"
                     variant="contained"
                     sx={{ borderRadius: 2 }}
@@ -232,7 +232,7 @@ export default function EventsListPage() {
         <CardActions sx={{ justifyContent: 'flex-end' }}>
           <Button
             component={Link}
-            href="/event/new"
+            href="/admin/event/new"
             variant="contained"
             startIcon={<AddCircleIcon />}
             sx={{ borderRadius: 2 }}

@@ -16,22 +16,14 @@ export class ScanMutationResolver {
     this.#scanWriteService = scanWriteService;
   }
 
-  @Mutation(() => ScanPayload, {
-    description:
-      'Scannt ein Ticket und setzt den Presence-State (Toggle oder erzwungene Richtung).',
-  })
-  async scanTicket(@Args('input', { type: () => ScanInput }) input: ScanInput) {
-    return await this.#scanWriteService.scan(input);
-  }
-
   /**
    * scanTicket(token: String!, direction: PresenceState, gate: String, deviceHash: String, byUserId: String): ScanResult!
    *
    * - bevorzugter Weg am Gate: QR-JWT wird verifiziert (Signatur/exp/jti, Replay-Schutz)
    * - wenn direction weggelassen wird, toggelt der Server zwischen INSIDE/OUTSIDE
    */
-  @Mutation(() => ScanPayload, { name: 'scanTicket2' })
-  async scanTicket2(
+  @Mutation(() => ScanPayload, { name: 'scanTicket' })
+  async scanTicket(
     @Args('token') token: string,
     @Args('direction', { type: () => PresenceState }) direction?: PresenceState,
     @Args('gate') gate?: string,
@@ -52,20 +44,21 @@ export class ScanMutationResolver {
    * - Legacy-/Fallback-Mutation (ohne QR-Token), nutzt direkte ticketId
    * - nützlich für Tests/Admin-Overrides
    */
-  @Mutation(() => ScanPayload, { name: 'scanTicketById' })
+  @Mutation(() => ScanPayload, {
+    name: 'scanTicketById',
+    description:
+      'Scannt ein Ticket und setzt den Presence-State (Toggle oder erzwungene Richtung).',
+  })
   async scanTicketById(
-    @Args('ticketId') ticketId: string,
-    @Args('direction', { type: () => PresenceState }) direction: PresenceState,
-    @Args('gate') gate: string,
-    @Args('deviceHash') deviceHash?: string,
-    @Args('byUserId') byUserId?: string,
+    @Args('input', { type: () => ScanInput }) input: ScanInput,
   ) {
+    const { ticketId, direction, gate, deviceHash, byUserId } = input;
     return this.#scanWriteService.scan({
       ticketId,
       direction,
       gate,
       deviceHash,
-      byUserId: byUserId,
+      byUserId,
     });
   }
 }

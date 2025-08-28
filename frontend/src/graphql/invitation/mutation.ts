@@ -2,16 +2,25 @@
 import { gql } from '@apollo/client';
 
 export const CREATE_INVITATION = gql /* GraphQL */ `
-  mutation CreateInvitation($eventId: ID!, $maxInvitees: Int!) {
-    createInvitation(input: { eventId: $eventId, maxInvitees: $maxInvitees }) {
+  mutation CreateInvitation($eventId: ID!, $maxInvitees: Int!, $firstName: String, $lastName: String) {
+    createInvitation(input: { eventId: $eventId, maxInvitees: $maxInvitees, firstName: $firstName, lastName: $lastName }) {
+      firstName
+        lastName
       approved
+      approvedById
+        approvedAt
       eventId
       guestProfileId
       id
       invitedByInvitationId
+       invitedById
+        plusOnes
       maxInvitees
       rsvpChoice
+      rsvpAt
       status
+      createdAt
+        updatedAt
     }
   }
 `;

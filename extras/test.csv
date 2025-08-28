@@ -1,3 +1,4 @@
-email,phone,firstName,lastName
-max@example.com,+49171234567,Max,Mustermann
-anna@mail.de,+491522334455,Anna,Schulz
+firstName,lastName,email,phone,maxInvitees
+Max,Mustermann,max@example.com,+49171234567,0
+Anna,Schulz,anna@mail.de,+491522334455,1
+Leroy,Adams,,,2

@@ -6,22 +6,10 @@ import { gql } from '@apollo/client';
  */
 export const CREATE_EVENT = gql`
   mutation CreateEvent(
-    $name: String!
-    $startsAt: DateTime!
-    $endsAt: DateTime!
-    $allowReEntry: Boolean!
-    $rotateSeconds: Int!
-    $maxSeats: Int
+    $input: CreateEventInput!
   ) {
     createEvent(
-      input: {
-        name: $name
-        startsAt: $startsAt
-        endsAt: $endsAt
-        allowReEntry: $allowReEntry
-        rotateSeconds: $rotateSeconds
-        maxSeats: $maxSeats
-      }
+      input: $input
     ) {
       allowReEntry
       createdAt
@@ -97,20 +85,10 @@ export const DELETE_EVENT = gql`
  */
 export const CREATE_SEAT = gql`
   mutation CreateSeat(
-    $eventId: ID!
-    $note: String
-    $number: String
-    $section: String
-    $table: String
+    $input: CreateSeatInput!
   ) {
     createSeat(
-      input: {
-        eventId: $eventId
-        note: $note
-        number: $number
-        section: $section
-        table: $table
-      }
+      input: $input
     ) {
       eventId
       id
@@ -126,8 +104,8 @@ export const CREATE_SEAT = gql`
  * Mehrere Sitze importieren
  */
 export const IMPORT_SEATS = gql`
-  mutation ImportSeats($eventId: ID!, $seats: [SeatImportInput!]!) {
-    importSeats(input: { eventId: $eventId, seats: $seats }) {
+  mutation ImportSeats($input: BulkImportSeatsInput!) {
+    importSeats(input: $input) {
       eventId
       id
       note

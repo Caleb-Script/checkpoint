@@ -1,7 +1,7 @@
 // /web/src/app/event/[id]/invite/page.tsx
 'use client';
 
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { gql, useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 
@@ -54,14 +54,12 @@ import {
 import { INVITATIONS } from '../../../../../graphql/invitation/query';
 import { CREATE_TICKET } from '../../../../../graphql/ticket/mutation';
 import { GET_TICKETS } from '../../../../../graphql/ticket/query';
-
 import {
   copyToClipboard,
   rsvpLinkForInvitationId,
   tryNativeShare,
   whatsappShareUrl,
 } from '../../../../../lib/link';
-
 import type {
   Invitation,
   InvitationsQueryResult,
@@ -122,6 +120,7 @@ function parseCsv(text: string): CsvRow[] {
     .toLowerCase()
     .split(sepa)
     .map((h) => h.trim());
+
   const looksHeader = [
     'firstname',
     'lastname',
@@ -131,6 +130,7 @@ function parseCsv(text: string): CsvRow[] {
   ].some((k) => header.includes(k));
 
   const out: CsvRow[] = [];
+
   if (looksHeader) {
     const idx = (name: string) => header.indexOf(name);
     for (let i = 1; i < lines.length; i++) {
@@ -212,6 +212,7 @@ export default function EventAdminInvitePage() {
       },
     },
   );
+
   const [updateInvitation, { loading: updating }] =
     useMutation(UPDATE_INVITATION);
   const [createPlusOne, { loading: plusOneCreating }] = useMutation(
@@ -232,6 +233,9 @@ export default function EventAdminInvitePage() {
   // UI-State
   const [defaultMaxInvitees, setDefaultMaxInvitees] = React.useState<number>(0);
   const [singleMaxInvitees, setSingleMaxInvitees] = React.useState<number>(0);
+  const [singleFirstName, setSingleFirstName] = React.useState<string>('');
+  const [singleLastName, setSingleLastName] = React.useState<string>('');
+
   const [msg, setMsg] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
   const [recentLinks, setRecentLinks] = React.useState<string[]>([]);
@@ -259,6 +263,7 @@ export default function EventAdminInvitePage() {
         .filter((t) => t.eventId === eventId && t.seatId)
         .map((t) => t.seatId as string),
     );
+
     let list = all.slice();
     if (onlyFree) list = list.filter((s) => !taken.has(s.id));
     if (filter) {
@@ -312,7 +317,6 @@ export default function EventAdminInvitePage() {
     await updateInvitation({ variables: { id, rsvpChoice: 'YES' } });
     await refetchInvs();
   }
-
   async function rsvpNo(id: string) {
     setErr(null);
     await updateInvitation({ variables: { id, rsvpChoice: 'NO' } });
@@ -336,12 +340,12 @@ export default function EventAdminInvitePage() {
 
   async function share(inv: Invitation) {
     const url = rsvpLinkForInvitationId(inv.id);
-    const title = `Einladung ${ev?.name ?? ''}`.trim();
-    const text =
-      `Bitte bestätige deine Teilnahme` +
-      (ev
-        ? `:\n${ev.name}\n${toLocal(ev.startsAt)} – ${toLocal(ev.endsAt)}`
-        : '');
+    const title = `Einladung ${((ev?.name ?? '') as string).trim()}`;
+    const text = ev
+      ? `Bitte bestätige deine Teilnahme\n${ev.name}\n${toLocal(ev.startsAt)} – ${toLocal(
+          ev.endsAt,
+        )}`
+      : 'Bitte bestätige deine Teilnahme';
     const usedNative = await tryNativeShare(title, text, url);
     if (!usedNative) {
       window.open(
@@ -372,7 +376,6 @@ export default function EventAdminInvitePage() {
   async function createManyFromPending() {
     setErr(null);
     setMsg(null);
-
     const links: string[] = [];
     let ok = 0;
     let fail = 0;
@@ -382,10 +385,12 @@ export default function EventAdminInvitePage() {
         const res = await createInvitation({
           variables: {
             eventId,
-            // Name/Email/Phone könntest du im Backend erweitern; aktuell nur maxInvitees als Beispiel
             maxInvitees: Number.isFinite(r.maxInvitees as number)
               ? Number(r.maxInvitees)
               : defaultMaxInvitees,
+            // Falls dein Backend es bereits unterstützt, kannst du hier auch first/last/email/phone mitgeben
+            firstName: r.firstName?.trim() || undefined,
+            lastName: r.lastName?.trim() || undefined,
           },
         });
         const id = res.data?.createInvitation?.id as string | undefined;
@@ -409,13 +414,29 @@ export default function EventAdminInvitePage() {
   async function createSingle() {
     setErr(null);
     setMsg(null);
-    const res = await createInvitation({
-      variables: { eventId, maxInvitees: Number(singleMaxInvitees || 0) },
-    });
+
+    const variables: {
+      eventId: string;
+      maxInvitees: number;
+      firstName?: string;
+      lastName?: string;
+    } = {
+      eventId,
+      maxInvitees: Number(singleMaxInvitees || 0),
+    };
+
+    if (singleFirstName.trim()) variables.firstName = singleFirstName.trim();
+    if (singleLastName.trim()) variables.lastName = singleLastName.trim();
+
+    const res = await createInvitation({ variables });
     await refetchInvs();
+
     const id = res.data?.createInvitation?.id as string | undefined;
     if (id) setRecentLinks([rsvpLinkForInvitationId(id)]);
     setMsg('Einladung erstellt.');
+
+    setSingleFirstName('');
+    setSingleLastName('');
     setSingleMaxInvitees(0);
   }
 
@@ -443,6 +464,7 @@ export default function EventAdminInvitePage() {
             </Tooltip>
           }
         />
+
         {evLoading && (
           <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
             <CircularProgress />
@@ -545,7 +567,7 @@ export default function EventAdminInvitePage() {
         />
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid sx={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 label="Default maxInvitees"
                 type="number"
@@ -557,7 +579,7 @@ export default function EventAdminInvitePage() {
                 fullWidth
               />
             </Grid>
-            <Grid sx={{ xs: 12, sm: 'auto' }}>
+            <Grid item xs={12} sm={'auto'}>
               <input
                 ref={fileInputRef}
                 hidden
@@ -598,7 +620,26 @@ export default function EventAdminInvitePage() {
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
             alignItems={{ xs: 'stretch', sm: 'center' }}
+            sx={{ flexWrap: 'wrap' }}
           >
+            <TextField
+              label="Vorname"
+              value={singleFirstName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSingleFirstName(e.target.value)
+              }
+              fullWidth
+              sx={{ maxWidth: 240 }}
+            />
+            <TextField
+              label="Nachname"
+              value={singleLastName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSingleLastName(e.target.value)
+              }
+              fullWidth
+              sx={{ maxWidth: 240 }}
+            />
             <TextField
               label="maxInvitees"
               type="number"
@@ -628,7 +669,6 @@ export default function EventAdminInvitePage() {
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           Einladungen dieses Events
         </Typography>
-
         {invLoading && (
           <Card variant="outlined">
             <CardContent>
@@ -636,11 +676,9 @@ export default function EventAdminInvitePage() {
             </CardContent>
           </Card>
         )}
-
         {!invLoading && eventInvs.length === 0 && (
           <Alert severity="info">Keine Einladungen vorhanden.</Alert>
         )}
-
         {eventInvs.map((inv) => {
           const url = rsvpLinkForInvitationId(inv.id);
           return (
@@ -812,8 +850,7 @@ export default function EventAdminInvitePage() {
               <Alert severity="info">
                 Nichts ausgewählt = Zufälliger Sitz (serverseitig). Später
                 änderbar, sobald ein
-                <i> updateTicket </i>
-                -Resolver vorhanden ist.
+                <i> updateTicket </i> -Resolver vorhanden ist.
               </Alert>
             </Stack>
           )}
@@ -881,3 +918,40 @@ export default function EventAdminInvitePage() {
     </Box>
   );
 }
+
+// ---- Falls du die Mutation lokal in dieser Datei brauchst (optional) ----
+export const CREATE_INVITATION_LOCAL = gql /* GraphQL */ `
+  mutation CreateInvitation(
+    $eventId: ID!
+    $maxInvitees: Int!
+    $firstName: String
+    $lastName: String
+  ) {
+    createInvitation(
+      input: {
+        eventId: $eventId
+        maxInvitees: $maxInvitees
+        firstName: $firstName
+        lastName: $lastName
+      }
+    ) {
+      firstName
+      lastName
+      approved
+      approvedById
+      approvedAt
+      eventId
+      guestProfileId
+      id
+      invitedByInvitationId
+      invitedById
+      plusOnes
+      maxInvitees
+      rsvpChoice
+      rsvpAt
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
