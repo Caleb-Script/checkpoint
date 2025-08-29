@@ -1,4 +1,4 @@
-// /web/src/components/AppShell.tsx
+// /frontend/srv/components/AppShell.tsx
 'use client';
 
 import BadgeIcon from '@mui/icons-material/Badge';

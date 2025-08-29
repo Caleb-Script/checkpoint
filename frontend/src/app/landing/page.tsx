@@ -1,4 +1,4 @@
-// /Users/gentlebookpro/Projekte/checkpoint/web/src/app/page.tsx
+// /Users/gentlebookpro/Projekte/checkpoint/frontend/srv/app/page.tsx
 'use client';
 
 import {

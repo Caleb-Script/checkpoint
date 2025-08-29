@@ -1,4 +1,4 @@
-// apps/web/src/lib/crypto/sha256.ts
+// frontend/srv/lib/crypto/sha256.ts
 // Kleiner, eigenständiger SHA-256 Fallback (Uint8Array in → Uint8Array out).
 // Hinweis: Für Secure-Contexts bevorzugen wir WebCrypto; das hier ist nur der Fallback.
 

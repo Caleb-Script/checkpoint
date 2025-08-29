@@ -1,4 +1,4 @@
-// apps/web/src/lib/crypto/webcrypto.ts
+// frontend/srv/lib/crypto/webcrypto.ts
 // Sicherer Zugriff auf WebCrypto & Subtle – nur wenn vorhanden/erlaubt.
 
 export function getWebCrypto(): Crypto | null {

@@ -1,4 +1,4 @@
-// /web/src/app/event/page.tsx
+// /frontend/srv/app/event/page.tsx
 'use client';
 
 import { useQuery } from '@apollo/client';
@@ -204,7 +204,7 @@ export default function EventsListPage() {
                   </Button>
                   <Button
                     component={Link}
-                    href={`/invitations?eventId=${ev.id}`}
+                    href={`/admin/${ev.id}/invitations`}
                     size="small"
                     variant="outlined"
                     sx={{ borderRadius: 2, ml: 'auto' }}

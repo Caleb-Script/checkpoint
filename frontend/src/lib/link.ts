@@ -1,4 +1,4 @@
-// /web/src/lib/links.ts
+// /frontend/srv/lib/links.ts
 /**
  * Hilfsfunktionen zum Bauen/Teilen von Links (RSVP etc.).
  * BASE-URL:

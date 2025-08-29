@@ -1,4 +1,4 @@
-// /web/src/app/security/page.tsx
+// /frontend/srv/app/security/page.tsx
 'use client';
 
 import { GET_TICKETS } from '@/graphql/ticket/query';

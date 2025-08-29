@@ -1,17 +1,26 @@
-// /web/src/graphql/invitations/query.ts
+// /frontend/srv/graphql/invitations/query.ts
 import { gql } from '@apollo/client';
 
 export const INVITATIONS = gql /* GraphQL */ `
   query Invitations {
     invitations {
-      approved
-      eventId
-      guestProfileId
       id
-      invitedByInvitationId
-      maxInvitees
-      rsvpChoice
-      status
+        firstName
+        lastName
+        eventId
+        guestProfileId
+        status
+        createdAt
+        updatedAt
+        rsvpChoice
+        rsvpAt
+        approved
+        approvedById
+        approvedAt
+        maxInvitees
+        invitedByInvitationId
+        invitedById
+        plusOnes
     }
   }
 `;
@@ -19,24 +28,23 @@ export const INVITATIONS = gql /* GraphQL */ `
 export const INVITATION = gql /* GraphQL */ `
   query Invitation($id: ID!) {
     invitation(id: $id) {
-      approved
-      eventId
-      guestProfileId
       id
-      invitedByInvitationId
-      maxInvitees
-      rsvpChoice
-      status
-      plusOnes {
-        approved
+        firstName
+        lastName
         eventId
         guestProfileId
-        id
-        invitedByInvitationId
-        maxInvitees
-        rsvpChoice
         status
-      }
+        createdAt
+        updatedAt
+        rsvpChoice
+        rsvpAt
+        approved
+        approvedById
+        approvedAt
+        maxInvitees
+        invitedByInvitationId
+        invitedById
+        plusOnes
     }
   }
 `;

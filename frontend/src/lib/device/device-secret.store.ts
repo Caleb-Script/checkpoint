@@ -1,4 +1,4 @@
-// apps/web/src/lib/device/device-secret.store.ts
+// frontend/srv/lib/device/device-secret.store.ts
 // Abstraktion für das Geräte-Secret:
 // - Nativ (iOS/Android via Capacitor): Keychain/Keystore mit capacitor-secure-storage-plugin
 // - Web: LocalStorage + Cookie-Fallback

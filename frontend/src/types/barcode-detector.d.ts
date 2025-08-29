@@ -1,8 +1,8 @@
-// /Users/gentlebookpro/Projekte/checkpoint/web/src/types/barcode-detector.d.ts
+// /Users/gentlebookpro/Projekte/checkpoint/frontend/srv/types/barcode-detector.d.ts
 // Eine zentrale, globale Deklaration für den experimentellen BarcodeDetector.
 // Keine Duplikate in Komponenten anlegen!
 
-export {};
+export { };
 
 declare global {
   interface DetectedBarcode {
@@ -30,7 +30,7 @@ declare global {
   }
 
   interface BarcodeDetectorConstructor {
-    new (options?: BarcodeDetectorOptions): BarcodeDetector;
+    new(options?: BarcodeDetectorOptions): BarcodeDetector;
     getSupportedFormats(): Promise<string[]>;
   }
 

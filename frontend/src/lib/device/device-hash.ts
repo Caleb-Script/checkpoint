@@ -1,4 +1,4 @@
-// apps/web/src/lib/device/device-hash.ts
+// frontend/srv/lib/device/device-hash.ts
 import { toBase64Url } from '../crypto/base64url';
 import { sha256 as sha256Fallback } from '../crypto/sha256';
 import { getRandomValues, getSubtle } from '../crypto/webcrypto';

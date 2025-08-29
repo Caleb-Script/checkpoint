@@ -1,4 +1,4 @@
-// /web/src/app/my-qr/page.tsx
+// /frontend/srv/app/my-qr/page.tsx
 'use client';
 
 import { useAuth } from '@/context/AuthContext';

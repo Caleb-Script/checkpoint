@@ -1,4 +1,4 @@
-import { PrismaClient, PresenceState } from '@prisma/client';
+import { PresenceState, PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
@@ -10,11 +10,13 @@ async function main(): Promise<void> {
         eventId: 'event-a',
         invitationId: 'inv-seed-1',
         currentState: PresenceState.OUTSIDE,
+        seatId: 'seat-demo-001',
       },
       {
         eventId: 'event-a',
         invitationId: 'inv-seed-2',
         currentState: PresenceState.OUTSIDE,
+        seatId: 'seat-demo-002',
       },
     ],
     skipDuplicates: true,
@@ -33,7 +35,7 @@ async function main(): Promise<void> {
       eventId,
       invitationId,
       guestProfileId: '61e4d86b-d227-4de5-9514-46c5d956b663',
-      seatId: 'seat-demo-001',
+      seatId: 'seat-demo-003',
       currentState: PresenceState.OUTSIDE,
     },
   });

@@ -1,4 +1,4 @@
-// /web/src/app/invitations/responses/page.tsx
+// /frontend/srv/app/invitations/responses/page.tsx
 'use client';
 import { useQuery } from '@apollo/client';
 import {

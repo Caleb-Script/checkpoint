@@ -1,4 +1,4 @@
-// /web/src/graphql/tickets/query.ts
+// /frontend/srv/graphql/tickets/query.ts
 import { gql } from '@apollo/client';
 
 /** Alle Tickets (einfacher Überblick) */

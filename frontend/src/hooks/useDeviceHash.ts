@@ -1,4 +1,4 @@
-// apps/web/src/hooks/useDeviceHash.ts
+// frontend/srv/hooks/useDeviceHash.ts
 'use client';
 
 import { useEffect, useState } from 'react';

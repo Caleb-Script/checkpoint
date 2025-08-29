@@ -1,4 +1,4 @@
-// apps/web/src/app/(account)/device/page.tsx
+// frontend/srv/app/(account)/device/page.tsx
 'use client';
 
 import { Box, Container } from '@mui/material';

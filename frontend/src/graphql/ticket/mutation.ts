@@ -1,4 +1,4 @@
-// /web/src/graphql/tickets/mutation.ts
+// /frontend/srv/graphql/tickets/mutation.ts
 import { gql } from '@apollo/client';
 
 /** Ticket erzeugen (nach Approval) */

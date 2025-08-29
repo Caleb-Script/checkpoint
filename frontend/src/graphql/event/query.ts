@@ -1,4 +1,4 @@
-// /web/src/graphql/event/query.ts
+// /frontend/srv/graphql/event/query.ts
 import { gql } from '@apollo/client';
 
 /**

@@ -1,4 +1,4 @@
-// /web/src/components/mobile/layout/AppLayout.tsx
+// /frontend/srv/components/mobile/layout/AppLayout.tsx
 'use client';
 
 import Link from 'next/link';

@@ -1,4 +1,4 @@
-// apps/web/src/lib/crypto/base64url.ts
+// frontend/srv/lib/crypto/base64url.ts
 export function toBase64Url(bytes: Uint8Array): string {
   let str = '';
   for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);

@@ -1,4 +1,4 @@
-// /web/src/app/rsvp/page.tsx
+// /frontend/src/app/rsvp/page.tsx
 'use client';
 
 export const dynamic = 'force-dynamic';
@@ -28,12 +28,26 @@ import * as React from 'react';
 
 import { EVENT_BY_ID } from '../../graphql/event/query';
 import {
-  ACCEPT_INVITATION,
   CREATE_PLUS_ONES_INVITATION,
+  REPLY_INVITATION,
   UPDATE_INVITATION,
 } from '../../graphql/invitation/mutation';
 import { INVITATION } from '../../graphql/invitation/query';
 import type { Invitation } from '../../types/invitation/invitation.type';
+
+const tz = 'Europe/Berlin';
+function toLocal(dt?: string) {
+  if (!dt) return '';
+  try {
+    return new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: tz,
+    }).format(new Date(dt));
+  } catch {
+    return String(dt);
+  }
+}
 
 export default function RsvpPage() {
   // Invitation-ID aus URL (?inv=…)
@@ -61,24 +75,31 @@ export default function RsvpPage() {
   const event = evData?.event ?? null;
 
   // Mutations
-  const [acceptInvitation, { loading: accepting }] =
-    useMutation(ACCEPT_INVITATION);
+  const [replyInvitation, { loading: accepting }] =
+    useMutation(REPLY_INVITATION);
   const [updateInvitation, { loading: savingRsvp }] =
     useMutation(UPDATE_INVITATION);
   const [createPlusOne, { loading: creatingPlusOne }] = useMutation(
     CREATE_PLUS_ONES_INVITATION,
   );
 
-  // Accept-Form Felder
-  const [firstName, setFirstName] = React.useState('');
-  const [lastName, setLastName] = React.useState('');
-  const [email, setEmail] = React.useState('');
+  // Formular-Felder (kontrolliert)
+  const [firstName, setFirstName] = React.useState<string>('');
+  const [lastName, setLastName] = React.useState<string>('');
+  const [email, setEmail] = React.useState<string>('');
+
+  // Prefill aus Invitation, wenn vorhanden und noch nicht gesetzt
+  React.useEffect(() => {
+    if (!invitation) return;
+    setFirstName((v) => v || invitation.firstName || '');
+    setLastName((v) => v || invitation.lastName || '');
+  }, [invitation?.id]); // einmalig pro Einladung
 
   // UI-Status
   const [msg, setMsg] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
 
-  // Der einfache Lock:
+  // Lock, sobald approved ODER RSVP gesetzt
   const isLocked = Boolean(
     invitation?.approved || invitation?.rsvpChoice != null,
   );
@@ -86,15 +107,6 @@ export default function RsvpPage() {
   const max = invitation?.maxInvitees ?? 0;
   const used = invitation?.plusOnes?.length ?? 0;
   const free = Math.max(0, max - used);
-
-  function toLocal(dt?: string) {
-    if (!dt) return '';
-    try {
-      return new Date(dt).toLocaleString();
-    } catch {
-      return dt;
-    }
-  }
 
   // Actions
   async function onAccept() {
@@ -108,12 +120,17 @@ export default function RsvpPage() {
       setErr('Bitte Vorname und Nachname angeben.');
       return;
     }
-    await acceptInvitation({
+    await replyInvitation({
       variables: {
         id: invId,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim() || null,
+        reply: {
+          reply: 'YES', // wichtig: Enum in UPPERCASE
+          input: {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim() || null,
+          },
+        },
       },
     });
     setMsg('Danke! Deine Zusage wurde gespeichert.');
@@ -257,7 +274,9 @@ export default function RsvpPage() {
                   <Button
                     variant="contained"
                     onClick={onAccept}
-                    disabled={accepting}
+                    disabled={
+                      accepting || !firstName.trim() || !lastName.trim()
+                    }
                   >
                     👍 Zusagen
                   </Button>
@@ -325,9 +344,9 @@ export default function RsvpPage() {
                 <Stack
                   direction="row"
                   spacing={1}
-                  sx={{ mb: 2 }}
                   useFlexGap
                   flexWrap="wrap"
+                  sx={{ mb: 2 }}
                 >
                   <Chip label={`Max: ${max}`} />
                   <Chip label={`Belegt: ${used}`} />

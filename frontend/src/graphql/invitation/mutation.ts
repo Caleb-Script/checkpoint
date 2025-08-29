@@ -1,4 +1,4 @@
-// /web/src/graphql/invitations/mutation.ts
+// /frontend/srv/graphql/invitations/mutation.ts
 import { gql } from '@apollo/client';
 
 export const CREATE_INVITATION = gql /* GraphQL */ `
@@ -77,25 +77,32 @@ export const UPDATE_INVITATION = gql /* GraphQL */ `
 `;
 
 /** ▶️ RSVP-ACCEPT: erstellt bei Bedarf GuestProfile (E-Mail ist optional) */
-export const ACCEPT_INVITATION = gql /* GraphQL */ `
-  mutation AcceptInvitation(
+export const REPLY_INVITATION = gql /* GraphQL */ `
+  mutation REPLY_INVITATIONeplyInvitation(
     $id: ID!
-    $firstName: String!
-    $lastName: String!
-    $email: String
+    $reply: RSVPReply!
   ) {
-    acceptInvitation(
+    replyInvitation(
       id: $id
-      input: { firstName: $firstName, lastName: $lastName, email: $email }
+      reply: $reply
     ) {
       id
-      eventId
-      guestProfileId
-      status
-      rsvpChoice
-      maxInvitees
-      invitedByInvitationId
-      approved
+        firstName
+        lastName
+        eventId
+        guestProfileId
+        status
+        createdAt
+        updatedAt
+        rsvpChoice
+        rsvpAt
+        approved
+        approvedById
+        approvedAt
+        maxInvitees
+        invitedByInvitationId
+        invitedById
+        plusOnes
     }
   }
 `;

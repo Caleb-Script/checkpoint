@@ -1,4 +1,4 @@
-// apps/web/src/components/device/DeviceCard.tsx
+// frontend/srv/components/device/DeviceCard.tsx
 'use client';
 
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';

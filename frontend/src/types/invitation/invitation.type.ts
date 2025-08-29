@@ -1,6 +1,8 @@
 export type Invitation = {
   id: string;
   eventId: string;
+  firstName?: string;
+  lastName?: string;
   guestProfileId?: string | null;
   invitedByInvitationId?: string | null;
   maxInvitees: number;
@@ -17,3 +19,12 @@ export type InvitationsQueryResult = {
 export type InvitationQueryResult = {
   invitation: Invitation | null;
 };
+
+export type RSVPReply = {
+  reply: 'YES' | 'NO',
+  input: {
+    firstName: string;
+    lastName: string;
+    email?: string
+  }
+}

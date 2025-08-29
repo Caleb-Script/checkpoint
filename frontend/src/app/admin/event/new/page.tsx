@@ -1,4 +1,4 @@
-// checkpoint/web/src/app/event/new/page.tsx
+// checkpoint/frontend/srv/app/event/new/page.tsx
 'use client';
 
 import { ApolloCache, useMutation } from '@apollo/client';
@@ -145,15 +145,14 @@ export default function NewEventPage() {
     }
 
     logger.debug({
-          name: trimmedName,
-          startsAt: startISO,
-          endsAt: endISO,
-          allowReEntry: form.allowReEntry,
-          rotateSeconds: Number(form.rotateSeconds),
-          maxSeats: Number(form.maxSeats) || 0,
-        },)
-    
-    
+      name: trimmedName,
+      startsAt: startISO,
+      endsAt: endISO,
+      allowReEntry: form.allowReEntry,
+      rotateSeconds: Number(form.rotateSeconds),
+      maxSeats: Number(form.maxSeats) || 0,
+    });
+
     await createEvent({
       variables: {
         input: {

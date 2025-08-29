@@ -1,4 +1,4 @@
-// /web/src/app/my-plus-ones/page.tsx
+// /frontend/srv/app/my-plus-ones/page.tsx
 'use client';
 
 import { gql, useMutation, useQuery } from '@apollo/client';

@@ -1,4 +1,4 @@
-// checkpoint/web/src/app/event/[id]/page.tsx
+// checkpoint/frontend/srv/app/event/[id]/page.tsx
 'use client';
 
 import { useMutation, useQuery } from '@apollo/client';
@@ -587,7 +587,7 @@ export default function EventDetailPage(): React.JSX.Element {
 
                 <Button
                   component={Link}
-                  href={`/invitations?eventId=${eventId}`}
+                  href={`/admin/event/${eventId}/invitations`}
                   variant="outlined"
                   startIcon={<BallotIcon />}
                   sx={{ borderRadius: 2 }}

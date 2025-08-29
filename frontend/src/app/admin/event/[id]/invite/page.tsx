@@ -1,21 +1,16 @@
-// /web/src/app/event/[id]/invite/page.tsx
+// /frontend/srv/app/event/[id]/invite/page.tsx
 'use client';
 
 import { gql, useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
 import GroupsIcon from '@mui/icons-material/Groups';
-import PersonIcon from '@mui/icons-material/Person';
 import AddIcon from '@mui/icons-material/PersonAddAlt1';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SendIcon from '@mui/icons-material/Send';
-import ShareIcon from '@mui/icons-material/Share';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 import {
@@ -91,6 +86,27 @@ type TicketRow = {
 };
 
 // ---------- Utilities ----------
+function displayName(
+  inv: Partial<Invitation> & {
+    firstName?: string | null;
+    lastName?: string | null;
+  },
+): string {
+  const fn = (inv.firstName ?? '').trim();
+  const ln = (inv.lastName ?? '').trim();
+  const name = [fn, ln].filter(Boolean).join(' ').trim();
+  return name || 'N/A';
+}
+function initialsOf(name: string): string {
+  const safe = name && name !== 'N/A' ? name : 'NA';
+  return safe
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
 const tz = 'Europe/Berlin';
 function toLocal(dt?: string): string {
   if (!dt) return '';
@@ -254,6 +270,19 @@ export default function EventAdminInvitePage() {
   const [filter, setFilter] = React.useState('');
   const [onlyFree, setOnlyFree] = React.useState(true);
 
+  // List UX controls
+  const [search, setSearch] = React.useState<string>('');
+  const [statusFilter, setStatusFilter] = React.useState<
+    'ALL' | 'PENDING' | 'ACCEPTED' | 'DECLINED'
+  >('ALL');
+  const [rsvpFilter, setRsvpFilter] = React.useState<
+    'ALL' | 'YES' | 'NO' | 'NONE'
+  >('ALL');
+  const [sortBy, setSortBy] = React.useState<
+    'updatedAt' | 'createdAt' | 'name'
+  >('updatedAt');
+  const [expandedId, setExpandedId] = React.useState<string | null>(null);
+
   // ---------- Helpers für Sitzliste ----------
   function seatsForEvent(): SeatRow[] {
     const all = seatsData?.seatsByEvent ?? [];
@@ -274,6 +303,7 @@ export default function EventAdminInvitePage() {
           .some((v) => String(v).toLowerCase().includes(f)),
       );
     }
+
     return list;
   }
 
@@ -388,7 +418,6 @@ export default function EventAdminInvitePage() {
             maxInvitees: Number.isFinite(r.maxInvitees as number)
               ? Number(r.maxInvitees)
               : defaultMaxInvitees,
-            // Falls dein Backend es bereits unterstützt, kannst du hier auch first/last/email/phone mitgeben
             firstName: r.firstName?.trim() || undefined,
             lastName: r.lastName?.trim() || undefined,
           },
@@ -502,11 +531,19 @@ export default function EventAdminInvitePage() {
                   label={`Re-Entry: ${ev.allowReEntry ? 'Ja' : 'Nein'}`}
                 />
                 {typeof ev.maxSeats === 'number' && (
-                  <Chip
-                    size="small"
-                    icon={<GroupsIcon />}
-                    label={`Max Seats: ${ev.maxSeats}`}
-                  />
+                  <>
+                    <Chip
+                      size="small"
+                      icon={<GroupsIcon />}
+                      label={`Max Seats: ${ev.maxSeats}`}
+                    />
+
+                    <Chip
+                      size="small"
+                      icon={<GroupsIcon />}
+                      label={`Seats left: ${ev.maxSeats - Number(seatsForEvent())}`}
+                    />
+                  </>
                 )}
               </Stack>
             </Stack>
@@ -664,132 +701,6 @@ export default function EventAdminInvitePage() {
         </CardContent>
       </Card>
 
-      {/* Einladungen als MOBILE CARDS */}
-      <Stack spacing={1.25} sx={{ mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Einladungen dieses Events
-        </Typography>
-        {invLoading && (
-          <Card variant="outlined">
-            <CardContent>
-              <Typography>Wird geladen…</Typography>
-            </CardContent>
-          </Card>
-        )}
-        {!invLoading && eventInvs.length === 0 && (
-          <Alert severity="info">Keine Einladungen vorhanden.</Alert>
-        )}
-        {eventInvs.map((inv) => {
-          const url = rsvpLinkForInvitationId(inv.id);
-          return (
-            <Card key={inv.id} variant="outlined" sx={{ borderRadius: 2 }}>
-              <CardContent sx={{ pb: 1.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <PersonIcon fontSize="small" />
-                  <Typography sx={{ fontWeight: 700 }}>Invitation</Typography>
-                  <Box sx={{ flex: 1 }} />
-                  <Chip
-                    size="small"
-                    label={inv.status}
-                    variant="outlined"
-                    color={
-                      inv.status === 'ACCEPTED'
-                        ? 'success'
-                        : inv.status === 'DECLINED'
-                          ? 'error'
-                          : 'default'
-                    }
-                  />
-                  <Chip
-                    size="small"
-                    label={`RSVP: ${inv.rsvpChoice ?? '—'}`}
-                    variant="outlined"
-                    color={
-                      inv.rsvpChoice === 'YES'
-                        ? 'success'
-                        : inv.rsvpChoice === 'NO'
-                          ? 'error'
-                          : 'default'
-                    }
-                  />
-                  <Chip
-                    size="small"
-                    label={`maxInvitees: ${inv.maxInvitees}`}
-                    variant="outlined"
-                  />
-                  <Chip
-                    size="small"
-                    label={inv.approved ? 'Approved' : 'Unapproved'}
-                    color={inv.approved ? 'success' : 'default'}
-                    variant={inv.approved ? 'filled' : 'outlined'}
-                  />
-                </Stack>
-
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  <TextField
-                    value={url}
-                    size="small"
-                    fullWidth
-                    inputProps={{ readOnly: true }}
-                  />
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Tooltip title="Kopieren">
-                      <IconButton onClick={() => copy(url)}>
-                        <ContentCopyIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Teilen (System/WhatsApp)">
-                      <IconButton onClick={() => share(inv)}>
-                        <ShareIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="RSVP YES">
-                      <span>
-                        <IconButton
-                          onClick={() => rsvpYes(inv.id)}
-                          disabled={updating}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title="RSVP NO">
-                      <span>
-                        <IconButton
-                          onClick={() => rsvpNo(inv.id)}
-                          disabled={updating}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title="Approven & Sitz zuweisen">
-                      <span>
-                        <IconButton
-                          onClick={() => openAssign(inv)}
-                          disabled={updating || creatingTicket}
-                        >
-                          <DoneAllIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Button
-                      size="small"
-                      startIcon={<AddIcon />}
-                      onClick={() => addPlusOne(inv.id, 1)}
-                      disabled={plusOneCreating}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      Plus-One
-                    </Button>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </Stack>
-
       {/* Dialog: Sitzplatz zuweisen */}
       <Dialog
         open={openAssignDlg}
@@ -919,7 +830,7 @@ export default function EventAdminInvitePage() {
   );
 }
 
-// ---- Falls du die Mutation lokal in dieser Datei brauchst (optional) ----
+// (Optional) Lokale Mutation, falls du sie direkt hier verwenden möchtest
 export const CREATE_INVITATION_LOCAL = gql /* GraphQL */ `
   mutation CreateInvitation(
     $eventId: ID!

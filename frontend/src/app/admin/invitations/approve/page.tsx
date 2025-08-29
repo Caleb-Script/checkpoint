@@ -1,4 +1,4 @@
-// /web/src/app/invitations/approve/page.tsx
+// /frontend/srv/app/invitations/approve/page.tsx
 'use client';
 
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';

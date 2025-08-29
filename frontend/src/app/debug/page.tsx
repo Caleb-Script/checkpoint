@@ -1,4 +1,4 @@
-// /Users/gentlebookpro/Projekte/checkpoint/web/src/app/debug/token/page.tsx
+// /Users/gentlebookpro/Projekte/checkpoint/frontend/srv/app/debug/token/page.tsx
 // Server-Komponente, die den Access-Token aus dem HttpOnly-Cookie liest
 // und (nur zu Debug-Zwecken) anzeigt + JWT-Header/Payload dekodiert.
 //

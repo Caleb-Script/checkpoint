@@ -1,4 +1,4 @@
-// /web/src/app/invitations/page.tsx
+// /frontend/srv/app/invitations/page.tsx
 'use client';
 
 import { useMutation, useQuery } from '@apollo/client';

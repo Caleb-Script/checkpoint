@@ -1,4 +1,4 @@
-// /web/src/app/profile/page.tsx
+// /frontend/srv/app/profile/page.tsx
 'use client';
 
 import {

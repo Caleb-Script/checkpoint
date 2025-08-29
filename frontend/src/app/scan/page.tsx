@@ -1,4 +1,4 @@
-// /Users/gentlebookpro/Projekte/checkpoint/web/src/app/scan/page.tsx
+// /Users/gentlebookpro/Projekte/checkpoint/frontend/srv/app/scan/page.tsx
 'use client';
 
 import { useMutation } from '@apollo/client';

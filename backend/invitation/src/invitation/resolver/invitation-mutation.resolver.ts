@@ -1,4 +1,6 @@
 // checkpoint/services/invitation/src/invitation-mutation.resolver.ts
+
+// TODO Disaprove
 import { Resolver, Mutation, Args, ID } from "@nestjs/graphql";
 import { Invitation } from "../models/entity/invitation.entity";
 import { InvitationWriteService } from "../service/invitation-write.service";
