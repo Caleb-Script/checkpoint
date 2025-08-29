@@ -1,8 +1,7 @@
-// /frontend/srv/app/my-qr/page.tsx
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useMutation, useQuery } from '@apollo/client';
+import { ApolloError, useMutation, useQuery } from '@apollo/client';
 import {
   Alert,
   Box,
@@ -12,6 +11,10 @@ import {
   CardHeader,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
   Tab,
   Table,
@@ -24,117 +27,137 @@ import {
 import { QRCodeCanvas } from 'qrcode.react';
 import * as React from 'react';
 
-// ⚠️ Import-Pfade bitte an **dein** Projekt anpassen.
-// Du verwendest bereits "ticket" (Singular) – daran halte ich mich hier:
+// Zentrale GraphQL-Definitionen
 import { CREATE_TOKEN } from '@/graphql/ticket/mutation';
 import { GET_TICKET_BY_ID } from '@/graphql/ticket/query';
-import { digestSHA256, randomHex, toHex } from '../../lib/crypto';
-import { Ticket } from '../../types/ticket/ticket.type';
-import { getLogger } from '../../utils/logger';
+import type { Ticket } from '@/types/ticket/ticket.type';
+
+// ZENTRALE Device-Utility (statt lokaler Implementierung)
+import { getDeviceHash } from '../../lib/device/device-hash';
 
 type CreateTokenPayload = {
   createToken: {
     token: string;
-    exp: number;
+    exp: number; // epoch seconds
     jti: string;
   };
 };
 
-function secondsLeft(expireAt: number) {
-  const diff = Math.floor((expireAt - Date.now()) / 1000);
-  return diff > 0 ? diff : 0;
+function getFirstTicketId(input: unknown): string | undefined {
+  if (!input) return undefined;
+  if (Array.isArray(input)) return input[0];
+  if (typeof input === 'string') return input;
+  return undefined;
 }
 
-/** Gerätestabiler Hash: (UA | persistenter Salz) → SHA-256 → 32 Hex */
-async function computeDeviceHash(): Promise<string> {
-  const saltKey = 'cp_device_salt';
-  let salt =
-    typeof localStorage !== 'undefined' ? localStorage.getItem(saltKey) : null;
-  if (!salt) {
-    // 16 Bytes → 32 Hex-Zeichen
-    salt = randomHex(16);
-    try {
-      localStorage.setItem(saltKey, salt);
-    } catch {
-      /* ignore */
-    }
+function secondsLeftFromEpoch(expEpochSeconds: number): number {
+  const ms = expEpochSeconds * 1000 - Date.now();
+  const s = Math.floor(ms / 1000);
+  return s > 0 ? s : 0;
+}
+
+function formatExp(expEpochSeconds: number): string {
+  try {
+    return new Date(expEpochSeconds * 1000).toLocaleString();
+  } catch {
+    return String(expEpochSeconds);
   }
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
-  const data = new TextEncoder().encode(`${ua}|${salt}`);
-  const ab = await digestSHA256(data);
-  const hex = toHex(ab);
-  return hex.slice(0, 32);
+}
+
+function extractGraphQLErrorMessage(err: unknown): string {
+  const ap = err as ApolloError;
+  const msg =
+    ap?.graphQLErrors?.[0]?.message ||
+    (typeof ap?.message === 'string' ? ap.message : null);
+  return msg || 'Unbekannter Fehler bei der Token-Erzeugung.';
 }
 
 export default function MyQRPage() {
-  const logger = getLogger(MyQRPage.name);
-
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  // ticketId kommt aus dem Keycloak-Token (Array -> wir nehmen das erste)
-  const ticketId = (user?.ticketId?.[0] ?? user?.ticketId?.[0]) as
-    | string
-    | undefined;
+  // ticketId robust aus Token (string oder string[])
+  const ticketId = getFirstTicketId(user?.ticketId);
 
-  const { data, loading, error, refetch } = useQuery<{
-    getTicketById: Ticket;
-  }>(GET_TICKET_BY_ID, { variables: { id: ticketId }, skip: !ticketId });
-
-  logger.debug('data=', data);
+  const { data, loading, error, refetch } = useQuery<{ getTicketById: Ticket }>(
+    GET_TICKET_BY_ID,
+    {
+      variables: { id: ticketId },
+      skip: !ticketId,
+      fetchPolicy: 'cache-and-network',
+    },
+  );
 
   const [createToken] = useMutation<CreateTokenPayload>(CREATE_TOKEN);
 
   const [tab, setTab] = React.useState(0);
-  const [token, setToken] = React.useState('');
-  const [ttl, setTtl] = React.useState(0);
-  const [expireAt, setExpireAt] = React.useState(0);
-  const [err, setErr] = React.useState<string | null>(null);
+  const [token, setToken] = React.useState<string>('');
+  const [expEpoch, setExpEpoch] = React.useState<number>(0);
+  const [jti, setJti] = React.useState<string>('');
+  const [secondsLeft, setSecondsLeft] = React.useState<number>(0);
+
+  // Inline-Fehler unter dem QR
+  const [inlineErr, setInlineErr] = React.useState<string | null>(null);
+
+  // Pop-up für „Untrusted device …“
+  const [deviceDialogOpen, setDeviceDialogOpen] = React.useState(false);
+  const [deviceDialogMsg, setDeviceDialogMsg] = React.useState<string>('');
 
   const ticket = data?.getTicketById;
 
   const refreshToken = React.useCallback(async () => {
     if (!ticket?.id) return;
-    setErr(null);
+    setInlineErr(null);
     try {
-      const deviceHash = await computeDeviceHash();
+      const deviceHash = await getDeviceHash(); // zentrale Utility
       const res = await createToken({
-        variables: { ticketId: ticket.id, deviceHash, ttlSeconds: 60 },
+        variables: { ticketId: ticket.id, deviceHash },
       });
-      const tok = res.data?.createToken.token;
-      const exp = res.data?.createToken.exp;
-      const jti = res.data?.createToken.jti;
-      if (!tok || !exp || !jti) {
-        setErr('Kein Token erhalten.');
+
+      const payload = res.data?.createToken;
+      if (res.errors && res.errors[0]) {
+          setDeviceDialogMsg(
+            'Dieses Gerät ist nicht freigegeben. Admin-Freigabe erforderlich.',
+          );
+          setDeviceDialogOpen(true);
+        
+      }
+      if (!payload?.token || !payload?.exp || !payload?.jti) {
+        setInlineErr('Kein gültiges Token erhalten.');
         return;
       }
-      setToken(tok);
-      setTtl(exp);
-      setExpireAt(Date.now() + exp * 1000);
+       
+      setToken(payload.token);
+      setExpEpoch(payload.exp);
+      setJti(payload.jti);
+      setSecondsLeft(secondsLeftFromEpoch(payload.exp));
+        
     } catch (e: unknown) {
-      const message =
-        e &&
-        typeof e === 'object' &&
-        'message' in e &&
-        typeof (e as { message?: unknown }).message === 'string'
-          ? (e as { message: string }).message
-          : 'Token konnte nicht erzeugt werden.';
-      setErr(message);
+      const message = extractGraphQLErrorMessage(e);
+
+      // spezieller Geräte-Fehler → Dialog
+      if (message.toLowerCase().includes('untrusted device')) {
+        setDeviceDialogMsg(
+          'Dieses Gerät ist nicht freigegeben. Admin-Freigabe erforderlich.',
+        );
+        setDeviceDialogOpen(true);
+      } else {
+        setInlineErr(message);
+      }
     }
   }, [createToken, ticket?.id]);
 
-  // Countdown + leiser Auto-Refresh kurz vor Ablauf
+  // Countdown & sanfter Auto-Refresh kurz vor Ablauf
   React.useEffect(() => {
-    if (!expireAt) return;
+    if (!expEpoch) return;
     const id = window.setInterval(() => {
-      const left = secondsLeft(expireAt);
-      setTtl(left);
-      if (left <= 5) {
-        // automatisch erneuern (Fehler ignorieren)
+      const left = secondsLeftFromEpoch(expEpoch);
+      setSecondsLeft(left);
+      if (left > 0 && left <= 5) {
         void refreshToken();
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [expireAt, refreshToken]);
+  }, [expEpoch, refreshToken]);
 
   if (authLoading) {
     return (
@@ -213,26 +236,47 @@ export default function MyQRPage() {
 
               {/* Tab 0: QR */}
               {tab === 0 && (
-                <Stack alignItems="center" spacing={1} sx={{ py: 1 }}>
+                <Stack alignItems="center" spacing={1.25} sx={{ py: 1 }}>
                   {token ? (
                     <>
                       <QRCodeCanvas value={token} size={260} includeMargin />
-                      <Typography variant="body2">
-                        Token läuft ab in <strong>{ttl}s</strong>
-                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                        alignItems="center"
+                      >
+                        <Chip
+                          size="small"
+                          label={`läuft ab in ${secondsLeft}s`}
+                          color={secondsLeft > 10 ? 'default' : 'warning'}
+                          variant="outlined"
+                        />
+                        <Chip
+                          size="small"
+                          label={`exp: ${formatExp(expEpoch)}`}
+                          variant="outlined"
+                        />
+                        <Chip
+                          size="small"
+                          label={`jti: ${jti.slice(0, 8)}…`}
+                          variant="outlined"
+                        />
+                      </Stack>
                       <Typography variant="caption" color="text.secondary">
                         Gerätegebunden – funktioniert nur auf diesem Gerät.
                       </Typography>
+                      {inlineErr && (
+                        <Alert severity="error" sx={{ width: '100%' }}>
+                          {inlineErr}
+                        </Alert>
+                      )}
                     </>
                   ) : (
                     <Alert severity="info" sx={{ width: '100%' }}>
                       Noch kein Token generiert. Klicke auf „QR-Token
                       generieren/erneuern“.
-                    </Alert>
-                  )}
-                  {err && (
-                    <Alert severity="error" sx={{ width: '100%' }}>
-                      {err}
                     </Alert>
                   )}
                 </Stack>
@@ -297,6 +341,27 @@ export default function MyQRPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pop-up für „Untrusted device – admin approval required“ */}
+      <Dialog
+        open={deviceDialogOpen}
+        onClose={() => setDeviceDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Gerät nicht vertrauenswürdig</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {deviceDialogMsg ||
+              'Dieses Gerät wurde noch nicht freigegeben. Bitte kontaktiere das Team, um die Freigabe zu erhalten.'}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeviceDialogOpen(false)} autoFocus>
+            Verstanden
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

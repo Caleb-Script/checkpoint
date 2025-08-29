@@ -204,7 +204,7 @@ export default function EventsListPage() {
                   </Button>
                   <Button
                     component={Link}
-                    href={`/admin/${ev.id}/invitations`}
+                    href={`/admin/event/${ev.id}/invitations`}
                     size="small"
                     variant="outlined"
                     sx={{ borderRadius: 2, ml: 'auto' }}

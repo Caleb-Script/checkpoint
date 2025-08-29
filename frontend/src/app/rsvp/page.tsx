@@ -90,6 +90,10 @@ export default function RsvpPage() {
   const [lastName, setLastName] = React.useState<string>('');
   const [email, setEmail] = React.useState<string>('');
 
+  // Plus-One Eingabefelder
+  const [plusOneFirstName, setPlusOneFirstName] = React.useState<string>('');
+  const [plusOneLastName, setPlusOneLastName] = React.useState<string>('');
+
   // Prefill aus Invitation, wenn vorhanden und noch nicht gesetzt
   React.useEffect(() => {
     if (!invitation) return;
@@ -159,13 +163,23 @@ export default function RsvpPage() {
       setErr('Kontingent erschöpft.');
       return;
     }
+    if (!plusOneFirstName.trim() || !plusOneLastName.trim()) {
+      setErr('Bitte Vor- und Nachname für den zusätzlichen Gast angeben.');
+      return;
+    }
     await createPlusOne({
       variables: {
-        eventId: invitation.eventId,
-        invitedByInvitationId: invitation.id,
+        input: {
+          eventId: invitation.eventId,
+          invitedByInvitationId: invitation.id,
+          firstName: plusOneFirstName.trim(),
+          lastName: plusOneLastName.trim(),
+        },
       },
     });
     setMsg('Plus-One Einladung angelegt. Freigabe durch das Team folgt.');
+    setPlusOneFirstName('');
+    setPlusOneLastName('');
     await refetch();
   }
 
@@ -358,15 +372,31 @@ export default function RsvpPage() {
                   />
                 </Stack>
 
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={2}
-                  sx={{ mb: 2 }}
-                >
+                {/* Eingabe für neuen Plus-One */}
+                <Stack spacing={1.5} sx={{ mb: 2, maxWidth: 420 }}>
+                  <TextField
+                    label="Vorname (Plus-One)"
+                    value={plusOneFirstName}
+                    onChange={(e) => setPlusOneFirstName(e.target.value)}
+                    disabled={creatingPlusOne || free <= 0}
+                    required
+                  />
+                  <TextField
+                    label="Nachname (Plus-One)"
+                    value={plusOneLastName}
+                    onChange={(e) => setPlusOneLastName(e.target.value)}
+                    disabled={creatingPlusOne || free <= 0}
+                    required
+                  />
                   <Button
                     variant="contained"
                     onClick={addPlusOne}
-                    disabled={creatingPlusOne || free <= 0}
+                    disabled={
+                      creatingPlusOne ||
+                      free <= 0 ||
+                      !plusOneFirstName.trim() ||
+                      !plusOneLastName.trim()
+                    }
                   >
                     Plus-One hinzufügen
                   </Button>
@@ -377,6 +407,8 @@ export default function RsvpPage() {
                     <TableHead>
                       <TableRow>
                         <TableCell>Invitation ID</TableCell>
+                        <TableCell>Vorname</TableCell>
+                        <TableCell>Nachname</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>RSVP</TableCell>
                         <TableCell>Approved</TableCell>
@@ -386,6 +418,8 @@ export default function RsvpPage() {
                       {invitation.plusOnes.map((c) => (
                         <TableRow key={c.id}>
                           <TableCell>{c.id}</TableCell>
+                          <TableCell>{c.firstName ?? '—'}</TableCell>
+                          <TableCell>{c.lastName ?? '—'}</TableCell>
                           <TableCell>{c.status}</TableCell>
                           <TableCell>{c.rsvpChoice ?? '—'}</TableCell>
                           <TableCell>

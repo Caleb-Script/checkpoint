@@ -28,3 +28,11 @@ export type RSVPReply = {
     email?: string;
   };
 };
+
+
+export type CreatePlusOnesInvitationInput = {
+  eventId: string
+  invitedByInvitationId: string
+  firstName: string
+  lastName: string
+}

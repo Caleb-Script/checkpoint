@@ -15,6 +15,7 @@ import { TraceContextProvider } from '../../trace/trace-context.provider.js';
 import { CreateTicketInput } from '../models/input/create-ticket.input.js';
 import { handleSpanError } from '../utils/error.util.js';
 import { getKafkaTopicsBy } from '../../messaging/kafka-topic.properties.js';
+import { UpdateTicketInput } from '../models/input/update-ticket.input.js';
 
 @Injectable()
 export class TicketWriteService {
@@ -42,11 +43,11 @@ export class TicketWriteService {
     this.#traceContextProvider = traceContextProvider;
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(['user', 'event']),
-    });
-  }
+  // async onModuleInit(): Promise<void> {
+  //   await this.#kafkaConsumerService.consume({
+  //     topics: getKafkaTopicsBy(['user', 'event']),
+  //   });
+  // }
 
   async create(input: CreateTicketInput) {
     return await this.#tracer.startActiveSpan('ticket.create', async (span) => {
@@ -146,6 +147,20 @@ export class TicketWriteService {
     });
     if (!found) throw new NotFoundException('Ticket not found');
     return found;
+  }
+
+  async update(input: UpdateTicketInput) {
+    await this.#ensureExists(input.id);
+
+    return this.#prismaService.ticket.update({
+      where: { id: input.id },
+      data: {
+        revoked: input.revoked,
+        deviceBoundKey: input.deviceBoundKey,
+        currentState: input.currentState,
+        seatId: input.seatId,
+      },
+    });
   }
 
   /**

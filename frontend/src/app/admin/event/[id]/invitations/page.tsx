@@ -77,6 +77,7 @@ import {
   Invitation,
   InvitationsQueryResult,
 } from '../../../../../types/invitation/invitation.type';
+import { useDeviceHash } from '../../../../../hooks/useDeviceHash';
 
 /* ---------- Zusätzliche Typen ---------- */
 type SeatRow = {

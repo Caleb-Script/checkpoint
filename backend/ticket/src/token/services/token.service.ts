@@ -21,6 +21,7 @@ import { SECURITY } from '../../config/security.config.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { PresenceState } from '../../scan/models/enums/presenceState.enum.js';
 import { TicketReadService } from '../../ticket/service/ticket-read.service.js';
+import { TicketWriteService } from '../../ticket/service/ticket-write.service.js';
 
 export interface TicketJwtClaims extends JWTPayload {
   sub: string; // ticketId
@@ -37,13 +38,16 @@ export class TokenService {
   #privateKey?: JWK;
   readonly #redisService: RedisService;
   readonly #ticketReadService: TicketReadService;
+  readonly #ticketWriteService: TicketWriteService;
 
   constructor(
     redisService: RedisService,
     ticketReadService: TicketReadService,
+    ticketWriteService: TicketWriteService,
   ) {
     this.#redisService = redisService;
     this.#ticketReadService = ticketReadService;
+    this.#ticketWriteService = ticketWriteService;
   }
 
   async #ensureKeys(): Promise<void> {
@@ -132,6 +136,13 @@ export class TokenService {
   ): Promise<{ token: string; exp: number; jti: string }> {
     const ticket = await this.#ticketReadService.findById(ticketId);
     if (!ticket) throw new NotFoundException('Ticket not found');
+
+    if (ticket.deviceBoundKey === null) {
+      await this.#ticketWriteService.update({
+        id: ticketId,
+        deviceBoundKey: deviceHash,
+      });
+    }
 
     if (ticket.deviceBoundKey && ticket.deviceBoundKey !== deviceHash) {
       // Admin-Notify (für Test: console.log)

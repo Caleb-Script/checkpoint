@@ -39,23 +39,28 @@ export const CREATE_INVITATION = gql /* GraphQL */ `
 
 export const CREATE_PLUS_ONES_INVITATION = gql /* GraphQL */ `
   mutation CreatePlusOnesInvitation(
-    $eventId: ID!
-    $invitedByInvitationId: ID!
+    $input: InvitationCreateInput!
   ) {
     createPlusOnesInvitation(
-      input: {
-        eventId: $eventId
-        invitedByInvitationId: $invitedByInvitationId
-      }
+        input: $input
     ) {
-      approved
-      eventId
-      guestProfileId
-      id
-      invitedByInvitationId
-      maxInvitees
-      rsvpChoice
-      status
+        id
+        firstName
+        lastName
+        eventId
+        guestProfileId
+        status
+        createdAt
+        updatedAt
+        rsvpChoice
+        rsvpAt
+        approved
+        approvedById
+        approvedAt
+        maxInvitees
+        invitedByInvitationId
+        invitedById
+        plusOnes
     }
   }
 `;

@@ -1,5 +1,4 @@
 import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
-import { TokenPayload } from '../../token/models/payloads/token.payload.js';
 import { Ticket } from '../models/entity/ticket.entity.js';
 import { CreateTicketInput } from '../models/input/create-ticket.input.js';
 import { TicketWriteService } from '../service/ticket-write.service.js';
