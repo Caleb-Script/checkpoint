@@ -63,6 +63,7 @@ type TicketRow = {
   id: string;
   eventId: string;
   seatId?: string | null;
+  guestProfileId?: string | null;
   revoked?: boolean | null;
 };
 
@@ -184,6 +185,8 @@ function TableCluster(props: {
   tableName: string;
   seats: Seat[];
   occupiedSeatIds?: Set<string>;
+  seatGuestMap?: Map<string, string>; // seatId -> guestProfileId
+  onSeatClick?: (seat: Seat, guestId?: string | null) => void;
 }): React.JSX.Element {
   // Mobile-first
   const containerSize = 260;
@@ -250,41 +253,48 @@ function TableCluster(props: {
             const mobilePos = chairsMobile[idx];
             const mdPos = chairsMd[idx];
             const occupied = props.occupiedSeatIds?.has(s.id) ?? false;
+            const guestId = props.seatGuestMap?.get(s.id) ?? null;
+
+            const tooltipContent = (
+              <Box>
+                <Typography variant="caption">
+                  <strong>Section:</strong> {s.section ?? '—'}
+                </Typography>
+                <br />
+                <Typography variant="caption">
+                  <strong>Table:</strong> {s.table ?? '—'}
+                </Typography>
+                <br />
+                <Typography variant="caption">
+                  <strong>Seat:</strong> {seatLabel(s)}
+                </Typography>
+                <br />
+                <Typography variant="caption">
+                  <strong>Status:</strong> {occupied ? 'belegt' : 'frei'}
+                </Typography>
+                {s.note && (
+                  <>
+                    <br />
+                    <Typography variant="caption">
+                      <strong>Notiz:</strong> {s.note}
+                    </Typography>
+                  </>
+                )}
+                {guestId && (
+                  <>
+                    <br />
+                    <Typography variant="caption" color="primary">
+                      Zum Gastprofil klicken
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            );
 
             return (
-              <Tooltip
-                key={s.id}
-                arrow
-                placement="top"
-                title={
-                  <Box>
-                    <Typography variant="caption">
-                      <strong>Section:</strong> {s.section ?? '—'}
-                    </Typography>
-                    <br />
-                    <Typography variant="caption">
-                      <strong>Table:</strong> {s.table ?? '—'}
-                    </Typography>
-                    <br />
-                    <Typography variant="caption">
-                      <strong>Seat:</strong> {seatLabel(s)}
-                    </Typography>
-                    <br />
-                    <Typography variant="caption">
-                      <strong>Status:</strong> {occupied ? 'belegt' : 'frei'}
-                    </Typography>
-                    {s.note && (
-                      <>
-                        <br />
-                        <Typography variant="caption">
-                          <strong>Gast:</strong> {s.note}
-                        </Typography>
-                      </>
-                    )}
-                  </Box>
-                }
-              >
+              <Tooltip key={s.id} arrow placement="top" title={tooltipContent}>
                 <Avatar
+                  onClick={() => guestId && props.onSeatClick?.(s, guestId)}
                   sx={{
                     position: 'absolute',
                     width: chairSize,
@@ -304,7 +314,14 @@ function TableCluster(props: {
                     border: '2px solid',
                     borderColor: 'background.paper',
                     boxShadow: 1,
+                    cursor: guestId ? 'pointer' : 'default',
                   }}
+                  aria-label={
+                    guestId
+                      ? 'Zum Gastprofil wechseln'
+                      : 'Sitz ohne Gastzuordnung'
+                  }
+                  role={guestId ? 'button' : undefined}
                 >
                   {seatLabel(s)}
                 </Avatar>
@@ -502,14 +519,30 @@ export default function EventDetailPage(): React.JSX.Element {
     return sorted;
   }, [grouped]);
 
-  // Belegte Seat-IDs aus Tickets
-  const occupiedSeatIds: Set<string> = React.useMemo(() => {
+  // Belegte Seat-IDs + Mapping Seat -> Guest
+  const { occupiedSeatIds, seatGuestMap } = React.useMemo(() => {
     const all = ticketsData?.getTickets ?? [];
-    const list = all.filter(
+    const relevant = all.filter(
       (t) => t.eventId === eventId && t.seatId && !t.revoked,
     );
-    return new Set(list.map((t) => String(t.seatId)));
+    const occ = new Set<string>();
+    const map = new Map<string, string>();
+    for (const t of relevant) {
+      const sid = String(t.seatId);
+      occ.add(sid);
+      if (t.guestProfileId) map.set(sid, String(t.guestProfileId));
+    }
+    return { occupiedSeatIds: occ, seatGuestMap: map };
   }, [ticketsData, eventId]);
+
+  // Klick auf Sitz → Gastprofil
+  const handleSeatClick = React.useCallback(
+    (_seat: Seat, guestId?: string | null) => {
+      if (!guestId) return;
+      router.push(`/admin/event/${eventId}/guests/${guestId}`);
+    },
+    [router, eventId],
+  );
 
   // ---------- UI ----------
   return (
@@ -835,6 +868,8 @@ export default function EventDetailPage(): React.JSX.Element {
                               tableName={tableKey}
                               seats={tables[tableKey]}
                               occupiedSeatIds={occupiedSeatIds}
+                              seatGuestMap={seatGuestMap}
+                              onSeatClick={handleSeatClick}
                             />
                           </Grid>
                         ))}
@@ -857,6 +892,7 @@ export default function EventDetailPage(): React.JSX.Element {
             <Stack spacing={1} sx={{ mt: 1 }}>
               {seatsData?.seatsByEvent.map((s) => {
                 const occupied = occupiedSeatIds.has(s.id);
+                const guestId = seatGuestMap.get(s.id);
                 return (
                   <Card key={s.id} variant="outlined" sx={{ borderRadius: 2 }}>
                     <CardContent sx={{ py: 1.25 }}>
@@ -867,7 +903,24 @@ export default function EventDetailPage(): React.JSX.Element {
                         sx={{ mb: 0.5 }}
                       >
                         <SeatIcon fontSize="small" />
-                        <Typography fontWeight={700}>
+                        <Typography
+                          fontWeight={700}
+                          sx={{
+                            ...(guestId
+                              ? {
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                }
+                              : {}),
+                          }}
+                          onClick={() =>
+                            guestId &&
+                            router.push(
+                              `/admin/event/${eventId}/guests/${guestId}`,
+                            )
+                          }
+                          title={guestId ? 'Zum Gastprofil' : undefined}
+                        >
                           Section {s.section || '—'} • Tisch {s.table || '—'} •
                           Sitz {seatLabel(s)}
                         </Typography>
@@ -903,7 +956,7 @@ export default function EventDetailPage(): React.JSX.Element {
                       offset: next,
                       limit,
                       filter: null,
-                    });
+                    } as any);
                   }}
                 >
                   Mehr laden
