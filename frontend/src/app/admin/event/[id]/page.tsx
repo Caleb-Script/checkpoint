@@ -597,11 +597,11 @@ export default function EventDetailPage(): React.JSX.Element {
 
                 <Button
                   component={Link}
-                  href={`/admin/event/${eventId}/responses`}
+                  href={`/admin/event/${eventId}/tickets`}
                   variant="outlined"
                   sx={{ borderRadius: 2 }}
                 >
-                  Responses
+                  Tickets
                 </Button>
               </Stack>
             </>

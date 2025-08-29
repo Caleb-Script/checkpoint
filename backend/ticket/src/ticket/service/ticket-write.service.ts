@@ -89,6 +89,14 @@ export class TicketWriteService {
               trace,
             );
 
+            void this.#kafkaProducerService.updateSeat(
+              {
+                id: input.seatId,
+              },
+              'ticket.write-service',
+              trace,
+            );
+
             return ticket;
           },
         );

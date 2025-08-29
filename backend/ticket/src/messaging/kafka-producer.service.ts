@@ -144,6 +144,16 @@ export class KafkaProducerService
     );
   }
 
+  async updateSeat(
+    payload: { id: string },
+    service: string,
+    trace?: TraceContext,
+  ) {
+    const topic = KafkaTopics.event.updateSeat;
+
+    await this.sendEvent(topic, 'updateSeat', payload, service, 'v1', trace);
+  }
+
   // async releaseItem(
   //     payload: unknown,
   //     service: string,

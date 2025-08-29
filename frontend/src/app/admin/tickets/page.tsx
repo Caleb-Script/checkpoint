@@ -96,7 +96,7 @@ function TicketsInnerPage() {
 
   const handleEventSelect = (value: string) => {
     const q = value ? `?eventId=${encodeURIComponent(value)}` : '';
-    router.replace(`/tickets${q}`);
+    router.replace(`/admin/tickets${q}`);
   };
 
   async function handleDelete(id: string) {

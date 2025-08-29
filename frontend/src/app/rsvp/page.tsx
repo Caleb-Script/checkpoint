@@ -1,4 +1,6 @@
 // /frontend/src/app/rsvp/page.tsx
+//TODO „Danke“-Screen nach erfolgreichem RSVP
+
 'use client';
 
 export const dynamic = 'force-dynamic';

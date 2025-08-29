@@ -7,7 +7,7 @@ export const CREATE_TICKET = gql /* GraphQL */ `
     $eventId: ID!
     $invitationId: ID!
     $seatId: ID
-    $guestProfileId: ID
+    $guestProfileId: ID!
   ) {
     createTicket(
       input: {

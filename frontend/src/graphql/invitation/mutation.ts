@@ -63,18 +63,30 @@ export const UPDATE_INVITATION = gql /* GraphQL */ `
         rsvpChoice: $rsvpChoice
         maxInvitees: $maxInvitees
       }
-    ) {
-      approved
-      eventId
-      guestProfileId
-      id
-      invitedByInvitationId
-      maxInvitees
-      rsvpChoice
-      status
-    }
+    )
   }
 `;
+
+/** generisches Update (approved, rsvpChoice, maxInvitees ...) */
+export const APPROVE_INVITATION = gql /* GraphQL */ `
+  mutation UpdateInvitation(
+    $id: ID!
+    $approved: Boolean
+    ) {
+    updateInvitation(id: $id, input: { approved: $approved}) {
+        approved
+        eventId
+        guestProfileId
+        id
+        invitedByInvitationId
+        maxInvitees
+        rsvpChoice
+        status
+    }
+}
+
+`;
+
 
 /** ▶️ RSVP-ACCEPT: erstellt bei Bedarf GuestProfile (E-Mail ist optional) */
 export const REPLY_INVITATION = gql /* GraphQL */ `

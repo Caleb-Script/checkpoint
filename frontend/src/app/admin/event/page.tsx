@@ -213,7 +213,7 @@ export default function EventsListPage() {
                   </Button>
                   <Button
                     component={Link}
-                    href={`/tickets?eventId=${encodeURIComponent(ev.id)}`}
+                    href={`/admin/event/${ev.id}/tickets`}
                     size="small"
                     variant="outlined"
                     sx={{ borderRadius: 2 }}
