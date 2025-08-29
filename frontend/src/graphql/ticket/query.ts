@@ -5,16 +5,16 @@ import { gql } from '@apollo/client';
 export const GET_TICKETS = gql /* GraphQL */ `
   query GetTickets {
     getTickets {
-       id
-        eventId
-        invitationId
-        guestProfileId
-        seatId
-        currentState
-        deviceBoundKey
-        revoked
-        createdAt
-        updatedAt
+      id
+      eventId
+      invitationId
+      guestProfileId
+      seatId
+      currentState
+      deviceBoundKey
+      revoked
+      createdAt
+      updatedAt
     }
   }
 `;

@@ -26,7 +26,7 @@ import * as React from 'react';
 
 // ⚠️ Import-Pfade bitte an **dein** Projekt anpassen.
 // Du verwendest bereits "ticket" (Singular) – daran halte ich mich hier:
-import { ROTATE_TOKEN } from '@/graphql/ticket/mutation';
+import { CREATE_TOKEN } from '@/graphql/ticket/mutation';
 import { GET_TICKET_BY_ID } from '@/graphql/ticket/query';
 import { digestSHA256, randomHex, toHex } from '../../lib/crypto';
 import { Ticket } from '../../types/ticket/ticket.type';
@@ -81,7 +81,7 @@ export default function MyQRPage() {
 
   logger.debug('data=', data);
 
-  const [rotate] = useMutation<RotateTokenPayload>(ROTATE_TOKEN);
+  const [rotate] = useMutation<RotateTokenPayload>(CREATE_TOKEN);
 
   const [tab, setTab] = React.useState(0);
   const [token, setToken] = React.useState('');

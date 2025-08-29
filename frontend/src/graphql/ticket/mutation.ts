@@ -26,21 +26,12 @@ export const CREATE_TICKET = gql /* GraphQL */ `
 `;
 
 /** Rotierenden Token ausstellen (für „Mein QR“ / Scanner) */
-export const ROTATE_TOKEN = gql /* GraphQL */ `
-  mutation RotateToken(
-    $ticketId: ID!
-    $deviceHash: String!
-    $ttlSeconds: Int!
-  ) {
-    rotateToken(
-      input: {
-        deviceHash: $deviceHash
-        ticketId: $ticketId
-        ttlSeconds: $ttlSeconds
-      }
-    ) {
+export const CREATE_TOKEN = gql /* GraphQL */ `
+  mutation CreateToken($ticketId: ID!, $deviceHash: String!) {
+    createToken(ticketId: $ticketId, deviceHash: $deviceHash) {
       token
-      ttlSeconds
+      exp
+      jti
     }
   }
 `;

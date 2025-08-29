@@ -26,16 +26,17 @@ import * as React from 'react';
 
 // ⚠️ Import-Pfade bitte an **dein** Projekt anpassen.
 // Du verwendest bereits "ticket" (Singular) – daran halte ich mich hier:
-import { ROTATE_TOKEN } from '@/graphql/ticket/mutation';
+import { CREATE_TOKEN } from '@/graphql/ticket/mutation';
 import { GET_TICKET_BY_ID } from '@/graphql/ticket/query';
 import { digestSHA256, randomHex, toHex } from '../../lib/crypto';
 import { Ticket } from '../../types/ticket/ticket.type';
 import { getLogger } from '../../utils/logger';
 
-type RotateTokenPayload = {
-  rotateToken: {
+type CreateTokenPayload = {
+  createToken: {
     token: string;
-    ttlSeconds: number;
+    exp: number;
+    jti: string;
   };
 };
 
@@ -81,7 +82,7 @@ export default function MyQRPage() {
 
   logger.debug('data=', data);
 
-  const [rotate] = useMutation<RotateTokenPayload>(ROTATE_TOKEN);
+  const [createToken] = useMutation<CreateTokenPayload>(CREATE_TOKEN);
 
   const [tab, setTab] = React.useState(0);
   const [token, setToken] = React.useState('');
@@ -96,18 +97,19 @@ export default function MyQRPage() {
     setErr(null);
     try {
       const deviceHash = await computeDeviceHash();
-      const res = await rotate({
+      const res = await createToken({
         variables: { ticketId: ticket.id, deviceHash, ttlSeconds: 60 },
       });
-      const tok = res.data?.rotateToken.token;
-      const ttlSec = res.data?.rotateToken.ttlSeconds;
-      if (!tok || !ttlSec) {
+      const tok = res.data?.createToken.token;
+      const exp = res.data?.createToken.exp;
+      const jti = res.data?.createToken.jti;
+      if (!tok || !exp || !jti) {
         setErr('Kein Token erhalten.');
         return;
       }
       setToken(tok);
-      setTtl(ttlSec);
-      setExpireAt(Date.now() + ttlSec * 1000);
+      setTtl(exp);
+      setExpireAt(Date.now() + exp * 1000);
     } catch (e: unknown) {
       const message =
         e &&
@@ -118,7 +120,7 @@ export default function MyQRPage() {
           : 'Token konnte nicht erzeugt werden.';
       setErr(message);
     }
-  }, [rotate, ticket?.id]);
+  }, [createToken, ticket?.id]);
 
   // Countdown + leiser Auto-Refresh kurz vor Ablauf
   React.useEffect(() => {

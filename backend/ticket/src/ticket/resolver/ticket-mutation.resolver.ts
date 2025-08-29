@@ -21,12 +21,4 @@ export class TicketMutationResolver {
   deleteTicket(@Args('id', { type: () => ID }) id: string) {
     return this.#ticketWriteService.delete(id);
   }
-
-  @Mutation(() => TokenPayload, { name: 'createToken' })
-  async createToken(
-    @Args('ticketId') ticketId: string,
-    @Args('deviceHash') deviceHash: string,
-  ): Promise<TokenPayload> {
-    return this.#ticketWriteService.createToken(ticketId, deviceHash);
-  }
 }

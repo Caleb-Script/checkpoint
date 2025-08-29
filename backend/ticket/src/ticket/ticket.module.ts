@@ -7,7 +7,6 @@ import { TicketQueryResolver } from './resolver/ticket-query.resolver.js';
 import { TicketReadService } from './service/ticket-read.service.js';
 import { TicketWriteService } from './service/ticket-write.service.js';
 import { ScanModule } from '../scan/scan.module.js';
-import { TokenModule } from '../token/token.module.js';
 import { ShareGuardModule } from '../guard/guard.module.js';
 
 @Module({
@@ -16,7 +15,6 @@ import { ShareGuardModule } from '../guard/guard.module.js';
     PrismaModule,
     RedisModule,
     ScanModule,
-    TokenModule,
     ShareGuardModule,
   ],
   providers: [
