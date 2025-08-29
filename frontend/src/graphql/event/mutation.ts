@@ -5,12 +5,8 @@ import { gql } from '@apollo/client';
  * Event erstellen
  */
 export const CREATE_EVENT = gql`
-  mutation CreateEvent(
-    $input: CreateEventInput!
-  ) {
-    createEvent(
-      input: $input
-    ) {
+  mutation CreateEvent($input: CreateEventInput!) {
+    createEvent(input: $input) {
       allowReEntry
       createdAt
       endsAt
@@ -84,12 +80,8 @@ export const DELETE_EVENT = gql`
  * Einzelsitz anlegen
  */
 export const CREATE_SEAT = gql`
-  mutation CreateSeat(
-    $input: CreateSeatInput!
-  ) {
-    createSeat(
-      input: $input
-    ) {
+  mutation CreateSeat($input: CreateSeatInput!) {
+    createSeat(input: $input) {
       eventId
       id
       note

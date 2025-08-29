@@ -1,20 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /**
  * Zentrale Konfiguration aller Kafka-Topics im System.
  * Dient der Typsicherheit, Übersichtlichkeit und Wiederverwendbarkeit in Publishern und Handlern.
  */
 
 export const KafkaTopics = {
-  user: {
-    addUser: 'invitation.add.user',
-    approve: 'auth.create.user',
-    addAttribute: 'auth.add-attribute.user',
-    setAttribute: 'auth.set-attribute.user',
-  },
-  event: {
-    updateSeat: 'event.update.seat',
+  ticket: {
     addSeat: 'ticket.add.seat',
+    updateSeat: 'event.update.seat',
   },
 } as const;
 

@@ -21,10 +21,10 @@ export type InvitationQueryResult = {
 };
 
 export type RSVPReply = {
-  reply: 'YES' | 'NO',
+  reply: 'YES' | 'NO';
   input: {
     firstName: string;
     lastName: string;
-    email?: string
-  }
-}
+    email?: string;
+  };
+};

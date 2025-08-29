@@ -49,7 +49,7 @@ export class TicketWriteService {
 
   async onModuleInit(): Promise<void> {
     await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(['user']),
+      topics: getKafkaTopicsBy(['user', 'event']),
     });
   }
 
@@ -91,7 +91,9 @@ export class TicketWriteService {
 
             void this.#kafkaProducerService.updateSeat(
               {
-                id: input.seatId,
+                id: input?.seatId,
+                guestId: input?.guestProfileId,
+                eventId: input.eventId,
               },
               'ticket.write-service',
               trace,
@@ -105,6 +107,33 @@ export class TicketWriteService {
       } finally {
         span.end();
       }
+    });
+  }
+
+  async addSeatId(input: {
+    id: string | undefined;
+    eventId: string;
+    guestId: string;
+  }) {
+    const { id: seatId, eventId, guestId: guestProfileId } = input;
+    const ticket = await (this.#prismaService as any).ticket.findUnique({
+      where: { eventId, guestProfileId },
+      select: { id: true, seatId: true, eventId: true, guestProfileId: true },
+    });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    const updated = await this.#prismaService.$transaction(async (tx) => {
+      const updatedTicket = await tx.ticket.update({
+        where: { id: ticket.id },
+        data: { seatId },
+        select: {
+          id: true,
+          eventId: true,
+          guestProfileId: true,
+          seatId: true,
+        },
+      });
+      return updatedTicket;
     });
   }
 

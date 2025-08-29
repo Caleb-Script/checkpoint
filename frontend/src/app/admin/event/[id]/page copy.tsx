@@ -50,21 +50,12 @@ import {
   UPDATE_EVENT,
 } from '../../../../graphql/event/mutation';
 import { EVENT_BY_ID, EVENT_SEATS } from '../../../../graphql/event/query';
-import { GET_TICKETS } from '../../../../graphql/ticket/query';
 import type { Event } from '../../../../types/event/event.type';
 import type { Seat } from '../../../../types/event/seat.type';
 
 // ---------- Resulttypen ----------
 type EventByIdResult = { event: Event };
 type EventSeatsResult = { seatsByEvent: Seat[]; seatsByEventCount: number };
-
-// Tickets (schlanker Typ)
-type TicketRow = {
-  id: string;
-  eventId: string;
-  seatId?: string | null;
-  revoked?: boolean | null;
-};
 
 // Gruppierung: Section -> (Table -> Seats)
 type SeatsByTable = Record<string, Seat[]>;
@@ -121,6 +112,7 @@ function parseCSV(text: string, eventId: string): Array<Omit<Seat, 'id'>> {
     const note = iNote >= 0 ? (parts[iNote] ?? '') : '';
 
     if (!section || !table || !number) {
+      // Zeilen mit fehlenden Pflichtwerten überspringen
       continue;
     }
 
@@ -183,7 +175,6 @@ function TableCluster(props: {
   sectionName: string;
   tableName: string;
   seats: Seat[];
-  occupiedSeatIds?: Set<string>;
 }): React.JSX.Element {
   // Mobile-first
   const containerSize = 260;
@@ -249,13 +240,9 @@ function TableCluster(props: {
           {props.seats.map((s, idx) => {
             const mobilePos = chairsMobile[idx];
             const mdPos = chairsMd[idx];
-            const occupied = props.occupiedSeatIds?.has(s.id) ?? false;
-
             return (
               <Tooltip
                 key={s.id}
-                arrow
-                placement="top"
                 title={
                   <Box>
                     <Typography variant="caption">
@@ -269,15 +256,11 @@ function TableCluster(props: {
                     <Typography variant="caption">
                       <strong>Seat:</strong> {seatLabel(s)}
                     </Typography>
-                    <br />
-                    <Typography variant="caption">
-                      <strong>Status:</strong> {occupied ? 'belegt' : 'frei'}
-                    </Typography>
                     {s.note && (
                       <>
                         <br />
                         <Typography variant="caption">
-                          <strong>Gast:</strong> {s.note}
+                          <strong>Note:</strong> {s.note}
                         </Typography>
                       </>
                     )}
@@ -291,8 +274,8 @@ function TableCluster(props: {
                     height: chairSize,
                     fontSize: 13,
                     fontWeight: 700,
-                    bgcolor: occupied ? 'error.main' : 'grey.900',
-                    color: occupied ? 'error.contrastText' : 'grey.100',
+                    bgcolor: 'grey.900',
+                    color: 'grey.100',
                     left: {
                       xs: mobilePos.left - chairSize / 2,
                       md: mdPos.left - chairSize / 2,
@@ -375,15 +358,6 @@ export default function EventDetailPage(): React.JSX.Element {
     onError: () => {},
   });
 
-  // Tickets des Events, um belegte Sitze zu markieren
-  const {
-    data: ticketsData,
-    loading: ticketsLoading,
-    refetch: refetchTickets,
-  } = useQuery<{ getTickets: TicketRow[] }>(GET_TICKETS, {
-    fetchPolicy: 'cache-and-network',
-  });
-
   // --------- Mutations ----------
   const [updateEvent, { loading: updating }] = useMutation(UPDATE_EVENT, {
     variables: { input: { id: eventId, allowReEntry: allow } },
@@ -427,7 +401,7 @@ export default function EventDetailPage(): React.JSX.Element {
   // --------- Handlers ----------
   const handleRefresh = async (): Promise<void> => {
     setError(null);
-    await Promise.all([refetchEvent(), refetchSeats(), refetchTickets()]);
+    await Promise.all([refetchEvent(), refetchSeats()]);
   };
 
   const handleFilePick = async (
@@ -502,15 +476,6 @@ export default function EventDetailPage(): React.JSX.Element {
     return sorted;
   }, [grouped]);
 
-  // Belegte Seat-IDs aus Tickets
-  const occupiedSeatIds: Set<string> = React.useMemo(() => {
-    const all = ticketsData?.getTickets ?? [];
-    const list = all.filter(
-      (t) => t.eventId === eventId && t.seatId && !t.revoked,
-    );
-    return new Set(list.map((t) => String(t.seatId)));
-  }, [ticketsData, eventId]);
-
   // ---------- UI ----------
   return (
     <Stack spacing={2} sx={{ pb: 1 }}>
@@ -538,7 +503,7 @@ export default function EventDetailPage(): React.JSX.Element {
                 <span>
                   <IconButton
                     onClick={handleRefresh}
-                    disabled={loading || seatsLoading || ticketsLoading}
+                    disabled={loading || seatsLoading}
                   >
                     <RefreshIcon />
                   </IconButton>
@@ -558,7 +523,7 @@ export default function EventDetailPage(): React.JSX.Element {
             </Stack>
           }
         />
-        {(loading || seatsLoading || ticketsLoading) && <LinearProgress />}
+        {loading && <LinearProgress />}
         <CardContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -784,21 +749,6 @@ export default function EventDetailPage(): React.JSX.Element {
               </Alert>
             )}
 
-            {/* Legende */}
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ mb: 1 }}
-            >
-              <Chip
-                size="small"
-                label="frei"
-                sx={{ bgcolor: 'grey.900', color: 'grey.100' }}
-              />
-              <Chip size="small" label="belegt" color="error" />
-            </Stack>
-
             <Stack spacing={2} sx={{ mt: 1 }}>
               {sectionKeysSorted.map((sectionKey) => {
                 const tables = grouped[sectionKey];
@@ -834,7 +784,6 @@ export default function EventDetailPage(): React.JSX.Element {
                               sectionName={sectionKey}
                               tableName={tableKey}
                               seats={tables[tableKey]}
-                              occupiedSeatIds={occupiedSeatIds}
                             />
                           </Grid>
                         ))}
@@ -855,39 +804,30 @@ export default function EventDetailPage(): React.JSX.Element {
               </Alert>
             )}
             <Stack spacing={1} sx={{ mt: 1 }}>
-              {seatsData?.seatsByEvent.map((s) => {
-                const occupied = occupiedSeatIds.has(s.id);
-                return (
-                  <Card key={s.id} variant="outlined" sx={{ borderRadius: 2 }}>
-                    <CardContent sx={{ py: 1.25 }}>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                        sx={{ mb: 0.5 }}
-                      >
-                        <SeatIcon fontSize="small" />
-                        <Typography fontWeight={700}>
-                          Section {s.section || '—'} • Tisch {s.table || '—'} •
-                          Sitz {seatLabel(s)}
-                        </Typography>
-                        <Box sx={{ flex: 1 }} />
-                        <Chip
-                          size="small"
-                          label={occupied ? 'belegt' : 'frei'}
-                          color={occupied ? 'error' : 'default'}
-                          variant={occupied ? 'filled' : 'outlined'}
-                        />
-                      </Stack>
-                      {s.note && (
-                        <Typography variant="body2" color="text.secondary">
-                          {s.note}
-                        </Typography>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {seatsData?.seatsByEvent.map((s) => (
+                <Card key={s.id} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <CardContent sx={{ py: 1.25 }}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={1}
+                      sx={{ mb: 0.5 }}
+                    >
+                      <SeatIcon fontSize="small" />
+                      <Typography fontWeight={700}>
+                        Section {s.section || '—'} • Tisch {s.table || '—'} •
+                        Sitz {seatLabel(s)}
+                      </Typography>
+                      <Box sx={{ flex: 1 }} />
+                    </Stack>
+                    {s.note && (
+                      <Typography variant="body2" color="text.secondary">
+                        {s.note}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
 
               {/* Mehr laden */}
               {!!seatsData && seatsData.seatsByEventCount > offset + limit && (

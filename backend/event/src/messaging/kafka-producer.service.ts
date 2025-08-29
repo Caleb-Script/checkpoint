@@ -1,16 +1,25 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/kafka/kafka-producer.service.ts
+import { kafkaBroker } from '../config/kafka.js';
+import { TraceContext } from '../trace/trace-context.util.js';
+import { KafkaHeaderBuilder } from './kafka-header-builder.js';
+import { KafkaTopics } from './kafka-topic.properties.js';
 import {
   Injectable,
   OnModuleInit,
   OnApplicationShutdown,
 } from '@nestjs/common';
+import {
+  context,
+  SpanStatusCode,
+  trace,
+  TraceAPI,
+  Tracer,
+} from '@opentelemetry/api';
 import { Kafka, Message, Producer, ProducerRecord } from 'kafkajs';
-import { kafkaBroker } from '../config/kafka.js';
-import { TraceContext } from '../trace/trace-context.util.js';
-import { KafkaHeaderBuilder } from './kafka-header-builder.js';
-import { KafkaTopics } from './kafka-topic.properties.js';
-import { context, SpanStatusCode, trace, Tracer } from '@opentelemetry/api';
-import { AddAttributeDTO } from '../ticket/models/dto/add-attribute.dto.js';
 
 /**
  * Kafka Producer zum Senden von Nachrichten.
@@ -119,43 +128,18 @@ export class KafkaProducerService
     }
   }
 
-  async addAttribute(
-    payload: AddAttributeDTO,
-    service: string,
-    trace?: TraceContext,
-  ): Promise<void> {
-    const topic = KafkaTopics.user.addAttribute;
-    const attribute = {
-      [payload.attribute]: payload.value, // z.B. { ticketId: "abc123" }
-    };
-    const cleanPayload = {
-      userId: payload.guestProfileId,
-      attributes: attribute,
-      mode: payload.mode,
-    };
-
-    await this.sendEvent(
-      topic,
-      'acceptRsvp',
-      cleanPayload,
-      service,
-      'v1',
-      trace,
-    );
-  }
-
-  async updateSeat(
+  async addSeatID(
     payload: {
-      id: string | undefined;
-      guestId: string;
+      seatId: string;
+      guestProfileId: string;
       eventId: string;
     },
     service: string,
     trace?: TraceContext,
   ) {
-    const topic = KafkaTopics.event.updateSeat;
+    const topic = KafkaTopics.ticket.addSeat;
 
-    await this.sendEvent(topic, 'updateSeat', payload, service, 'v1', trace);
+    await this.sendEvent(topic, 'addSeat', payload, service, 'v1', trace);
   }
 
   // async releaseItem(
