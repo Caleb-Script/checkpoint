@@ -81,7 +81,7 @@ export class UserHandler implements KafkaEventHandler {
       `${ctx.topic}:${ctx.partition}:${ctx.offset}`;
 
     const input: NotificationInput = {
-      templateId: 'cmexys0280000ijfz7nzul4ph',
+      templateId: 'cmeykun9g000006cmg151qnmy',
       recipientUsername: username,
       recipientId: userId,
       recipientTenant: derivedTenant,

@@ -290,7 +290,13 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
    * - Falls User bereits existiert (username/email), werden Attribute gemerged (mode "append" für Arrays; "set" für einzelne Werte).
    * - invitationId wird als String-Array gespeichert (Keycloak-Konvention).
    */
-  async signUp({ invitationId, firstName, lastName, emailData, phone }: SignIn) {
+  async signUp({
+    invitationId,
+    firstName,
+    lastName,
+    emailData,
+    phone,
+  }: SignIn) {
     return await this.#tracer.startActiveSpan('auth.signUp', async (span) => {
       try {
         return await otelContext.with(

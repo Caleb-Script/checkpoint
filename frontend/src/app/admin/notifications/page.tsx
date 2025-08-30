@@ -117,7 +117,9 @@ const QUERY_NOTIFICATIONS_PAGED = gql`
 // Falls dein Server aktuell nur eine simple Liste hat, kannst du das als Fallback nehmen.
 export const QUERY_NOTIFICATIONS_ALL = gql`
   query Notifications {
-    notifications { ...NotificationFields }
+    notifications {
+      ...NotificationFields
+    }
   }
   ${NOTIFICATION_FIELDS}
 `;
@@ -184,8 +186,8 @@ const PAGE_SIZE = 50;
 /** ================ Page ================ */
 
 export default function AdminNotificationsPage() {
-    const logger = getLogger(AdminNotificationsPage.name);
-    
+  const logger = getLogger(AdminNotificationsPage.name);
+
   // Filter-States (clientseitig)
   const [onlyUnread, setOnlyUnread] = React.useState(true);
   const [category, setCategory] = React.useState<string>('ALL');
@@ -213,7 +215,7 @@ export default function AdminNotificationsPage() {
     onCompleted: (d) => {
       const conn = d?.notificationsPaged;
       setItems(conn?.items ?? []);
-        setNextCursor(conn?.nextCursor ?? null);
+      setNextCursor(conn?.nextCursor ?? null);
     },
   });
 
@@ -401,9 +403,6 @@ export default function AdminNotificationsPage() {
     );
     return arr;
   }, [items, searchText]);
-
-
-
 
   return (
     <Box>

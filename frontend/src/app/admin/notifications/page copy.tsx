@@ -31,7 +31,14 @@ import {
   Typography,
 } from '@mui/material';
 import * as React from 'react';
-import { MUT_ARCHIVE, MUT_MARK_READ, QUERY_ADMIN_NOTIFICATIONS, QUERY_MY_NOTIFICATIONS, SUB_NOTIFICATION_ADDED, SUB_NOTIFICATION_UPDATED } from '../../../graphql/notification';
+import {
+  MUT_ARCHIVE,
+  MUT_MARK_READ,
+  QUERY_ADMIN_NOTIFICATIONS,
+  QUERY_MY_NOTIFICATIONS,
+  SUB_NOTIFICATION_ADDED,
+  SUB_NOTIFICATION_UPDATED,
+} from '../../../graphql/notification';
 
 type Notification = {
   id: string;

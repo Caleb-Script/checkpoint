@@ -15,20 +15,10 @@
     "lint": "npm -ws run lint",
     "test": "npm -ws run test",
     "prettier": "prettier --cache --write \"**/src/**/*.{ts,tsx}\"",
-     "event:gen": "pnpm -w --filter ./backend/event run gen",
-    "event:migrate": "pnpm -w --filter ./backend/event run migrate",
-    "event:reset": "pnpm -w --filter ./backend/event run reset",
-    "event:seed": "pnpm -w --filter ./backend/event run seed",
-
-    "invitation:gen": "pnpm -w --filter ./backend/invitation run gen",
-    "invitation:migrate": "pnpm -w --filter ./backend/invitation run migrate",
-    "invitation:reset": "pnpm -w --filter ./backend/invitation run reset",
-    "invitation:seed": "pnpm -w --filter ./backend/invitation run seed",
-
-    "ticket:gen": "pnpm -w --filter ./backend/ticket run gen",
-    "ticket:migrate": "pnpm -w --filter ./backend/ticket run migrate",
-    "ticket:reset": "pnpm -w --filter ./backend/ticket run reset",
-    "ticket:seed": "pnpm -w --filter ./backend/ticket run seed"
+    "reset": "pnpm -r --filter ./backend/event --filter ./backend/invitation --filter ./backend/ticket --filter ./backend/notification run reset",
+    "migrate": "pnpm -r --filter ./backend/event --filter ./backend/invitation --filter ./backend/ticket --filter ./backend/notification run migrate",
+    "gen": "pnpm -r --filter ./backend/event --filter ./backend/invitation --filter ./backend/ticket --filter ./backend/notification run gen",
+    "seed": "pnpm -r --filter ./backend/event --filter ./backend/invitation --filter ./backend/ticket --filter ./backend/notification run seed"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

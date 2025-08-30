@@ -115,22 +115,20 @@ export default function MyQRPage() {
 
       const payload = res.data?.createToken;
       if (res.errors && res.errors[0]) {
-          setDeviceDialogMsg(
-            'Dieses Gerät ist nicht freigegeben. Admin-Freigabe erforderlich.',
-          );
-          setDeviceDialogOpen(true);
-        
+        setDeviceDialogMsg(
+          'Dieses Gerät ist nicht freigegeben. Admin-Freigabe erforderlich.',
+        );
+        setDeviceDialogOpen(true);
       }
       if (!payload?.token || !payload?.exp || !payload?.jti) {
         setInlineErr('Kein gültiges Token erhalten.');
         return;
       }
-       
+
       setToken(payload.token);
       setExpEpoch(payload.exp);
       setJti(payload.jti);
       setSecondsLeft(secondsLeftFromEpoch(payload.exp));
-        
     } catch (e: unknown) {
       const message = extractGraphQLErrorMessage(e);
 

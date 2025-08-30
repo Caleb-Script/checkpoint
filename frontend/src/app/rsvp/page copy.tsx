@@ -1,5 +1,5 @@
 // /frontend/src/app/rsvp/page.tsx
-// TODO „Danke“-Screen nach erfolgreichem RSVP (aktuell: persönliches Pop-up/Dialog)
+//TODO „Danke“-Screen nach erfolgreichem RSVP
 
 'use client';
 
@@ -7,8 +7,6 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
 import { useMutation, useQuery } from '@apollo/client';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import {
   Alert,
   Box,
@@ -18,10 +16,6 @@ import {
   CardHeader,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Stack,
   Table,
@@ -56,8 +50,6 @@ function toLocal(dt?: string) {
     return String(dt);
   }
 }
-
-type DialogKind = 'YES' | 'NO' | null;
 
 export default function RsvpPage() {
   // Invitation-ID aus URL (?inv=…)
@@ -97,7 +89,6 @@ export default function RsvpPage() {
   const [firstName, setFirstName] = React.useState<string>('');
   const [lastName, setLastName] = React.useState<string>('');
   const [email, setEmail] = React.useState<string>('');
-  const [phone, setPhone] = React.useState<string>(''); // Handynummer (für WhatsApp)
 
   // Plus-One Eingabefelder
   const [plusOneFirstName, setPlusOneFirstName] = React.useState<string>('');
@@ -108,19 +99,11 @@ export default function RsvpPage() {
     if (!invitation) return;
     setFirstName((v) => v || invitation.firstName || '');
     setLastName((v) => v || invitation.lastName || '');
-    // Typ-Erweiterung, falls Invitation.phone im Typ bereits enthalten ist, ist das „as“ redundant.
-    setPhone(
-      (v) => v || (invitation as { phone?: string | null })?.phone || '',
-    );
   }, [invitation?.id]); // einmalig pro Einladung
 
   // UI-Status
   const [msg, setMsg] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
-
-  // Persönliches Pop-up (Dialog)
-  const [dialogKind, setDialogKind] = React.useState<DialogKind>(null);
-  const dialogOpen = dialogKind !== null;
 
   // Lock, sobald approved ODER RSVP gesetzt
   const isLocked = Boolean(
@@ -130,10 +113,6 @@ export default function RsvpPage() {
   const max = invitation?.maxInvitees ?? 0;
   const used = invitation?.plusOnes?.length ?? 0;
   const free = Math.max(0, max - used);
-
-  // Einfache Nummernprüfung (optional, nur UX-Hinweis – keine harte Validierung)
-  const phoneLooksValid =
-    phone.trim().length === 0 || /^[+0-9 ()/-]{6,}$/.test(phone.trim()); // locker für internationale Formate
 
   // Actions
   async function onAccept() {
@@ -156,14 +135,11 @@ export default function RsvpPage() {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim() || null,
-            phone: phone.trim() || null,
           },
         },
       },
     });
-
     setMsg('Danke! Deine Zusage wurde gespeichert.');
-    setDialogKind('YES');
     await refetch();
   }
 
@@ -176,7 +152,6 @@ export default function RsvpPage() {
     }
     await updateInvitation({ variables: { id: invId, rsvpChoice: 'NO' } });
     setMsg('Absage gespeichert.');
-    setDialogKind('NO');
     await refetch();
   }
 
@@ -199,7 +174,6 @@ export default function RsvpPage() {
           invitedByInvitationId: invitation.id,
           firstName: plusOneFirstName.trim(),
           lastName: plusOneLastName.trim(),
-          // Optional: phone hier ergänzen, wenn Backend-Schema das vorsieht
         },
       },
     });
@@ -207,10 +181,6 @@ export default function RsvpPage() {
     setPlusOneFirstName('');
     setPlusOneLastName('');
     await refetch();
-  }
-
-  function closeDialog() {
-    setDialogKind(null);
   }
 
   // Rendering
@@ -234,8 +204,6 @@ export default function RsvpPage() {
       </Box>
     );
   }
-
-  const friendlyName = firstName?.trim() || 'Du';
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: 'auto' }}>
@@ -309,20 +277,6 @@ export default function RsvpPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     helperText="Du kannst diese Angabe leer lassen."
                   />
-                  <TextField
-                    label="Handynummer (WhatsApp, optional)"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    error={!phoneLooksValid}
-                    helperText={
-                      phoneLooksValid
-                        ? 'Für schnelle Kontaktaufnahme (z. B. WhatsApp). Optional.'
-                        : 'Bitte eine gültig aussehende Telefonnummer eingeben.'
-                    }
-                  />
                 </Stack>
 
                 <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700 }}>
@@ -337,10 +291,7 @@ export default function RsvpPage() {
                     variant="contained"
                     onClick={onAccept}
                     disabled={
-                      accepting ||
-                      !firstName.trim() ||
-                      !lastName.trim() ||
-                      !phoneLooksValid
+                      accepting || !firstName.trim() || !lastName.trim()
                     }
                   >
                     👍 Zusagen
@@ -492,81 +443,6 @@ export default function RsvpPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Persönlicher Dialog für Zusage/Absage */}
-      <Dialog
-        open={dialogOpen}
-        onClose={closeDialog}
-        fullWidth
-        maxWidth="sm"
-        aria-labelledby="rsvp-dialog-title"
-      >
-        <DialogTitle
-          id="rsvp-dialog-title"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          {dialogKind === 'YES' ? (
-            <>
-              <CheckCircleIcon fontSize="small" />
-              Danke für deine Zusage!
-            </>
-          ) : (
-            <>
-              <SentimentDissatisfiedIcon fontSize="small" />
-              Schade, dass du nicht kommen kannst
-            </>
-          )}
-        </DialogTitle>
-        <DialogContent dividers>
-          {dialogKind === 'YES' ? (
-            <Stack spacing={1.5}>
-              <Typography>
-                {friendlyName}, voll schön, dass du dabei bist
-                {event ? ` bei „${event.name}“` : ''}! 🎉
-              </Typography>
-              {event && (
-                <Typography variant="body2" color="text.secondary">
-                  Termin: {toLocal(event.startsAt)} – {toLocal(event.endsAt)}
-                </Typography>
-              )}
-              {phone.trim() && (
-                <Typography variant="body2" color="text.secondary">
-                  Wir melden uns ggf. per WhatsApp/SMS unter{' '}
-                  <strong>{phone.trim()}</strong>.
-                </Typography>
-              )}
-              {!invitation?.approved && (
-                <Alert severity="info">
-                  Deine Zusage bedeutet noch kein Ticket. Unser Team prüft und
-                  schaltet dich frei.
-                </Alert>
-              )}
-            </Stack>
-          ) : (
-            <Stack spacing={1.5}>
-              <Typography>
-                {friendlyName}, danke für deine Rückmeldung. Vielleicht klappt
-                es beim nächsten Mal. 🙂
-              </Typography>
-              {event && (
-                <Typography variant="body2" color="text.secondary">
-                  Event: „{event.name}“ — {toLocal(event.startsAt)} –{' '}
-                  {toLocal(event.endsAt)}
-                </Typography>
-              )}
-              <Typography variant="body2" color="text.secondary">
-                Wenn du deine Entscheidung doch noch anpassen möchtest, gib uns
-                Bescheid (nach Zuweisung eines Accounts).
-              </Typography>
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog} autoFocus variant="contained">
-            Okay
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

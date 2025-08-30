@@ -23,7 +23,13 @@ import {
   Typography,
 } from '@mui/material';
 import * as React from 'react';
-import { QUERY_MY_NOTIFICATIONS, MUT_MARK_READ, MUT_ARCHIVE, SUB_NOTIFICATION_ADDED, SUB_NOTIFICATION_UPDATED } from '../../../graphql/notification';
+import {
+  MUT_ARCHIVE,
+  MUT_MARK_READ,
+  QUERY_MY_NOTIFICATIONS,
+  SUB_NOTIFICATION_ADDED,
+  SUB_NOTIFICATION_UPDATED,
+} from '../../../graphql/notification';
 
 export default function MyNotificationsPage() {
   const { user } = useAuth();

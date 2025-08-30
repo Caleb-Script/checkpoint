@@ -31,7 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const client = getApolloClient(undefined);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-
   const [doLogout] = useMutation(LOGOUT, {
     client,
   });
@@ -44,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(user?.roles?.includes('ADMIN') ?? false);
     } catch {
       setUser(null);
-      setIsAdmin(false)
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }
@@ -66,7 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <ApolloProvider client={getApolloClient(undefined)}>
       <AuthContext.Provider
-        value={{ user, isAdmin, isAuthenticated: !!user, loading, refetchMe, logout }}
+        value={{
+          user,
+          isAdmin,
+          isAuthenticated: !!user,
+          loading,
+          refetchMe,
+          logout,
+        }}
       >
         {children}
       </AuthContext.Provider>

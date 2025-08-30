@@ -29,10 +29,9 @@ export type RSVPReply = {
   };
 };
 
-
 export type CreatePlusOnesInvitationInput = {
-  eventId: string
-  invitedByInvitationId: string
-  firstName: string
-  lastName: string
-}
+  eventId: string;
+  invitedByInvitationId: string;
+  firstName: string;
+  lastName: string;
+};

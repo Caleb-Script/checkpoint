@@ -11,13 +11,12 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import SecurityIcon from '@mui/icons-material/Security';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import {
   AppBar,
-  Avatar,
   BottomNavigation,
   BottomNavigationAction,
   Box,
@@ -36,8 +35,8 @@ import {
 
 import { useAuth } from '@/context/AuthContext';
 import type { KeycloakUserInfo } from '../../../types/auth/auth.type';
-import { useUnreadCount } from '../../notifications/useUnreadCount';
 import AvatarWithBadge from '../../notifications/AvatarWithBadge';
+import { useUnreadCount } from '../../notifications/useUnreadCount';
 
 type Role = 'ADMIN' | 'SECURITY' | 'GUEST';
 
@@ -140,9 +139,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const roles = React.useMemo(() => extractRoles(user), [user]);
   const navItems = React.useMemo(() => buildNavForRoles(roles), [roles]);
 
-    const recipientUsername =
-      (user as any)?.username || (user as any)?.preferred_username || null;
-    const unread = useUnreadCount(recipientUsername);
+  const recipientUsername =
+    (user as any)?.username || (user as any)?.preferred_username || null;
+  const unread = useUnreadCount(recipientUsername);
 
   // Aktiver Tab (anhand Präfix-Match)
   const currentIndex = React.useMemo(() => {

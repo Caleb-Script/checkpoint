@@ -128,12 +128,25 @@ export class KafkaProducerService
   }
 
   async sendUserCredentials(
-    payload: { userId: string; firstName: string, username: string, password: string, phone?: string },
+    payload: {
+      userId: string;
+      firstName: string;
+      username: string;
+      password: string;
+      phone?: string;
+    },
     service: string,
     trace?: TraceContext,
   ) {
     const topic = KafkaTopics.notification.sendCredentials;
-    await this.sendEvent(topic, 'sendCredentials', payload, service, 'v1', trace);
+    await this.sendEvent(
+      topic,
+      'sendCredentials',
+      payload,
+      service,
+      'v1',
+      trace,
+    );
   }
 
   // async releaseItem(
