@@ -1,0 +1,4 @@
+pnpm add @nestjs/common rxjs @nestjs/core graphql-subscriptions @nestjs/graphql @prisma/client @apollo/subgraph @js-temporal/polyfill @nestjs/apollo @nestjs/config @nestjs/platform-express @opentelemetry/api cfonts chalk class-validator kafkajs pino pino-pretty
+
+
+pnpm add -D prettier-plugin-sort-imports prisma prettier

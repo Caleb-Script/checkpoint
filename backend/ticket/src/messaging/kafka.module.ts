@@ -6,6 +6,7 @@ import { KafkaProducerService } from './kafka-producer.service.js';
 import { KafkaHeaderBuilder } from './kafka-header-builder.js';
 import { TraceModule } from '../trace/trace.module.js';
 import { TicketModule } from '../ticket/ticket.module.js';
+import { EventHandler } from './handlers/event.handler.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TicketModule } from '../ticket/ticket.module.js';
     KafkaConsumerService,
     KafkaEventDispatcherService,
     KafkaHeaderBuilder,
+    EventHandler,
   ],
   exports: [KafkaProducerService, KafkaConsumerService],
 })
