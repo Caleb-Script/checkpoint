@@ -10,10 +10,11 @@ import { KafkaConsumerService } from '../../messaging/kafka-consumer.service';
 import { KafkaProducerService } from '../../messaging/kafka-producer.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TraceContextProvider } from '../../trace/trace-context.provider';
+import { Notification } from '../models/entitys/notification.entity';
 import { ListNotificationsInput } from '../models/inputs/inputs';
 import { NotificationRenderer } from '../utils/notification.renderer';
-import { Injectable } from '@nestjs/common';
-import { context as otelContext, trace, Tracer } from '@opentelemetry/api';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { trace, Tracer } from '@opentelemetry/api';
 
 @Injectable()
 export class NotificationReadService {
@@ -50,7 +51,40 @@ export class NotificationReadService {
   //     });
   // }
 
-  async listForUser(input: ListNotificationsInput) {
+  async findById(id: string) {
+    void this.#logger.debug('findById: id=%s', id);
+
+    const notification = await this.#prismaService.notification.findUnique({
+      where: { id },
+    });
+
+    if (!notification) throw new NotFoundException('Notification not found');
+    return notification as Notification;
+  }
+
+  async findByUser(userId: string) {
+    void this.#logger.debug('findById: userId=%s', userId);
+
+    const where = {
+      recipientId: userId,
+    };
+
+    const findManyArgs: any = {
+      where,
+      orderBy: { createdAt: 'desc' },
+    };
+
+    const notifications =
+      await this.#prismaService.notification.findMany(findManyArgs);
+
+    if (!notifications.length) {
+      throw new NotFoundException('Notifications not found');
+    }
+
+    return notifications as Notification[];
+  }
+
+  async find(input: ListNotificationsInput) {
     const take = Math.min(input.limit ?? 20, 100);
     const where = {
       recipientUsername: input.recipientUsername,

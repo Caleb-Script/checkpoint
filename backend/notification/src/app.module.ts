@@ -33,6 +33,17 @@ import { GraphQLModule } from '@nestjs/graphql';
         playground: cfg.get('GRAPHQL_PLAYGROUND') === 'true',
         csrfPrevention: false,
         introspection: true,
+        // 🔽🔽🔽 WICHTIG: Subscriptions per graphql-ws aktivieren
+        subscriptions: {
+          'graphql-ws': {
+            path: '/graphql', // Standard: gleich wie HTTP-Endpoint
+            onConnect: async (ctx) => {
+              // optional: Auth über connectionParams
+              // const token = ctx.connectionParams?.Authorization;
+              // ctx.extra['auth'] = decode(token);
+            },
+          },
+        },
       }),
     }),
     KafkaModule,
@@ -42,4 +53,4 @@ import { GraphQLModule } from '@nestjs/graphql';
   ],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -9,15 +9,16 @@ import { LoggerService } from '../../logger/logger.service';
 import { KafkaConsumerService } from '../../messaging/kafka-consumer.service';
 import { KafkaProducerService } from '../../messaging/kafka-producer.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TemplateReadService } from '../../template/services/template-read.service';
 import { TraceContextProvider } from '../../trace/trace-context.provider';
 import { NotifyFromTemplateInput } from '../models/inputs/notify.input';
 import { NotificationRenderer } from '../utils/notification.renderer';
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { context as otelContext, trace, Tracer } from '@opentelemetry/api';
+import { trace, Tracer } from '@opentelemetry/api';
 import { DeliveryStatus } from '@prisma/client/edge';
 
 @Injectable()
@@ -30,6 +31,7 @@ export class NotificationWriteService {
   readonly #tracer: Tracer;
   readonly #traceContextProvider: TraceContextProvider;
   readonly #renderer: NotificationRenderer;
+  readonly #templateReadService: TemplateReadService;
 
   constructor(
     prismaService: PrismaService,
@@ -38,6 +40,7 @@ export class NotificationWriteService {
     loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
     renderer: NotificationRenderer,
+    templateReadServie: TemplateReadService,
   ) {
     this.#kafkaConsumerService = kafkaConsumerService;
     this.#loggerService = loggerService;
@@ -47,6 +50,7 @@ export class NotificationWriteService {
     this.#traceContextProvider = traceContextProvider;
     this.#renderer = renderer;
     this.#prismaService = prismaService;
+    this.#templateReadService = templateReadServie;
   }
 
   // async onModuleInit(): Promise<void> {
@@ -55,22 +59,22 @@ export class NotificationWriteService {
   //     });
   // }
 
-  // ---------- Notifications ----------
-  async notifyFromTemplate(input: NotifyFromTemplateInput) {
-    this.#logger.debug('notifyFromTemplate: input=%o', input);
+  async create(input: NotifyFromTemplateInput) {
+    void this.#logger.debug('notifyFromTemplate: input=%o', input);
 
-    const tpl = await (this.#prismaService as any).template.findUnique({
-      where: { key: input.templateKey },
-    });
+    const template = await this.#templateReadService.findById(
+      input.templateKey,
+    );
 
-    this.#logger.debug('notifyFromTemplate: template=%o', tpl);
-    if (!tpl || !tpl.isActive)
-      throw new NotFoundException('Template not found or inactive');
+    void this.#logger.debug('notifyFromTemplate: template=%o', template);
 
     const vars = input.variables ?? {};
-    this.#renderer.validate((tpl.variables as unknown as string[]) ?? [], vars);
+    this.#renderer.validate(
+      (template.variables as unknown as string[]) ?? [],
+      vars,
+    );
     const rendered = this.#renderer.render(
-      { title: tpl.title, body: tpl.body },
+      { title: template.title, body: template.body },
       vars,
     );
 
@@ -84,14 +88,14 @@ export class NotificationWriteService {
           recipientUsername: input.recipientUsername,
           recipientId: input.recipientId ?? null,
           recipientTenant: input.recipientTenant ?? null,
-          templateId: tpl.id,
+          templateId: template.id,
           variables: vars as any,
           renderedTitle: rendered.title,
           renderedBody: rendered.body,
           data: {} as any,
           linkUrl: input.linkUrl ?? null,
           priority: input.priority ?? 'NORMAL',
-          category: input.category ?? tpl.category,
+          category: input.category ?? template.category,
           status: 'NEW',
           read: false,
           deliveredAt: null,

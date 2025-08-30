@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -8,7 +7,7 @@ import { MarkReadInput } from '../models/inputs/inputs';
 import { NotifyFromTemplateInput } from '../models/inputs/notify.input';
 import { NotificationWriteService } from '../services/notification-write.service';
 import { pubsub } from '../utils/pubsub';
-import { Args, ID, Mutation, Resolver, Subscription } from '@nestjs/graphql';
+import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
 
 @Resolver()
 export class NotificationMutationResolver {
@@ -20,7 +19,7 @@ export class NotificationMutationResolver {
 
   @Mutation(() => Notification)
   async notifyFromTemplate(@Args('input') input: NotifyFromTemplateInput) {
-    const n = await this.#notificationWriteservice.notifyFromTemplate(input);
+    const n = await this.#notificationWriteservice.create(input);
     await pubsub.publish('notificationAdded', {
       notificationAdded: n,
       recipientUsername: n.recipientUsername,
@@ -46,30 +45,5 @@ export class NotificationMutationResolver {
       recipientUsername: n.recipientUsername,
     });
     return n;
-  }
-
-  // ---- Subscriptions (In-App Push) ----
-  @Subscription(() => Notification, {
-    filter: (payload, variables) =>
-      payload.recipientUsername === variables.recipientUsername,
-    resolve: (payload) => payload.notificationAdded,
-  })
-  notificationAdded(
-    @Args('recipientUsername', { type: () => String })
-    _recipientUsername: string,
-  ) {
-    return pubsub.asyncIterator('notificationAdded');
-  }
-
-  @Subscription(() => Notification, {
-    filter: (payload, variables) =>
-      payload.recipientUsername === variables.recipientUsername,
-    resolve: (payload) => payload.notificationUpdated,
-  })
-  notificationUpdated(
-    @Args('recipientUsername', { type: () => String })
-    _recipientUsername: string,
-  ) {
-    return pubsub.asyncIterator('notificationUpdated');
   }
 }
