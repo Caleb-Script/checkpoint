@@ -5,7 +5,6 @@
 import { kafkaBroker } from '../config/kafka.js';
 import { TraceContext } from '../trace/trace-context.util.js';
 import { KafkaHeaderBuilder } from './kafka-header-builder.js';
-import { KafkaTopics } from './kafka-topic.properties.js';
 import {
   Injectable,
   OnModuleInit,
@@ -120,60 +119,6 @@ export class KafkaProducerService
       span.end();
     }
   }
-
-  async updateSeat(
-    payload: {
-      id: string | undefined;
-      guestId: string;
-      eventId: string;
-    },
-    service: string,
-    trace?: TraceContext,
-  ) {
-    const topic = KafkaTopics.event.updateSeat;
-
-    await this.sendEvent(topic, 'updateSeat', payload, service, 'v1', trace);
-  }
-
-  // async releaseItem(
-  //     payload: unknown,
-  //     service: string,
-  //     trace?: TraceContext,
-  // ): Promise<void> {
-  //     const topic = KafkaTopics.inventory.release;
-  //     await this.sendEvent(
-  //         topic,
-  //         'releaseItem',
-  //         payload,
-  //         service,
-  //         'v1',
-  //         trace,
-  //     );
-  // }
-
-  // /**
-  //  * Spezifischer Shortcut zum Versenden von Mail-Nachrichten.
-  //  */
-  // async sendMailNotification(
-  //     eventType: 'create' | 'delete',
-  //     payload: unknown,
-  //     service: string,
-  //     trace?: TraceContext,
-  // ): Promise<void> {
-  //     const topic =
-  //         eventType === 'create'
-  //             ? KafkaTopics.notification.create
-  //             : KafkaTopics.notification.delete;
-
-  //     await this.sendEvent(
-  //         topic,
-  //         `sendMail.${eventType}`,
-  //         payload,
-  //         service,
-  //         'v1',
-  //         trace,
-  //     );
-  // }
 
   async onApplicationShutdown(): Promise<void> {
     await this.producer.disconnect();

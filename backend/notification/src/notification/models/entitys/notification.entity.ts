@@ -38,6 +38,8 @@ export class Notification {
   @Field(() => GraphQLISODateTime) createdAt!: Date;
   @Field(() => GraphQLISODateTime) updatedAt!: Date;
   @Field({ nullable: true }) createdBy?: string;
+
+  @Field({ nullable: true }) dedupeKey?: string;
 }
 
 @ObjectType()

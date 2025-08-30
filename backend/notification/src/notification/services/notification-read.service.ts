@@ -10,8 +10,14 @@ import { KafkaConsumerService } from '../../messaging/kafka-consumer.service';
 import { KafkaProducerService } from '../../messaging/kafka-producer.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TraceContextProvider } from '../../trace/trace-context.provider';
-import { Notification } from '../models/entitys/notification.entity';
-import { ListNotificationsInput } from '../models/inputs/inputs';
+import {
+  Notification,
+  NotificationConnection,
+} from '../models/entitys/notification.entity';
+import {
+  ListAllNotificationsInput,
+  ListNotificationsInput,
+} from '../models/inputs/inputs';
 import { NotificationRenderer } from '../utils/notification.renderer';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { trace, Tracer } from '@opentelemetry/api';
@@ -84,7 +90,37 @@ export class NotificationReadService {
     return notifications as Notification[];
   }
 
-  async find(input: ListNotificationsInput) {
+  async findAll() {
+    const notifications = await this.#prismaService.notification.findMany();
+    return notifications as Notification[];
+  }
+
+  async find(input: ListAllNotificationsInput) {
+    const { limit, category, includeRead, cursor } = input;
+    const take = Math.min(Math.max(limit ?? 50, 1), 200);
+
+    const where: any = {};
+    if (category) where.category = category;
+    if (includeRead === false) where.read = false;
+
+    const cursorClause = cursor ? { cursor: { id: cursor }, skip: 1 } : {};
+
+    const args: any = {
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+      ...cursorClause,
+    };
+    const items = await this.#prismaService.notification.findMany(args);
+
+    const nextCursor =
+      items.length === take ? (items[items.length - 1]?.id ?? null) : null;
+
+    const result = { items, nextCursor } as NotificationConnection;
+    return result;
+  }
+
+  async find2(input: ListNotificationsInput) {
     const take = Math.min(input.limit ?? 20, 100);
     const where = {
       recipientUsername: input.recipientUsername,

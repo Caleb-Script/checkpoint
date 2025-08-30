@@ -16,6 +16,7 @@ import { KeycloakUserInfo } from '../types/auth/auth.type';
 
 type AuthContextType = {
   user: KeycloakUserInfo | null;
+  isAdmin: boolean;
   isAuthenticated: boolean;
   loading: boolean;
   refetchMe: () => Promise<void>;
@@ -28,6 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<KeycloakUserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const client = getApolloClient(undefined);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
 
   const [doLogout] = useMutation(LOGOUT, {
     client,
@@ -38,8 +41,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const user = await fetchUserInfo();
       setUser(user ?? null);
+      setIsAdmin(user?.roles?.includes('ADMIN') ?? false);
     } catch {
       setUser(null);
+      setIsAdmin(false)
     } finally {
       setLoading(false);
     }
@@ -50,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await doLogout(); // Cache leeren
     } finally {
       setUser(null); // UI sofort aktualisieren
+      setIsAdmin(false);
     }
   }, [doLogout]);
 
@@ -60,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <ApolloProvider client={getApolloClient(undefined)}>
       <AuthContext.Provider
-        value={{ user, isAuthenticated: !!user, loading, refetchMe, logout }}
+        value={{ user, isAdmin, isAuthenticated: !!user, loading, refetchMe, logout }}
       >
         {children}
       </AuthContext.Provider>

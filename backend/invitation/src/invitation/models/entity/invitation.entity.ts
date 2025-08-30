@@ -85,4 +85,9 @@ export class Invitation {
   })
   @IsOptional()
   plusOnes?: string[];
+
+  @Field(() => String, {
+    nullable: true,
+  })
+  phone?: string;
 }

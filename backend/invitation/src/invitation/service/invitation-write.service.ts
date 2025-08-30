@@ -113,7 +113,7 @@ export class InvitationWriteService {
    * Optional könnte hier ein Profil-/Ticket-Workflow über Events gestartet werden.
    */
   async accept({ id, input }: { id: string; input: AcceptRSVPInput }) {
-    const { lastName, firstName, email, mobile } = input;
+    const { lastName, firstName, email, phone } = input;
     const Invitation = await this.readService.findOne(id);
 
     if (Invitation.rsvpChoice === RsvpChoice.YES)
@@ -136,6 +136,7 @@ export class InvitationWriteService {
                   status: InvitationStatus.ACCEPTED,
                   lastName,
                   firstName,
+                  phone,
                 },
               });
 
@@ -147,7 +148,7 @@ export class InvitationWriteService {
                   firstName: firstName,
                   lastName: lastName,
                   emailData: email,
-                  mobile,
+                  phone,
                 },
                 "invitation.write-service",
                 trace,

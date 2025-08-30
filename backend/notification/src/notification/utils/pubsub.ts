@@ -1,12 +1,25 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { PubSub } from 'graphql-subscriptions';
+// src/notification/utils/pubsub.ts
+import { PubSub as GqlPubSub } from 'graphql-subscriptions';
 
-// Einheitliche, „einfach“ getypte Oberfläche:
-export type PubSubLike = {
-  publish: (trigger: string, payload: any) => Promise<void>;
+/** Minimale Engine-Definition mit asyncIterator */
+export interface PubSubEngine {
+  publish(triggerName: string, payload: any): Promise<void>;
+  subscribe(
+    triggerName: string,
+    onMessage: (payload: any) => void,
+  ): Promise<number>;
+  unsubscribe(subId: number): void;
   asyncIterator<T = any>(triggers: string | string[]): AsyncIterator<T>;
-};
+}
 
-// Der Cast sorgt dafür, dass TS `asyncIterator` garantiert sieht,
-// unabhängig von generischen Typen der verwendeten Version.
-export const pubsub: PubSubLike = new PubSub() as unknown as PubSubLike;
+/** Eine einzige Runtime-Instanz – einmal "any" casten, damit TS Ruhe gibt */
+const core = new GqlPubSub() as unknown as PubSubEngine;
+
+/** Sauberer, stabiler Export (kein default!) */
+export const pubsub: PubSubEngine = {
+  publish: (t, p) => core.publish(t, p),
+  subscribe: (t, h) => core.subscribe(t, h),
+  unsubscribe: (id) => core.unsubscribe(id),
+  asyncIterator: (triggers) => core.asyncIterator(triggers),
+};

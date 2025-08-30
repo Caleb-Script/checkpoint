@@ -37,6 +37,7 @@ export interface SignIn {
   readonly lastName: string;
   readonly emailData?: string;
   readonly invitationId: string;
+  readonly phone?: string;
 }
 
 export type UpdateUserInput = {
@@ -289,7 +290,7 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
    * - Falls User bereits existiert (username/email), werden Attribute gemerged (mode "append" für Arrays; "set" für einzelne Werte).
    * - invitationId wird als String-Array gespeichert (Keycloak-Konvention).
    */
-  async signUp({ invitationId, firstName, lastName, emailData }: SignIn) {
+  async signUp({ invitationId, firstName, lastName, emailData, phone }: SignIn) {
     return await this.#tracer.startActiveSpan('auth.signUp', async (span) => {
       try {
         return await otelContext.with(
@@ -304,6 +305,9 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
             const initialAttrs: Record<string, string[]> = {};
             if (invitationId) {
               initialAttrs['invitationId'] = this.#normalizeAttr(invitationId);
+            }
+            if (phone) {
+              initialAttrs['phone'] = this.#normalizeAttr(invitationId);
             }
 
             const baseUser = {
@@ -408,6 +412,18 @@ export class KeycloakService implements KeycloakConnectOptionsFactory {
               {
                 userId: id,
                 invitationId,
+              },
+              'auth.signUp',
+              trace,
+            );
+
+            this.#kafkaProducerService.sendUserCredentials(
+              {
+                userId: id,
+                firstName,
+                username,
+                password,
+                phone,
               },
               'auth.signUp',
               trace,

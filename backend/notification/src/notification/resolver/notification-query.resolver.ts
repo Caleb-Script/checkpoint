@@ -8,7 +8,10 @@ import {
   Notification,
   NotificationConnection,
 } from '../models/entitys/notification.entity';
-import { ListNotificationsInput } from '../models/inputs/inputs';
+import {
+  ListAllNotificationsInput,
+  ListNotificationsInput,
+} from '../models/inputs/inputs';
 import { NotificationReadService } from '../services/notification-read.service';
 import { Args, ID, Query, Resolver } from '@nestjs/graphql';
 
@@ -38,6 +41,12 @@ export class NotificationQueryResolver {
   }
 
   @Query(() => [Notification], { nullable: true })
+  async notifications() {
+    const notification = await this.#notificationReadservice.findAll();
+    return notification;
+  }
+
+  @Query(() => [Notification], { nullable: true })
   async notificationByUser(@Args('id', { type: () => ID }) id: string) {
     const notifications = await this.#notificationReadservice.findByUser(id);
     void this.#logger.debug(
@@ -47,10 +56,18 @@ export class NotificationQueryResolver {
     return notifications;
   }
 
+  @Query(() => NotificationConnection)
+  async notificationsPaged(
+    @Args('input') input: ListAllNotificationsInput,
+  ): Promise<NotificationConnection> {
+    const result = await this.#notificationReadservice.find(input);
+    return result;
+  }
+
   @Query(() => Notification, { nullable: true })
   async notificationByUser2(@Args('id', { type: () => ID }) id: string) {
     // Optional: Zugriff nur für Besitzer
-    const { items } = await this.#notificationReadservice.find({
+    const { items } = await this.#notificationReadservice.find2({
       recipientUsername: '',
       includeRead: true,
       limit: 1,
@@ -65,6 +82,6 @@ export class NotificationQueryResolver {
 
   @Query(() => NotificationConnection)
   async myNotifications(@Args('input') input: ListNotificationsInput) {
-    return this.#notificationReadservice.find(input);
+    return this.#notificationReadservice.find2(input);
   }
 }

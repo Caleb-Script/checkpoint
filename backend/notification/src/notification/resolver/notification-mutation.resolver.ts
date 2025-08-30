@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Notification } from '../models/entitys/notification.entity';
 import { MarkReadInput } from '../models/inputs/inputs';
-import { NotifyFromTemplateInput } from '../models/inputs/notify.input';
+import { NotificationInput } from '../models/inputs/notify.input';
 import { NotificationWriteService } from '../services/notification-write.service';
 import { pubsub } from '../utils/pubsub';
 import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
@@ -18,7 +18,7 @@ export class NotificationMutationResolver {
   }
 
   @Mutation(() => Notification)
-  async notifyFromTemplate(@Args('input') input: NotifyFromTemplateInput) {
+  async notifyFromTemplate(@Args('input') input: NotificationInput) {
     const n = await this.#notificationWriteservice.create(input);
     await pubsub.publish('notificationAdded', {
       notificationAdded: n,

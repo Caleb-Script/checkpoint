@@ -127,6 +127,15 @@ export class KafkaProducerService
     await this.sendEvent(topic, 'addUserId', payload, service, 'v1', trace);
   }
 
+  async sendUserCredentials(
+    payload: { userId: string; firstName: string, username: string, password: string, phone?: string },
+    service: string,
+    trace?: TraceContext,
+  ) {
+    const topic = KafkaTopics.notification.sendCredentials;
+    await this.sendEvent(topic, 'sendCredentials', payload, service, 'v1', trace);
+  }
+
   // async releaseItem(
   //     payload: unknown,
   //     service: string,

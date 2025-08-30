@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/kafka/kafka-event-dispatcher.service.ts
 import { getLogger } from '../logger/logger.js';
 import { KAFKA_EVENT_TOPICS } from '../messaging/decorators/kafka-event.decorator.js';

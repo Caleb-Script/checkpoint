@@ -1,7 +1,6 @@
-import { KafkaModule } from '../messaging/kafka.module.js';
 import { TraceContextProvider } from './trace-context.provider.js';
 import { TraceInterceptor } from './trace.interceptor.js';
-import { forwardRef, Global, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
 /**
@@ -14,7 +13,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
  */
 @Global()
 @Module({
-  imports: [forwardRef(() => KafkaModule)],
+  imports: [],
   providers: [
     TraceContextProvider,
     {

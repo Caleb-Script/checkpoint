@@ -10,7 +10,7 @@ async function main(): Promise<void> {
   // assumes invitation ids exist; we can seed a dummy if needed
   // prisma/seed.ts (Auszug)
   await prisma.template.upsert({
-    where: { key: 'account.welcome.credentials' },
+    where: { key: 'sendUserCredentials' },
     update: {},
     create: {
       key: 'account.welcome.credentials',

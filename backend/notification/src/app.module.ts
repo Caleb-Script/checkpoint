@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { LoggerModule } from './logger/logger.module.js';
 import { KafkaModule } from './messaging/kafka.module.js';
 import { NotificationModule } from './notification/notification.module.js';
 import { TemplateModule } from './template/template.module.js';
+import { TraceModule } from './trace/trace.module.js';
 import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
@@ -33,24 +31,14 @@ import { GraphQLModule } from '@nestjs/graphql';
         playground: cfg.get('GRAPHQL_PLAYGROUND') === 'true',
         csrfPrevention: false,
         introspection: true,
-        // 🔽🔽🔽 WICHTIG: Subscriptions per graphql-ws aktivieren
-        subscriptions: {
-          'graphql-ws': {
-            path: '/graphql', // Standard: gleich wie HTTP-Endpoint
-            onConnect: async (ctx) => {
-              // optional: Auth über connectionParams
-              // const token = ctx.connectionParams?.Authorization;
-              // ctx.extra['auth'] = decode(token);
-            },
-          },
-        },
       }),
     }),
-    KafkaModule,
     NotificationModule,
     TemplateModule,
     LoggerModule,
+    TraceModule,
+    KafkaModule,
   ],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

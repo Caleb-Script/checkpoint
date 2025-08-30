@@ -12,6 +12,7 @@ subgraph:
   event: http://localhost:3002/graphql
   invitation: http://localhost:3003/graphql
   ticket: http://localhost:3004/graphql
+  notification: http://localhost:3005/graphql
 
 # ==============================================================================
 # K A F K A

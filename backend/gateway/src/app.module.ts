@@ -146,6 +146,7 @@ function clearCookie(
                         { name: 'event', url: subgraph.event },
                         { name: 'invitation', url: subgraph.invitation },
                         { name: 'ticket', url: subgraph.ticket },
+                        { name: 'notification', url: subgraph.notification },
                     ],
                 }),
 

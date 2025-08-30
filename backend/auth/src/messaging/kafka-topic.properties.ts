@@ -11,6 +11,9 @@ export const KafkaTopics = {
     addAttribute: 'auth.add-attribute.user',
     setAttribute: 'auth.set-attribute.user',
   },
+  notification: {
+    sendCredentials: 'notification.notify.user',
+  },
 } as const;
 
 /**

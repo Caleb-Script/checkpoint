@@ -15,3 +15,11 @@ export class ListNotificationsInput {
 export class MarkReadInput {
   @Field(() => ID) id!: string;
 }
+
+@InputType()
+export class ListAllNotificationsInput {
+  @Field(() => Int, { defaultValue: 50 }) limit!: number;
+  @Field({ nullable: true }) cursor?: string;
+  @Field({ defaultValue: true }) includeRead!: boolean; // true = alle, false = nur ungelesen
+  @Field({ nullable: true }) category?: string; // z.B. 'WHATSAPP'
+}

@@ -7,7 +7,7 @@ import { LoggerPlus } from '../../logger/logger-plus';
 import { LoggerService } from '../../logger/logger.service';
 import { Notification } from '../models/entitys/notification.entity';
 import { pubsub } from '../utils/pubsub';
-import { Args, Resolver, Subscription } from '@nestjs/graphql';
+import { Args, Query, Resolver, Subscription } from '@nestjs/graphql';
 
 @Resolver()
 export class NotificationSubscriptionResolver {
@@ -19,6 +19,11 @@ export class NotificationSubscriptionResolver {
     this.#logger = this.#loggerService.getLogger(
       NotificationSubscriptionResolver.name,
     );
+  }
+
+  @Query(() => String, { name: 'wsHealth' })
+  wsHealth(): string {
+    return 'ok';
   }
 
   @Subscription(() => Notification, {

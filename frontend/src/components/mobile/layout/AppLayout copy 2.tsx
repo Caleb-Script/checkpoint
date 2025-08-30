@@ -13,7 +13,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import SecurityIcon from '@mui/icons-material/Security';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import {
   AppBar,
@@ -36,8 +35,6 @@ import {
 
 import { useAuth } from '@/context/AuthContext';
 import type { KeycloakUserInfo } from '../../../types/auth/auth.type';
-import { useUnreadCount } from '../../notifications/useUnreadCount';
-import AvatarWithBadge from '../../notifications/AvatarWithBadge';
 
 type Role = 'ADMIN' | 'SECURITY' | 'GUEST';
 
@@ -140,10 +137,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const roles = React.useMemo(() => extractRoles(user), [user]);
   const navItems = React.useMemo(() => buildNavForRoles(roles), [roles]);
 
-    const recipientUsername =
-      (user as any)?.username || (user as any)?.preferred_username || null;
-    const unread = useUnreadCount(recipientUsername);
-
   // Aktiver Tab (anhand Präfix-Match)
   const currentIndex = React.useMemo(() => {
     const idx = navItems.findIndex(
@@ -219,7 +212,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <>
               <Tooltip title={user?.name || user?.email || 'Profil'}>
                 <IconButton onClick={onAvatarClick} size="small" sx={{ ml: 1 }}>
-                  <AvatarWithBadge initials={initials} count={unread} />
+                  <Avatar sx={{ width: 32, height: 32 }}>{initials}</Avatar>
                 </IconButton>
               </Tooltip>
 
@@ -231,27 +224,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
-                {/* NEU: Notifications Menu Item */}
-                <MenuItem
-                  onClick={() =>
-                    goto(
-                      roles.includes('ADMIN')
-                        ? '/admin/notifications'
-                        : '/profile/notifications',
-                    )
-                  }
-                >
-                  <ListItemIcon>
-                    <NotificationsIcon fontSize="small" />
-                  </ListItemIcon>
-                  Benachrichtigungen
-                  {unread > 0 && (
-                    <Box component="span" sx={{ ml: 1, fontWeight: 700 }}>
-                      ({unread})
-                    </Box>
-                  )}
-                </MenuItem>
-
                 <MenuItem onClick={() => goto('/profile')}>
                   <ListItemIcon>
                     <AccountCircleIcon fontSize="small" />

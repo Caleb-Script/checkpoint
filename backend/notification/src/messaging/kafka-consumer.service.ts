@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { groupId, kafkaBroker } from '../config/kafka.js';
 import { LoggerPlus } from '../logger/logger-plus.js';
 import { LoggerService } from '../logger/logger.service.js';
@@ -127,7 +128,7 @@ export class KafkaConsumerService implements OnApplicationShutdown {
             const fallbackLogger = this.#loggerService.getLogger(
               KafkaConsumerService.name,
             );
-            fallbackLogger.error('Kafka-Consumer-Fehler: %o', err);
+            void fallbackLogger.error('Kafka-Consumer-Fehler: %o', err);
 
             throw err;
           } finally {

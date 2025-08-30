@@ -37,6 +37,7 @@ input UserInput {
   lastName: String!
   email: String
   invitationId: String
+  phone: String
 }
 
 input SetPasswordInput {
