@@ -17,7 +17,8 @@ import { KafkaTopics } from "./kafka-topic.properties.js";
  */
 @Injectable()
 export class KafkaProducerService
-  implements OnModuleInit, OnApplicationShutdown {
+  implements OnModuleInit, OnApplicationShutdown
+{
   private readonly kafka = new Kafka({ brokers: [kafkaBroker] });
   private readonly producer: Producer = this.kafka.producer();
   private readonly tracer: Tracer = trace.getTracer("kafka-producer");

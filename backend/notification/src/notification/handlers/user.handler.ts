@@ -16,8 +16,8 @@ import { Priority } from '../../notification/models/enums/priority.enum.js';
 import { NotificationInput } from '../../notification/models/inputs/notify.input.js';
 import { NotificationWriteService } from '../../notification/services/notification-write.service.js';
 
-import { Injectable } from '@nestjs/common';
 import { UserCredentialDTO } from '../models/dto/user-created-schema.dto.js';
+import { Injectable } from '@nestjs/common';
 
 @KafkaHandler('user')
 @Injectable()

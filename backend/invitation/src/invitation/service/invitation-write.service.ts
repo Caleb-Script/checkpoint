@@ -78,7 +78,7 @@ export class InvitationWriteService {
                   guestProfileId: userId,
                 },
               });
-              
+
               // Wichtig: Subscription-Event
               // this.#pubsub?.publish('invitationUpdated', { invitationUpdated: updated });
               return updated;
@@ -156,7 +156,7 @@ export class InvitationWriteService {
   }
 
   async approve(id: string, approve: boolean) {
-    this.#logger.debug('approve: input=%o', {id,approve});
+    this.#logger.debug("approve: input=%o", { id, approve });
 
     return await this.#tracer.startActiveSpan(
       "invitation.accept-rsvp",
@@ -172,21 +172,21 @@ export class InvitationWriteService {
               const data: Record<string, any> = {};
               data.approved = approve;
 
-              const updated = await this.#prismaService.invitation.update({
+              const updated = (await this.#prismaService.invitation.update({
                 where: { id },
                 data,
-              }) as Invitation;
+              })) as Invitation;
 
               const trace = this.#traceContextProvider.getContext();
 
               if (approve) {
-                this.#logger.debug('Zugang gewährt');
+                this.#logger.debug("Zugang gewährt");
                 if (!updated.guestProfileId) {
                   this.#kafkaProducerService.approved(
                     {
                       invitationId: id,
-                      firstName: updated.firstName ?? 'N/A',
-                      lastName: updated.lastName ?? 'N/A',
+                      firstName: updated.firstName ?? "N/A",
+                      lastName: updated.lastName ?? "N/A",
                       emailData: updated.email,
                       phone: updated.phone,
                     },
@@ -194,16 +194,17 @@ export class InvitationWriteService {
                     trace,
                   );
                 } else {
-                  this.#logger.debug('Gastprofil bereits vorhanden – Kafka-Event übersprungen (idempotent).');
+                  this.#logger.debug(
+                    "Gastprofil bereits vorhanden – Kafka-Event übersprungen (idempotent).",
+                  );
                 }
               } else {
-                this.#logger.debug('Zugang verweigert');
+                this.#logger.debug("Zugang verweigert");
               }
 
               // // (Optional) gleich ein „updated“ Event fürs Realtime-UI publizieren, siehe PubSub unten
               // this.#pubsub?.publish('invitationUpdated', { invitationUpdated: updated });
 
-            
               return updated;
             },
           );
@@ -350,13 +351,14 @@ export class InvitationWriteService {
       data,
     });
 
-
     return updated;
   }
 
   async delete(id: string) {
     await this.#ensureExists(id);
-    const deleted = await this.#prismaService.invitation.delete({ where: { id } });
+    const deleted = await this.#prismaService.invitation.delete({
+      where: { id },
+    });
 
     return deleted;
   }
@@ -390,7 +392,9 @@ export class InvitationWriteService {
   }
 
   async #ensureExists(id: string) {
-    const found = await this.#prismaService.invitation.findUnique({ where: { id } });
+    const found = await this.#prismaService.invitation.findUnique({
+      where: { id },
+    });
     if (!found) throw new NotFoundException("Invitation not found");
   }
 

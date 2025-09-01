@@ -8,10 +8,7 @@ import { KafkaProducerService } from "./kafka-producer.service.js";
 import { KafkaBootstrap } from "./kafka-bootstrap.provider.js";
 
 @Module({
-  imports: [
-    DiscoveryModule,
-    TraceModule,
-  ],
+  imports: [DiscoveryModule, TraceModule],
   providers: [
     KafkaProducerService,
     KafkaConsumerService,
@@ -21,4 +18,4 @@ import { KafkaBootstrap } from "./kafka-bootstrap.provider.js";
   ],
   exports: [KafkaProducerService, KafkaConsumerService],
 })
-export class KafkaModule { }
+export class KafkaModule {}

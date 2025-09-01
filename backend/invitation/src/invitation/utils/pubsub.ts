@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 // src/notification/utils/pubsub.ts
-import { PubSub as GqlPubSub } from 'graphql-subscriptions';
+import { PubSub as GqlPubSub } from "graphql-subscriptions";
 
 /** Minimale Engine-Definition mit asyncIterator */
 export interface PubSubEngine {

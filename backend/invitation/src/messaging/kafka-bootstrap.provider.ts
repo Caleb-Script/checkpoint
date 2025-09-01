@@ -1,8 +1,8 @@
 // messaging/kafka-bootstrap.provider.ts
 
-import { KafkaConsumerService } from './kafka-consumer.service.js';
-import { getKafkaTopicsBy } from './kafka-topic.properties.js';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { KafkaConsumerService } from "./kafka-consumer.service.js";
+import { getKafkaTopicsBy } from "./kafka-topic.properties.js";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 
 @Injectable()
 export class KafkaBootstrap implements OnModuleInit {
@@ -13,6 +13,6 @@ export class KafkaBootstrap implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#consumer.consume({ topics: getKafkaTopicsBy(['auth']) });
+    await this.#consumer.consume({ topics: getKafkaTopicsBy(["auth"]) });
   }
 }
