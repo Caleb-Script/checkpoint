@@ -1,6 +1,4 @@
 // eslint-disable-next-line max-classes-per-file
-import { KeycloakService } from './keycloak.service.js';
-import { LoginResolver } from './login.resolver.js';
 import { forwardRef, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import {
@@ -9,11 +7,15 @@ import {
   RoleGuard,
 } from 'nest-keycloak-connect';
 import { KafkaModule } from '../../messaging/kafka.module.js';
+import { AuthQueryResolver } from './resolvers/auth-query.resolver.js';
+import { AuthMutationResolver } from './resolvers/auth-mutation.resolver.js';
+import { KeycloakReadService } from './services/keycloak-read.service.js';
+import { KeycloakWriteService } from './services/keycloak-write.service.js';
 
 @Module({
   imports: [forwardRef(() => KafkaModule)],
-  providers: [KeycloakService],
-  exports: [KeycloakService],
+  providers: [KeycloakReadService, KeycloakWriteService],
+  exports: [KeycloakReadService, KeycloakWriteService],
 })
 class ConfigModule {}
 
@@ -21,13 +23,15 @@ class ConfigModule {}
   imports: [
     forwardRef(() => KafkaModule),
     KeycloakConnectModule.registerAsync({
-      useExisting: KeycloakService,
+      useExisting: KeycloakReadService,
       imports: [ConfigModule],
     }),
   ],
   providers: [
-    KeycloakService,
-    LoginResolver,
+    KeycloakReadService,
+    KeycloakWriteService,
+    AuthQueryResolver,
+    AuthMutationResolver,
     {
       // fuer @UseGuards(AuthGuard)
       provide: APP_GUARD,
@@ -39,6 +43,6 @@ class ConfigModule {}
       useClass: RoleGuard,
     },
   ],
-  exports: [KeycloakConnectModule, KeycloakService],
+  exports: [KeycloakConnectModule, KeycloakReadService],
 })
 export class KeycloakModule {}

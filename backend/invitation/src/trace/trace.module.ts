@@ -14,7 +14,7 @@ import { TraceInterceptor } from "./trace.interceptor.js";
  */
 @Global()
 @Module({
-  imports: [forwardRef(() => KafkaModule)],
+  imports: [],
   providers: [
     TraceContextProvider,
     {

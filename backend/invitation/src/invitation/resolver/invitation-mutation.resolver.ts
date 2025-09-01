@@ -43,6 +43,14 @@ export class InvitationMutationResolver {
   }
 
   @Mutation(() => Invitation)
+  async approveInvitation(
+    @Args("id", { type: () => ID }) id: string,
+    @Args("approve", { type: () => Boolean }) approve:boolean,
+  ): Promise<Invitation> {
+    return this.service.approve(id, approve) as Promise<Invitation>;
+  }
+
+  @Mutation(() => Invitation)
   async removeInvitation(
     @Args("id", { type: () => ID }) id: string,
   ): Promise<Invitation> {

@@ -6,17 +6,10 @@ import { TicketMutationResolver } from './resolver/ticket-mutation.resolver.js';
 import { TicketQueryResolver } from './resolver/ticket-query.resolver.js';
 import { TicketReadService } from './service/ticket-read.service.js';
 import { TicketWriteService } from './service/ticket-write.service.js';
-import { ScanModule } from '../scan/scan.module.js';
 import { ShareGuardModule } from '../guard/guard.module.js';
 
 @Module({
-  imports: [
-    forwardRef(() => KafkaModule),
-    PrismaModule,
-    RedisModule,
-    ScanModule,
-    ShareGuardModule,
-  ],
+  imports: [KafkaModule, PrismaModule, RedisModule, ShareGuardModule],
   providers: [
     TicketReadService,
     TicketWriteService,

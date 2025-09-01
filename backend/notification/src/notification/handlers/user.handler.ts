@@ -16,8 +16,8 @@ import { Priority } from '../../notification/models/enums/priority.enum.js';
 import { NotificationInput } from '../../notification/models/inputs/notify.input.js';
 import { NotificationWriteService } from '../../notification/services/notification-write.service.js';
 
-import { UserCredentialDTO } from '../models/dto/user-created-schema.dto.js';
 import { Injectable } from '@nestjs/common';
+import { UserCredentialDTO } from '../models/dto/user-created-schema.dto.js';
 
 @KafkaHandler('user')
 @Injectable()
@@ -29,7 +29,7 @@ export class UserHandler implements KafkaEventHandler {
     this.#notificationWriteService = notificationWriteService;
   }
 
-  @KafkaEvent(KafkaTopics.user.created)
+  @KafkaEvent(KafkaTopics.auth.created)
   async handle(
     topic: string,
     data: any,
@@ -43,7 +43,7 @@ export class UserHandler implements KafkaEventHandler {
     );
 
     switch (topic) {
-      case KafkaTopics.user.created:
+      case KafkaTopics.auth.created:
         await this.#sendUserCredentials(data, context);
         break;
       default:
@@ -81,7 +81,7 @@ export class UserHandler implements KafkaEventHandler {
       `${ctx.topic}:${ctx.partition}:${ctx.offset}`;
 
     const input: NotificationInput = {
-      templateId: 'cmeykun9g000006cmg151qnmy',
+      templateId: 'cmezn1js600008o8xa4cz3usm',
       recipientUsername: username,
       recipientId: userId,
       recipientTenant: derivedTenant,

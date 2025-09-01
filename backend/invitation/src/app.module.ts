@@ -7,6 +7,8 @@ import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
 } from "@nestjs/apollo";
+import { TraceModule } from "./trace/trace.module";
+import { PrismaModule } from "./prisma/prisma.module";
 import { KafkaModule } from "./messaging/kafka.module";
 
 @Module({
@@ -29,8 +31,13 @@ import { KafkaModule } from "./messaging/kafka.module";
         introspection: true,
       }),
     }),
-    KafkaModule,
+    // Infrastruktur / Cross-Cutting
     LoggerModule,
+    PrismaModule,
+    TraceModule,
+    KafkaModule,
+
+    // Feature-Module
     InvitationModule,
   ],
 })

@@ -20,7 +20,7 @@
     "eslint": "eslint src",
     "depcheck": "depcheck",
     "typedoc": "typedoc",
-    "prettier": "prettier --cache --write \"src/**/*.ts\" \"__tests__/**/*.ts\"",
+    "prettier": "prettier --cache --write \"src/**/*.ts\"",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {

@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/messaging/handlers/user.handler.ts
-import { getLogger } from '../../logger/logger.js';
-import { SeatWriteService } from '../../seat/service/seat-write.service.js';
+import { getLogger } from '../logger/logger.js';
 import {
   KafkaEvent,
   KafkaHandler,
-} from '../decorators/kafka-event.decorator.js';
+} from '../messaging/decorators/kafka-event.decorator.js';
 import {
   KafkaEventContext,
   KafkaEventHandler,
-} from '../interface/kafka-event.interface.js';
-import { KafkaTopics } from '../kafka-topic.properties.js';
+} from '../messaging/interface/kafka-event.interface.js';
+import { KafkaTopics } from '../messaging/kafka-topic.properties.js';
+import { SeatWriteService } from '../seat/service/seat-write.service.js';
 import { Injectable } from '@nestjs/common';
 
 @KafkaHandler('user')

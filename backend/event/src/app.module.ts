@@ -2,6 +2,7 @@ import { EventModule } from './event/event.module.js';
 import { LoggerModule } from './logger/logger.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SeatModule } from './seat/seat.module.js';
+import { TraceModule } from './trace/trace.module.js';
 import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
@@ -30,8 +31,12 @@ import { GraphQLModule } from '@nestjs/graphql';
         introspection: true,
       }),
     }),
+    // Infrastruktur / Cross-Cutting
     LoggerModule,
     PrismaModule,
+    TraceModule,
+
+    // Feature-Module
     EventModule,
     SeatModule,
   ],

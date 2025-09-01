@@ -90,4 +90,9 @@ export class Invitation {
     nullable: true,
   })
   phone?: string;
+  
+  @Field(() => String, {
+    nullable: true,
+  })
+  email?: string;
 }

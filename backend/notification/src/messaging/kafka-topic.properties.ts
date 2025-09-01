@@ -6,7 +6,7 @@
  */
 
 export const KafkaTopics = {
-  user: {
+  auth: {
     created: 'notification.notify.user',
   },
 } as const;

@@ -7,7 +7,7 @@ import { SeatWriteService } from './service/seat-write.service.js';
 import { forwardRef, Module } from '@nestjs/common';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => KafkaModule)],
+  imports: [PrismaModule, KafkaModule],
   providers: [
     SeatReadService,
     SeatWriteService,

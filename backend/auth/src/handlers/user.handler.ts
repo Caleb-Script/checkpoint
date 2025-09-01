@@ -1,25 +1,23 @@
 // src/messaging/handlers/user.handler.ts
 import { Injectable } from '@nestjs/common';
-import { getLogger } from '../../logger/logger.js';
+import { getLogger } from '../logger/logger';
 import {
   KafkaEvent,
   KafkaHandler,
-} from '../decorators/kafka-event.decorator.js';
-import { KafkaEventHandler } from '../interface/kafka-event.interface.js';
-import { KafkaTopics } from '../kafka-topic.properties.js';
-import {
-  KeycloakService,
-  SignIn,
-} from '../../security/keycloak/keycloak.service.js';
+} from '../messaging/decorators/kafka-event.decorator';
+import { KafkaEventHandler } from '../messaging/interface/kafka-event.interface';
+import { KafkaTopics } from '../messaging/kafka-topic.properties';
+import { SignInInput } from '../security/keycloak/models/inputs/sign-in.input';
+import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service';
 
 @KafkaHandler('user')
 @Injectable()
 export class UserHandler implements KafkaEventHandler {
-  readonly keycloakService: KeycloakService;
+  readonly keycloakWriteService: KeycloakWriteService;
   readonly #logger = getLogger(UserHandler.name);
 
-  constructor(KeycloakService: KeycloakService) {
-    this.keycloakService = KeycloakService;
+  constructor(KeycloakService: KeycloakWriteService) {
+    this.keycloakWriteService = KeycloakService;
   }
 
   @KafkaEvent(KafkaTopics.user.create, KafkaTopics.user.delete)
@@ -36,11 +34,11 @@ export class UserHandler implements KafkaEventHandler {
     }
   }
 
-  async #create(data: SignIn): Promise<void> {
+  async #create(data: SignInInput): Promise<void> {
     this.#logger.debug('CreateUserHandler: data=%o', data);
 
     const { firstName, lastName, emailData, invitationId } = data;
-    await this.keycloakService.signUp({
+    await this.keycloakWriteService.signUp({
       firstName,
       lastName,
       emailData,
@@ -51,6 +49,6 @@ export class UserHandler implements KafkaEventHandler {
   async #delete(username: string): Promise<void> {
     this.#logger.debug('DeleteUserHandler: username=%s', username);
 
-    await this.keycloakService.deleteUser(username);
+    await this.keycloakWriteService.deleteUser(username);
   }
 }

@@ -8,19 +8,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { context as otelContext, trace, Tracer } from '@opentelemetry/api';
 import { LoggerPlus } from '../../logger/logger-plus.js';
 import { LoggerService } from '../../logger/logger.service.js';
-import { KafkaConsumerService } from '../../messaging/kafka-consumer.service.js';
 import { KafkaProducerService } from '../../messaging/kafka-producer.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { TraceContextProvider } from '../../trace/trace-context.provider.js';
 import { CreateTicketInput } from '../models/input/create-ticket.input.js';
 import { handleSpanError } from '../utils/error.util.js';
-import { getKafkaTopicsBy } from '../../messaging/kafka-topic.properties.js';
 import { UpdateTicketInput } from '../models/input/update-ticket.input.js';
 
 @Injectable()
 export class TicketWriteService {
   readonly #prismaService: PrismaService;
-  readonly #kafkaConsumerService: KafkaConsumerService;
   readonly #kafkaProducerService: KafkaProducerService;
   readonly #loggerService: LoggerService;
   readonly #logger: LoggerPlus;
@@ -29,25 +26,17 @@ export class TicketWriteService {
 
   constructor(
     prismaService: PrismaService,
-    kafkaConsumerService: KafkaConsumerService,
     kafkaProducerService: KafkaProducerService,
     loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
   ) {
     this.#prismaService = prismaService;
-    this.#kafkaConsumerService = kafkaConsumerService;
     this.#loggerService = loggerService;
     this.#logger = this.#loggerService.getLogger(TicketWriteService.name);
     this.#kafkaProducerService = kafkaProducerService;
     this.#tracer = trace.getTracer(TicketWriteService.name);
     this.#traceContextProvider = traceContextProvider;
   }
-
-  // async onModuleInit(): Promise<void> {
-  //   await this.#kafkaConsumerService.consume({
-  //     topics: getKafkaTopicsBy(['user', 'event']),
-  //   });
-  // }
 
   async create(input: CreateTicketInput) {
     return await this.#tracer.startActiveSpan('ticket.create', async (span) => {
@@ -99,7 +88,7 @@ export class TicketWriteService {
           },
         );
       } catch (error) {
-        handleSpanError(span, error, this.#logger, 'addItem');
+        handleSpanError(span, error, this.#logger, 'create');
       } finally {
         span.end();
       }

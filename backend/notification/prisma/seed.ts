@@ -13,7 +13,7 @@ async function main(): Promise<void> {
     where: { key: 'sendUserCredentials' },
     update: {},
     create: {
-      key: 'account.welcome.credentials',
+      key: 'sendUserCredentials',
       title: 'Willkommen, {{firstName}}',
       body: 'Dein Benutzername: {{username}}\nDein Passwort: {{password}}\nBitte ändere dein Passwort nach dem Login.',
       variables: ['firstName', 'username', 'password'] as any,

@@ -14,7 +14,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
  */
 @Global()
 @Module({
-  imports: [forwardRef(() => KafkaModule)],
+  imports: [],
   providers: [
     TraceContextProvider,
     {

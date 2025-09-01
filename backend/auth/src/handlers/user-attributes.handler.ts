@@ -1,12 +1,12 @@
 // /src/messaging/handlers/user-attributes.handler.ts
 import { Injectable } from '@nestjs/common';
-import { getLogger } from '../../logger/logger.js';
+import { getLogger } from '../logger/logger';
 import {
-  KafkaEvent,
   KafkaHandler,
-} from '../decorators/kafka-event.decorator.js';
-import { KafkaTopics } from '../kafka-topic.properties.js';
-import { KeycloakService } from '../../security/keycloak/keycloak.service.js';
+  KafkaEvent,
+} from '../messaging/decorators/kafka-event.decorator';
+import { KafkaTopics } from '../messaging/kafka-topic.properties';
+import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service';
 
 type Mode = 'set' | 'append' | 'remove';
 
@@ -22,7 +22,7 @@ export interface AddUserAttributeEvent {
 @Injectable()
 export class UserAttributesHandler {
   #logger = getLogger(UserAttributesHandler.name);
-  constructor(private readonly keycloakService: KeycloakService) {}
+  constructor(private readonly keycloakWriteService: KeycloakWriteService) {}
 
   @KafkaEvent(KafkaTopics.user.addAttribute, KafkaTopics.user.setAttribute)
   async handle(topic: string, data: AddUserAttributeEvent): Promise<void> {
@@ -32,8 +32,8 @@ export class UserAttributesHandler {
       data,
     );
 
-    await this.keycloakService.addAttribute({
-      userId: data.userId,
+    await this.keycloakWriteService.addAttribute({
+      userId: data.userId ?? '',
       attributes: data.attributes,
       mode:
         data.mode ?? (topic === KafkaTopics.user.setAttribute ? 'set' : 'set'),

@@ -1,16 +1,16 @@
 // src/messaging/handlers/user.handler.ts
 import { Injectable } from "@nestjs/common";
-import { getLogger } from "../../logger/logger.js";
+import { InvitationWriteService } from "../invitation/service/invitation-write.service.js";
+import { getLogger } from "../logger/logger.js";
 import {
   KafkaEvent,
   KafkaHandler,
-} from "../decorators/kafka-event.decorator.js";
+} from "../messaging/decorators/kafka-event.decorator.js";
 import {
   KafkaEventContext,
   KafkaEventHandler,
-} from "../interface/kafka-event.interface.js";
-import { KafkaTopics } from "../kafka-topic.properties.js";
-import { InvitationWriteService } from "../../invitation/service/invitation-write.service.js";
+} from "../messaging/interface/kafka-event.interface.js";
+import { KafkaTopics } from "../messaging/kafka-topic.properties.js";
 
 @KafkaHandler("user")
 @Injectable()
@@ -22,7 +22,7 @@ export class UserHandler implements KafkaEventHandler {
     this.invitationWriteService = InvitationWriteService;
   }
 
-  @KafkaEvent(KafkaTopics.user.addUser)
+  @KafkaEvent(KafkaTopics.auth.addUser)
   async handle(
     topic: string,
     data: any,
@@ -31,7 +31,7 @@ export class UserHandler implements KafkaEventHandler {
     this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
-      case KafkaTopics.user.addUser:
+      case KafkaTopics.auth.addUser:
         await this.#create(data);
         break;
     }

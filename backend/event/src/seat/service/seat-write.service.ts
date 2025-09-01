@@ -1,20 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/consistent-type-definitions */
-/* eslint-disable no-unused-private-class-members */
 /* eslint-disable @typescript-eslint/array-type */
 import { LoggerPlus } from '../../logger/logger-plus.js';
 import { LoggerService } from '../../logger/logger.service.js';
-import { KafkaConsumerService } from '../../messaging/kafka-consumer.service.js';
 import { KafkaProducerService } from '../../messaging/kafka-producer.service.js';
-import { getKafkaTopicsBy } from '../../messaging/kafka-topic.properties.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { TraceContextProvider } from '../../trace/trace-context.provider.js';
 import { handleSpanError } from '../utils/error.util.js';
-import { SeatReadService } from './seat-read.service.js';
 import { Injectable } from '@nestjs/common';
 import { context as otelContext, trace, Tracer } from '@opentelemetry/api';
 
@@ -27,7 +22,6 @@ export type ReserveSeatArgs = {
 @Injectable()
 export class SeatWriteService {
   readonly #prismaService: PrismaService;
-  readonly #kafkaConsumerService: KafkaConsumerService;
   readonly #kafkaProducerService: KafkaProducerService;
   readonly #loggerService: LoggerService;
   readonly #logger: LoggerPlus;
@@ -36,24 +30,16 @@ export class SeatWriteService {
 
   constructor(
     prismaService: PrismaService,
-    kafkaConsumerService: KafkaConsumerService,
     kafkaProducerService: KafkaProducerService,
     loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
   ) {
     this.#prismaService = prismaService;
-    this.#kafkaConsumerService = kafkaConsumerService;
     this.#loggerService = loggerService;
     this.#logger = this.#loggerService.getLogger(SeatWriteService.name);
     this.#kafkaProducerService = kafkaProducerService;
     this.#tracer = trace.getTracer(SeatWriteService.name);
     this.#traceContextProvider = traceContextProvider;
-  }
-
-  async onModuleInit(): Promise<void> {
-    await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(['ticket']),
-    });
   }
 
   listByEvent(eventId: string) {

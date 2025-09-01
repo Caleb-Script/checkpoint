@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import { RsvpChoice } from "../models/enums/rsvp-choice.enum";
 import { InvitationStatus } from "../models/enums/invitation-status.enum";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
@@ -24,6 +23,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class InvitationWriteService {
+  readonly #prismaService: PrismaService;
   readonly #kafkaConsumerService: KafkaConsumerService;
   readonly #kafkaProducerService: KafkaProducerService;
   readonly #loggerService: LoggerService;
@@ -32,13 +32,14 @@ export class InvitationWriteService {
   readonly #traceContextProvider: TraceContextProvider;
 
   constructor(
-    private readonly prisma: PrismaService,
+    prismaService: PrismaService,
     private readonly readService: InvitationReadService,
     kafkaConsumerService: KafkaConsumerService,
     kafkaProducerService: KafkaProducerService,
     loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
   ) {
+    this.#prismaService = prismaService;
     this.#kafkaConsumerService = kafkaConsumerService;
     this.#loggerService = loggerService;
     this.#logger = this.#loggerService.getLogger(InvitationWriteService.name);
@@ -69,19 +70,22 @@ export class InvitationWriteService {
             async () => {
               this.#logger.debug("accept");
 
-              await this.ensureExists(invitationId);
+              await this.#ensureExists(invitationId);
 
-              const updated = await this.prisma.invitation.update({
+              const updated = await this.#prismaService.invitation.update({
                 where: { id: invitationId },
                 data: {
                   guestProfileId: userId,
                 },
               });
+              
+              // Wichtig: Subscription-Event
+              // this.#pubsub?.publish('invitationUpdated', { invitationUpdated: updated });
               return updated;
             },
           );
         } catch (error) {
-          handleSpanError(span, error, this.#logger, "addItem");
+          handleSpanError(span, error, this.#logger, "addUserId");
         } finally {
           span.end();
         }
@@ -95,7 +99,7 @@ export class InvitationWriteService {
     const { reply: reply1, input } = reply;
 
     if (reply1 === RsvpChoice.NO) {
-      return await this.prisma.invitation.update({
+      return await this.#prismaService.invitation.update({
         where: { id },
         data: {
           rsvpChoice: reply1,
@@ -127,9 +131,9 @@ export class InvitationWriteService {
             async () => {
               this.#logger.debug("accept");
 
-              await this.ensureExists(id);
+              await this.#ensureExists(id);
 
-              const updated = await this.prisma.invitation.update({
+              const updated = await this.#prismaService.invitation.update({
                 where: { id },
                 data: {
                   rsvpChoice: RsvpChoice.YES,
@@ -139,25 +143,72 @@ export class InvitationWriteService {
                   phone,
                 },
               });
-
-              const trace = this.#traceContextProvider.getContext();
-
-              this.#kafkaProducerService.approved(
-                {
-                  invitationId: id,
-                  firstName: firstName,
-                  lastName: lastName,
-                  emailData: email,
-                  phone,
-                },
-                "invitation.write-service",
-                trace,
-              );
               return updated;
             },
           );
         } catch (error) {
-          handleSpanError(span, error, this.#logger, "addItem");
+          handleSpanError(span, error, this.#logger, "accept");
+        } finally {
+          span.end();
+        }
+      },
+    );
+  }
+
+  async approve(id: string, approve: boolean) {
+    this.#logger.debug('approve: input=%o', {id,approve});
+
+    return await this.#tracer.startActiveSpan(
+      "invitation.accept-rsvp",
+      async (span) => {
+        try {
+          return await otelContext.with(
+            trace.setSpan(otelContext.active(), span),
+            async () => {
+              this.#logger.debug("approve");
+
+              await this.#ensureExists(id);
+
+              const data: Record<string, any> = {};
+              data.approved = approve;
+
+              const updated = await this.#prismaService.invitation.update({
+                where: { id },
+                data,
+              }) as Invitation;
+
+              const trace = this.#traceContextProvider.getContext();
+
+              if (approve) {
+                this.#logger.debug('Zugang gewährt');
+                if (!updated.guestProfileId) {
+                  this.#kafkaProducerService.approved(
+                    {
+                      invitationId: id,
+                      firstName: updated.firstName ?? 'N/A',
+                      lastName: updated.lastName ?? 'N/A',
+                      emailData: updated.email,
+                      phone: updated.phone,
+                    },
+                    "invitation.write-service",
+                    trace,
+                  );
+                } else {
+                  this.#logger.debug('Gastprofil bereits vorhanden – Kafka-Event übersprungen (idempotent).');
+                }
+              } else {
+                this.#logger.debug('Zugang verweigert');
+              }
+
+              // // (Optional) gleich ein „updated“ Event fürs Realtime-UI publizieren, siehe PubSub unten
+              // this.#pubsub?.publish('invitationUpdated', { invitationUpdated: updated });
+
+            
+              return updated;
+            },
+          );
+        } catch (error) {
+          handleSpanError(span, error, this.#logger, "approve");
         } finally {
           span.end();
         }
@@ -190,7 +241,7 @@ export class InvitationWriteService {
       invitedByInvitationId: input.invitedByInvitationId ?? null,
     };
 
-    const created = await this.prisma.invitation.create({ data });
+    const created = await this.#prismaService.invitation.create({ data });
     return created;
   }
 
@@ -204,7 +255,7 @@ export class InvitationWriteService {
       );
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.#prismaService.$transaction(async (tx) => {
       // 1) Versuch, maxInvitees zu dekrementieren, NUR wenn > 0
       const dec = await tx.invitation.updateMany({
         where: {
@@ -261,7 +312,7 @@ export class InvitationWriteService {
   }
 
   async update(id: string, input: InvitationUpdateInput) {
-    await this.ensureExists(id);
+    await this.#ensureExists(id);
 
     const data: Record<string, any> = {};
 
@@ -294,23 +345,25 @@ export class InvitationWriteService {
       data.guestProfileId = input.guestProfileId;
     }
 
-    const updated = await this.prisma.invitation.update({
+    const updated = await this.#prismaService.invitation.update({
       where: { id },
       data,
     });
+
+
     return updated;
   }
 
   async delete(id: string) {
-    await this.ensureExists(id);
-    const deleted = await this.prisma.invitation.delete({ where: { id } });
+    await this.#ensureExists(id);
+    const deleted = await this.#prismaService.invitation.delete({ where: { id } });
 
     return deleted;
   }
 
   async setGuestProfileId(id: string, guestProfileId: string | null) {
-    await this.ensureExists(id);
-    const updated = await this.prisma.invitation.update({
+    await this.#ensureExists(id);
+    const updated = await this.#prismaService.invitation.update({
       where: { id },
       data: { guestProfileId },
     });
@@ -321,7 +374,7 @@ export class InvitationWriteService {
     if (!records?.length) return { inserted: 0 };
 
     const ops = records.map((r) =>
-      this.prisma.invitation.create({
+      this.#prismaService.invitation.create({
         data: {
           eventId: r.eventId,
           status: InvitationStatus.PENDING,
@@ -332,12 +385,12 @@ export class InvitationWriteService {
       }),
     );
 
-    const res = await this.prisma.$transaction(ops);
+    const res = await this.#prismaService.$transaction(ops);
     return { inserted: res.length };
   }
 
-  private async ensureExists(id: string) {
-    const found = await this.prisma.invitation.findUnique({ where: { id } });
+  async #ensureExists(id: string) {
+    const found = await this.#prismaService.invitation.findUnique({ where: { id } });
     if (!found) throw new NotFoundException("Invitation not found");
   }
 
@@ -345,7 +398,7 @@ export class InvitationWriteService {
    * Löscht ein einzelnes Plus-One (Child) und erhöht das maxInvitees der Parent-Einladung um 1.
    */
   async deletePlusOne(id: string) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.#prismaService.$transaction(async (tx) => {
       // Child holen
       const child = await tx.invitation.findUnique({
         where: { id },
@@ -398,7 +451,7 @@ export class InvitationWriteService {
    * Löscht alle Plus-Ones einer Parent-Einladung und erhöht maxInvitees entsprechend um die Anzahl.
    */
   async deleteAllPlusOnes(invitedByInvitationId: string) {
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.#prismaService.$transaction(async (tx) => {
       // Parent prüfen (+ plusOnes laden)
       const parent = await tx.invitation.findUnique({
         where: { id: invitedByInvitationId },
