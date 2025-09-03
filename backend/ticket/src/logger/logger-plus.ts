@@ -1,8 +1,5 @@
-/* eslint-disable no-unused-private-class-members */
 import { getLogger } from './logger.js';
-import { KafkaProducerService } from '../messaging/kafka-producer.service.js';
 import { TraceContext } from '../trace/trace-context.util.js';
-import { KafkaTopics } from '../messaging/kafka-topic.properties.js';
 import { format } from 'util';
 import {
   trace,
@@ -35,18 +32,18 @@ export interface LogEventDTO {
 export class LoggerPlus {
   private traceContext?: TraceContext;
   readonly #context: string;
-  readonly #kafka: KafkaProducerService;
-  readonly #serviceName: string;
+  // readonly #kafka: KafkaProducerService;
+  // readonly #serviceName: string;
   readonly #tracer: Tracer;
 
   constructor(
     context: string,
-    kafka: KafkaProducerService,
-    serviceName: string = 'shopping-cart-service',
+    // kafka: KafkaProducerService,
+    // serviceName: string = 'shopping-cart-service',
   ) {
     this.#context = context;
-    this.#kafka = kafka;
-    this.#serviceName = serviceName;
+    // this.#kafka = kafka;
+    // this.#serviceName = serviceName;
     this.logger = getLogger(this.#context);
     this.#tracer = trace.getTracer('logger-plus');
   }
@@ -58,29 +55,32 @@ export class LoggerPlus {
     return this;
   }
 
-  private getCaller(): string {
-    const err = new Error();
-    const stack = err.stack?.split('\n') ?? [];
+  // private getCaller(): string {
+  //   const err = new Error();
+  //   const stack = err.stack?.split('\n') ?? [];
 
-    for (const line of stack) {
-      if (
-        line.includes('LoggerPlus.') === false && // rausfiltern
-        line.includes('at ') &&
-        !line.includes('node:') // optional: interne Node-Calls ausschließen
-      ) {
-        const match = line.match(/at\s+([^\s]+)\s/);
-        if (match) {
-          const fullMethod = match[1]; // z.B. InvitationWriteService.create
-          const methodName = fullMethod.split('.').pop() ?? 'unknown';
-          return `${this.#context}#${methodName}`;
-        }
-      }
-    }
+  //   for (const line of stack) {
+  //     if (
+  //       line.includes('LoggerPlus.') === false && // rausfiltern
+  //       line.includes('at ') &&
+  //       !line.includes('node:') // optional: interne Node-Calls ausschließen
+  //     ) {
+  //       const match = line.match(/at\s+([^\s]+)\s/);
+  //       if (match) {
+  //         const fullMethod = match[1]; // z. B. InvitationWriteService.create
+  //         const methodName = fullMethod?.split('.').pop() ?? 'unknown';
+  //         return `${this.#context}#${methodName}`;
+  //       }
+  //     }
+  //   }
 
-    return `${this.#context}#unknown`;
-  }
+  //   return `${this.#context}#unknown`;
+  // }
 
-  private async sendLog(level: LogLevel, message: string) {
+  private async sendLog(
+    level: LogLevel,
+    // message: string
+  ) {
     // Entscheide, ob ein manueller TraceContext gesetzt wurde
     const isExternalTraceContext = !!this.traceContext;
 
@@ -124,15 +124,6 @@ export class LoggerPlus {
       },
       async (span) => {
         try {
-          const logPayload: LogEventDTO = {
-            level,
-            message,
-            service: this.#serviceName,
-            context: this.getCaller(),
-            traceContext,
-            timestamp: new Date().toISOString(),
-          };
-
           // await this.#kafka.sendEvent(
           //     KafkaTopics.logstream.log,
           //     'log',
@@ -165,19 +156,28 @@ export class LoggerPlus {
   async info(message: string, ...args: unknown[]) {
     const msg = format(message, ...args);
     this.logger.info(msg);
-    await this.sendLog(LogLevel.INFO, msg);
+    await this.sendLog(
+      LogLevel.INFO,
+      // msg
+    );
   }
 
   async warn(message: string, ...args: unknown[]) {
     const msg = format(message, ...args);
     this.logger.warn(msg);
-    await this.sendLog(LogLevel.WARN, msg);
+    await this.sendLog(
+      LogLevel.WARN,
+      // msg
+    );
   }
 
   async error(message: string, ...args: unknown[]) {
     const msg = format(message, ...args);
     this.logger.error(msg);
-    await this.sendLog(LogLevel.ERROR, msg);
+    await this.sendLog(
+      LogLevel.ERROR,
+      // msg
+    );
   }
 
   async trace(message: string, ...args: unknown[]) {

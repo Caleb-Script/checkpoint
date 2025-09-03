@@ -1,7 +1,6 @@
 // Simple PNG wrapper: QR als <img> in ein minimal gerendertes SVG, Ausgabe als PNG-Stream
 // Für echte Gestaltung könntest du sharp/canvas einsetzen. Hier bleiben wir dependencies-light.
 
-import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 
 export function svgForTicket(params: {

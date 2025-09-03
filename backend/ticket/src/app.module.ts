@@ -13,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { TraceModule } from './trace/trace.module.js';
 import { TokenModule } from './token/token.module.js';
 import { ScanModule } from './scan/scan.module.js';
+import { HandlerModule } from './handlers/handler.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ScanModule } from './scan/scan.module.js';
     TicketModule,
     TokenModule,
     ScanModule,
+    HandlerModule,
   ],
   providers: [AuthGuard],
 })

@@ -14,7 +14,10 @@ export class LoggerService {
   }
 
   getLogger(context: string): LoggerPlus {
-    return new LoggerPlus(context, this.kafka);
+    return new LoggerPlus(
+      context,
+      // this.kafka
+    );
   }
 }
 

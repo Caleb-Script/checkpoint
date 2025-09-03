@@ -28,7 +28,7 @@ export class EventHandler implements KafkaEventHandler {
   async handle(
     topic: string,
     data: any,
-    context: KafkaEventContext,
+    _context: KafkaEventContext,
   ): Promise<void> {
     this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 

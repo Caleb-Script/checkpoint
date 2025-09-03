@@ -1,20 +1,28 @@
-// messaging/kafka-bootstrap.provider.ts
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+// kafka-bootstrap.provider.ts
 
-import { KafkaConsumerService } from './kafka-consumer.service.js';
-import { getKafkaTopicsBy } from './kafka-topic.properties.js';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { kafkaProducer, kafka } from '../config/kafka.config.js';
+import { Provider } from '@nestjs/common';
 
-@Injectable()
-export class KafkaBootstrap implements OnModuleInit {
-  readonly #consumer: KafkaConsumerService;
+export const KAFKA_INSTANCE = 'KAFKA_INSTANCE';
+export const KAFKA_PRODUCER = 'KAFKA_PRODUCER';
 
-  constructor(consumer: KafkaConsumerService) {
-    this.#consumer = consumer;
-  }
+export const kafkaInstanceProvider: Provider = {
+  provide: KAFKA_INSTANCE,
+  useValue: kafka,
+};
 
-  async onModuleInit(): Promise<void> {
-    await this.#consumer.consume({
-      topics: getKafkaTopicsBy(['auth', 'event']),
-    });
-  }
-}
+export const kafkaProducerProvider: Provider = {
+  provide: KAFKA_PRODUCER,
+  useFactory: async () => {
+    await kafkaProducer.connect();
+    return kafkaProducer;
+  },
+};
+
+export const kafkaBootstrapProvider: Provider[] = [
+  kafkaInstanceProvider,
+  kafkaProducerProvider,
+];

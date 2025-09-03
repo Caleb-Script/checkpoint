@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 @Injectable()
 export class ScanReadService {
-  private readonly logger = new Logger(ScanReadService.name);
+  // private readonly logger = new Logger(ScanReadService.name);
 
   readonly #prismaService: PrismaService;
 

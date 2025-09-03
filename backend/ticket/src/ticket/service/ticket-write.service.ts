@@ -46,15 +46,15 @@ export class TicketWriteService {
           async () => {
             void this.#logger.debug('input=%o', input);
 
-            const data = {
-              event: input.eventId,
-              invitation: input.invitationId,
-              currentState: 'OUTSIDE',
-              deviceBoundKey: null,
-              revoked: false,
-              seat: input.seatId,
-              lastRotatedAt: null,
-            };
+            // const data = {
+            //   event: input.eventId,
+            //   invitation: input.invitationId,
+            //   currentState: 'OUTSIDE',
+            //   deviceBoundKey: null,
+            //   revoked: false,
+            //   seat: input.seatId,
+            //   lastRotatedAt: null,
+            // };
 
             const ticket = await await (
               this.#prismaService as any
@@ -107,7 +107,7 @@ export class TicketWriteService {
     });
     if (!ticket) throw new NotFoundException('Ticket not found');
 
-    const updated = await this.#prismaService.$transaction(async (tx) => {
+    await this.#prismaService.$transaction(async (tx) => {
       const updatedTicket = await tx.ticket.update({
         where: { id: ticket.id },
         data: { seatId },

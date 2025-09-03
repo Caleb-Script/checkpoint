@@ -1,148 +1,67 @@
-import { Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { Kafka, Consumer, ConsumerSubscribeTopics } from 'kafkajs';
-import { KafkaEventDispatcherService } from './kafka-event-dispatcher.service.js';
-import type { KafkaEventContext } from './interface/kafka-event.interface.js';
-import { LoggerService } from '../logger/logger.service.js';
-import { TraceContextUtil } from '../trace/trace-context.util.js';
+// kafka-consumer.service.ts
+// ✅ Kafka Consumer Service mit Lifecycle-Management und Dispatcher-Aufruf
+
 import {
-  context as otelContext,
-  SpanContext,
-  SpanKind,
-  SpanStatusCode,
-  trace,
-  Tracer,
-} from '@opentelemetry/api';
-import { LoggerPlus } from '../logger/logger-plus.js';
-import { groupId, kafkaBroker } from '../config/kafka.js';
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { KafkaEventDispatcherService } from './kafka-event-dispatcher.service.js';
+import { createKafkaConsumer } from '../config/kafka.config.js';
+import { getKafkaTopicsBy } from './kafka-topic.properties.js';
 
 /**
- * Kafka Consumer zur Registrierung von Topic-Handlern.
+ * KafkaConsumerService
+ * Verwaltet das Abonnieren und Verarbeiten von Kafka-Nachrichten
  */
 @Injectable()
-export class KafkaConsumerService implements OnApplicationShutdown {
-  private readonly kafka = new Kafka({ brokers: [kafkaBroker] });
-  private readonly consumers: Consumer[] = [];
-  private readonly tracer: Tracer = trace.getTracer('kafka-consumer');
+export class KafkaConsumerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(KafkaConsumerService.name);
+  private readonly consumer = createKafkaConsumer('checkpoint-event');
 
-  readonly #dispatcher: KafkaEventDispatcherService;
-  readonly #loggerService: LoggerService;
+  constructor(private readonly dispatcher: KafkaEventDispatcherService) {}
 
-  constructor(
-    dispatcher: KafkaEventDispatcherService,
-    loggerService: LoggerService,
-  ) {
-    this.#dispatcher = dispatcher;
-    this.#loggerService = loggerService;
-  }
+  /**
+   * Startet den Kafka-Consumer bei Anwendungsstart.
+   */
+  async onModuleInit(): Promise<void> {
+    await this.consumer.connect();
 
-  async consume(topics: ConsumerSubscribeTopics): Promise<void> {
-    const consumer = this.kafka.consumer({ groupId });
-    await consumer.connect();
-    await consumer.subscribe(topics);
-
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        const headers = Object.fromEntries(
-          Object.entries(message.headers ?? {}).map(([key, val]) => [
-            key,
-            val?.toString(),
-          ]),
-        );
-
-        // ⬅️ 1. TraceContext aus Kafka-Headers extrahieren (W3C oder B3)
-        const traceContext = TraceContextUtil.fromHeaders(headers);
-
-        // ⬅️ 2. OpenTelemetry-Kontext aus propagierten Headern extrahieren
-        // const parentContext = propagation.extract(otelContext.active(), headers);
-
-        // ⬅️ 3. Optional: SpanLink setzen, um Producer-Trace zu verlinken
-        const links: { context: SpanContext }[] = [];
-        if (traceContext.traceId && traceContext.spanId) {
-          links.push({
-            context: {
-              traceId: traceContext.traceId,
-              spanId: traceContext.spanId,
-              traceFlags: traceContext.sampled ? 1 : 0,
-              isRemote: true,
-            },
-          });
-        }
-
-        // ⬅️ 4. Kafka-Consumer-Span starten
-        const span = this.tracer.startSpan(`kafka.receive.${topic}`, {
-          kind: SpanKind.CONSUMER,
-          attributes: {
-            'messaging.system': 'kafka',
-            'messaging.destination': topic,
-            'messaging.destination_kind': 'topic',
-            'messaging.operation': 'consume',
-          },
-          links,
-        });
-
-        const spanCtx = trace.setSpan(otelContext.active(), span);
-
-        await otelContext.with(spanCtx, async () => {
-          try {
-            const valueBuffer = message.value;
-            const value = valueBuffer
-              ? Buffer.from(valueBuffer).toString()
-              : '{}';
-            const payload = JSON.parse(value);
-
-            const eventName = headers['x-event-name'] ?? topic;
-            const kafkaContext: KafkaEventContext = {
-              topic,
-              partition,
-              offset: message.offset,
-              headers,
-              timestamp: message.timestamp,
-            };
-
-            span.setAttributes({
-              'kafka.topic': topic,
-              'kafka.partition': partition,
-              'kafka.offset': message.offset,
-              'kafka.event.name': eventName,
-            });
-
-            // ⬅️ 5. Logger mit TraceContext verlinken (für Kafka-Logevent)
-            const logger: LoggerPlus = this.#loggerService
-              .getLogger(KafkaConsumerService.name)
-              .withContext(traceContext);
-
-            await logger.info(`Event erfolgreich empfangen: ${eventName}`);
-
-            // ⬅️ 6. Event an passenden Handler weiterreichen
-            await this.#dispatcher.dispatch(eventName, payload, kafkaContext);
-
-            span.setStatus({ code: SpanStatusCode.OK });
-          } catch (err) {
-            span.recordException(err as Error);
-            span.setStatus({
-              code: SpanStatusCode.ERROR,
-              message: (err as Error).message,
-            });
-
-            const fallbackLogger = this.#loggerService.getLogger(
-              KafkaConsumerService.name,
-            );
-            fallbackLogger.error('Kafka-Consumer-Fehler: %o', err);
-
-            throw err;
-          } finally {
-            span.end();
-          }
-        });
-      },
+    // 👉 mehrere Subscriptions
+    await this.consumer.subscribe({
+      topics: getKafkaTopicsBy(['ticket']),
+      fromBeginning: false,
     });
 
-    this.consumers.push(consumer);
+    await this.consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        try {
+          const rawValue = message.value?.toString();
+          if (!rawValue) return;
+
+          const payload = JSON.parse(rawValue);
+
+          this.logger.log(`📩 Event erfolgreich empfangen: ${topic}`);
+
+          await this.dispatcher.dispatch(topic, payload, {
+            topic,
+            partition,
+            offset: message.offset,
+            headers: message.headers,
+            timestamp: message.timestamp,
+          });
+        } catch (err) {
+          this.logger.error('Fehler beim Verarbeiten der Kafka-Nachricht', err);
+        }
+      },
+    });
   }
 
-  async onApplicationShutdown(): Promise<void> {
-    for (const consumer of this.consumers) {
-      await consumer.disconnect();
-    }
+  /**
+   * Trenne Verbindung beim Shutdown
+   */
+  async onModuleDestroy(): Promise<void> {
+    await this.consumer.disconnect();
   }
 }
