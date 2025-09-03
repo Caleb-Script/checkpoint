@@ -1,25 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-// src/notification/utils/pubsub.ts
-import { PubSub as GqlPubSub } from "graphql-subscriptions";
+import Redis from 'ioredis';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
 
-/** Minimale Engine-Definition mit asyncIterator */
-export interface PubSubEngine {
-  publish(triggerName: string, payload: any): Promise<void>;
-  subscribe(
-    triggerName: string,
-    onMessage: (payload: any) => void,
-  ): Promise<number>;
-  unsubscribe(subId: number): void;
-  asyncIterator<T = any>(triggers: string | string[]): AsyncIterator<T>;
-}
+const redisUrl = process.env.REDIS_URL;
 
-/** Eine einzige Runtime-Instanz – einmal "any" casten, damit TS Ruhe gibt */
-const core = new GqlPubSub() as unknown as PubSubEngine;
-
-/** Sauberer, stabiler Export (kein default!) */
-export const pubsub: PubSubEngine = {
-  publish: (t, p) => core.publish(t, p),
-  subscribe: (t, h) => core.subscribe(t, h),
-  unsubscribe: (id) => core.unsubscribe(id),
-  asyncIterator: (triggers) => core.asyncIterator(triggers),
+const redisOptions = {
+  host: process.env.REDIS_HOST ?? '127.0.0.1',
+  port: +(process.env.REDIS_PORT ?? 6379),
+  password: process.env.REDIS_PASSWORD || undefined,
+  retryStrategy: (times: number) => Math.min(times * 50, 2000),
+  maxRetriesPerRequest: 1,
+  enableReadyCheck: true,
 };
+
+// Publisher/Subscriber explizit anlegen (robuster als implizit)
+const publisher = redisUrl ? new Redis(redisUrl) : new Redis(redisOptions);
+const subscriber = redisUrl ? new Redis(redisUrl) : new Redis(redisOptions);
+
+export const pubsub = new RedisPubSub({ publisher, subscriber });
+
+// Trigger zentral halten – EIN Name, überall gleich verwenden
+export const TRIGGER = {
+  INVITATION_UPDATED: 'INVITATION_UPDATED',
+} as const;

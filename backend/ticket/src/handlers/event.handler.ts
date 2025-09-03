@@ -24,7 +24,7 @@ export class EventHandler implements KafkaEventHandler {
     this.#ticketWriteService = TicketWriteService;
   }
 
-  @KafkaEvent(KafkaTopics.event.addSeat)
+  @KafkaEvent(KafkaTopics.ticket.addSeat)
   async handle(
     topic: string,
     data: any,
@@ -33,7 +33,7 @@ export class EventHandler implements KafkaEventHandler {
     this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
-      case KafkaTopics.event.addSeat:
+      case KafkaTopics.ticket.addSeat:
         await this.#add(data);
         break;
     }

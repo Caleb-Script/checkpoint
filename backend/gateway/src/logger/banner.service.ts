@@ -46,7 +46,7 @@ export class BannerService implements OnApplicationBootstrap {
             chalk.cyan('Betriebssystem: ') + chalk.yellow(`${type()} (${release()})`),
         );
         this.#logger.info(chalk.cyan('Benutzer: ') + chalk.yellow(userInfo().username));
-        this.#logger.info(chalk.cyan('Swagger UI: ') + chalk.yellowBright('/swagger'));
+        this.#logger.info(chalk.cyan('Swagger UI: ') + chalk.yellow('/swagger'));
         this.#logger.info(chalk.green('===============================')); // Endmarkierung für die Anwendungsinformationen
     }
 

@@ -34,7 +34,7 @@ import {
 } from '@mui/material';
 
 import { useAuth } from '@/context/AuthContext';
-import type { KeycloakUserInfo } from '../../../types/auth/auth.type';
+import type { User } from '../../../types/auth/auth.type';
 import AvatarWithBadge from '../../notifications/AvatarWithBadge';
 import { useUnreadCount } from '../../notifications/useUnreadCount';
 
@@ -50,7 +50,7 @@ type NavItem = {
  * Rollen aus dem User extrahieren (case-insensitive).
  * Falls keine Rolle vorhanden, behandeln wir den eingeloggten User als 'GUEST'.
  */
-function extractRoles(user: KeycloakUserInfo | null): Role[] {
+function extractRoles(user: User | null): Role[] {
   if (!user) return [];
   const raw = Array.isArray(user.roles) ? user.roles : [];
   const set = new Set(raw.map((r) => String(r).toUpperCase()));

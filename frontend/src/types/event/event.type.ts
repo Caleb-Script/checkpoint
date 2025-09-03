@@ -10,13 +10,6 @@ export type Event = {
   updatedAt: string;
 };
 
-export type EventsQueryResult = {
-  events: Event[];
-};
-
-export type EventByIdQueryResult = {
-  event: Event | null;
-};
 
 export type CreateEventInput = {
   name: string;

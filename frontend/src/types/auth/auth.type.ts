@@ -4,35 +4,22 @@ export type LoginInput = {
 };
 
 export type Token = {
-  access_token: string;
-  expires_in: number;
-  refresh_token: string;
-  refresh_expires_in: number;
-  id_token: string;
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshExpiresIn: number;
+  idToken: string;
   scope: string;
 };
 
-export type KeycloakUserInfo = {
-  sub: string;
-  username?: string;
-  name?: string;
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-  roles: string[];
-  ticketId?: string[];
-  invitationId?: string;
-};
-
-export type UserAttributes = {
-  ticketId?: string[];
-  invitationId?: string[];
-};
-
-export type KeycloakUser = {
+export type User = {
   id: string;
-  username: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  attributes: UserAttributes;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string
+  roles: string[];
+  ticketId?: string;
+  invitationId?: string;
 };

@@ -99,6 +99,7 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: ${KAFKA_ADVERTISED_HOST_NAME}
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      TZ: Europe/Berlin
     # command: sh -c "export KAFKA_ADVERTISED_HOST_NAME=$(hostname); /usr/bin/start-kafka.sh"
     networks:
       - checkpoint-net

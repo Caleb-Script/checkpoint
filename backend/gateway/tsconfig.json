@@ -11,6 +11,7 @@
   },
   "include": ["src/**/*", "__tests__/**/*"],
   "compilerOptions": {
+    "typeRoots": ["src/types", "./node_modules/@types"],
     // "rootDir": ".",
     // uebersetzter JS-Code im Hinblick auf Module. "NodeNext" erfordert dasselbe fuer "moduleResolution"
     // "module": "NodeNext", // entspricht "Node16"
@@ -59,12 +60,12 @@
     // Wie werden zu importierende Module im Dateisystem gefunden?
     // "moduleResolution": "nodenext",
     "moduleResolution": "node",
-    "moduleDetection": "force", // default: "auto",
+    "moduleDetection": "force" // default: "auto",
     // "exactOptionalPropertyTypes": true, // bei optionalen Properties ggf. explizit undefined spezifiziere
     // "noImplicitAny": true, // Fehler bei implizitem Typ "any", default bei strict
     // "noImplicitThis": true, // Fehler bei this mit implizitem "any", default bei strict
     // "useUnknownInCatchVariables": true // unknown als default-Typ bei catch-Klauseln, default bei strict
     // "noPropertyAccessFromIndexSignature": true, // Fehler in __tests__ bei dot-Zugriff auf nicht-definierte Properties, z.B. response.data.statusCode
     // "allowJs": true, // wegen ts-jest und ESM
-  },
+  }
 }

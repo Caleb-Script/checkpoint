@@ -1,14 +1,14 @@
 // src/messaging/handlers/user.handler.ts
 import { Injectable } from '@nestjs/common';
-import { getLogger } from '../logger/logger';
+import { getLogger } from '../logger/logger.js';
 import {
   KafkaEvent,
   KafkaHandler,
-} from '../messaging/decorators/kafka-event.decorator';
-import { KafkaEventHandler } from '../messaging/interface/kafka-event.interface';
-import { KafkaTopics } from '../messaging/kafka-topic.properties';
-import { SignInInput } from '../security/keycloak/models/inputs/sign-in.input';
-import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service';
+} from '../messaging/decorators/kafka-event.decorator.js';
+import { KafkaEventHandler } from '../messaging/interface/kafka-event.interface.js';
+import { KafkaTopics } from '../messaging/kafka-topic.properties.js';
+import { SignInInput } from '../security/keycloak/models/inputs/sign-in.input.js';
+import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service.js';
 
 @KafkaHandler('user')
 @Injectable()
@@ -20,24 +20,24 @@ export class UserHandler implements KafkaEventHandler {
     this.keycloakWriteService = KeycloakService;
   }
 
-  @KafkaEvent(KafkaTopics.user.create, KafkaTopics.user.delete)
+  @KafkaEvent(KafkaTopics.auth.create, KafkaTopics.auth.delete)
   async handle(topic: string, data: any): Promise<void> {
     this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
-      case KafkaTopics.user.create:
+      case KafkaTopics.auth.create:
         await this.#create(data);
         break;
-      case KafkaTopics.user.delete:
+      case KafkaTopics.auth.delete:
         await this.#delete(data);
         break;
     }
   }
 
-  async #create(data: SignInInput): Promise<void> {
+  async #create(data: { payload: SignInInput }): Promise<void> {
     this.#logger.debug('CreateUserHandler: data=%o', data);
 
-    const { firstName, lastName, emailData, invitationId } = data;
+    const { firstName, lastName, emailData, invitationId } = data.payload;
     await this.keycloakWriteService.signUp({
       firstName,
       lastName,

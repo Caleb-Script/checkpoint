@@ -121,11 +121,11 @@ export default function ProfilePage() {
   }
 
   const {
-    sub,
+    id: sub,
     username,
     name,
-    givenName,
-    familyName,
+    firstName: givenName,
+    lastName: familyName,
     email,
     roles,
     invitationId,

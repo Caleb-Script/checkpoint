@@ -10,6 +10,7 @@ import {
 import { TraceModule } from "./trace/trace.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { KafkaModule } from "./messaging/kafka.module";
+import { HandlerModule } from "./handlers/handler.module";
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { KafkaModule } from "./messaging/kafka.module";
     PrismaModule,
     TraceModule,
     KafkaModule,
+    HandlerModule,
 
     // Feature-Module
     InvitationModule,

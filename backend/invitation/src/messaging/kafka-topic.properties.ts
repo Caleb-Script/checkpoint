@@ -1,20 +1,33 @@
+// kafka-topic.properties.ts
+// ✅ Einheitliche Definition der verwendeten Kafka-Topics
+
 /**
  * Zentrale Konfiguration aller Kafka-Topics im System.
  * Dient der Typsicherheit, Übersichtlichkeit und Wiederverwendbarkeit in Publishern und Handlern.
+ * KafkaTopics
+ * Enthält alle in diesem Microservice verwendeten Kafka-Topics als Konstanten.
  */
-
 export const KafkaTopics = {
   auth: {
+    /** Wird verwendet, um neue Benutzer zu erstellen */
+    create: "auth.create.user",
+
+    /** Wird verwendet, um Benutzer zu löschen */
+    delete: "auth.delete",
+  },
+  invitation: {
+    /** Wird verwendet, um einer Einladung einen Benutzer zuzuweisen */
     addUser: "invitation.add.user",
-    approve: "auth.create.user",
   },
 } as const;
 
 /**
+ * Typ zur Validierung aller erlaubten Topics
  * Type-safe Zugriff auf Topic-Namen.
  * Beispiel: `KafkaTopics.Invitation.CustomerDeleted`
  */
 export type KafkaTopicsType = typeof KafkaTopics;
+/**
 
 /**
  * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z. B. für Subscriptions).

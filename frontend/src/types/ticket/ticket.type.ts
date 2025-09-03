@@ -2,10 +2,11 @@ export type Ticket = {
   id: string;
   eventId: string;
   invitationId: string;
-  seatId?: string | null;
+  guestProfileId?: string;
+  seatId?: string;
   currentState: 'INSIDE' | 'OUTSIDE';
-  deviceBoundKey?: string | null;
-  revoked?: boolean | null;
+  deviceBoundKey?: string;
+  revoked?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 };
-
-export type GetTicketsResult = { getTickets: Ticket[] };

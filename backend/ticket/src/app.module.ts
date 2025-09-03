@@ -11,6 +11,8 @@ import { AuthGuard } from './ticket/utils/auth.guard.js';
 import { KafkaModule } from './messaging/kafka.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { TraceModule } from './trace/trace.module.js';
+import { TokenModule } from './token/token.module.js';
+import { ScanModule } from './scan/scan.module.js';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { TraceModule } from './trace/trace.module.js';
 
     // Feature-Module
     TicketModule,
+    TokenModule,
+    ScanModule,
   ],
   providers: [AuthGuard],
 })

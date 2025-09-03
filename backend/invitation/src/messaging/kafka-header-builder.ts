@@ -1,5 +1,39 @@
 import { TraceContext } from "../trace/trace-context.util.js";
 
+// kafka-header-builder.ts
+// ✅ Utility zur Erstellung standardisierter Kafka-Header (z. B. für Traceability, Correlation ID)
+
+/**
+ * Erstellt Kafka-kompatible Header mit standardisierten Feldern.
+ * @param headers - Zusätzliche Header-Felder, die hinzugefügt werden sollen
+ * @returns Kafka-kompatibles Header-Objekt (Record<string, Buffer>)
+ */
+export function buildKafkaHeaders(
+  headers: Record<string, string> = {},
+): Record<string, Buffer> {
+  return Object.entries({
+    "x-trace-id": generateUUID(),
+    ...headers,
+  }).reduce(
+    (acc, [key, value]) => {
+      acc[key] = Buffer.from(value);
+      return acc;
+    },
+    {} as Record<string, Buffer>,
+  );
+}
+
+/**
+ * Erzeugt eine einfache UUID (nicht RFC-konform, aber eindeutig genug für Tracing-Zwecke).
+ */
+function generateUUID(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
  * Erzeugt standardisierte Kafka-Header für Event-Messages.
  */

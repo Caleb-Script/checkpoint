@@ -1,17 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/consistent-type-imports */
+
 import {
   Injectable,
   NotFoundException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { RedisLockService } from '../../redis/redis-lock.service.js';
 import { SECURITY } from '../../config/security.config.js';
+
 import { ScanInput } from '../models/inputs/scan.input.js';
 import { ScanPayload } from '../models/payload/scan.payload.js';
 import { ScanVerdict } from '../models/enums/scan-verdict.enum.js';
@@ -20,6 +22,74 @@ import { PresenceState } from '../models/enums/presenceState.enum.js';
 import { Ticket } from '../../ticket/models/entity/ticket.entity.js';
 import { GuardVerdict } from '../../guard/models/enums/guard-verdict.enum.js';
 import { TokenService } from '../../token/services/token.service.js';
+import { ScanLog } from '../models/entitys/scan-log.entity.js';
+
+/**
+ * Zusätzliche Reason-Codes, WARUM ein Scan geblockt wurde.
+ * Diese Codes sind stabil und können im Frontend/Monitoring ausgewertet werden.
+ */
+export enum ScanBlockReason {
+  REVOKED = 'REVOKED',
+  BLOCKED_GLOBAL = 'BLOCKED_GLOBAL',
+  GUARD_POLICY_BLOCK = 'GUARD_POLICY_BLOCK',
+  ALREADY_INSIDE = 'ALREADY_INSIDE',
+  ALREADY_OUTSIDE = 'ALREADY_OUTSIDE',
+  COOLDOWN = 'COOLDOWN',
+  LOCK_BUSY = 'LOCK_BUSY',
+}
+
+/**
+ * Prisma-Teil-Interfaces, um any zu vermeiden.
+ */
+interface TicketRepository {
+  findUnique(args: { where: { id: string } }): Promise<Ticket | null>;
+  findFirst(args: {
+    where: { deviceBoundKey: string };
+  }): Promise<Ticket | null>;
+  update(args: {
+    where: { id: string };
+    data: { currentState: PresenceState };
+  }): Promise<Ticket>;
+}
+
+interface ScanLogCreateData {
+  ticketId: string;
+  eventId: string;
+  byUserId?: string;
+  direction: PresenceState;
+  verdict: ScanVerdict;
+  gate?: string;
+  deviceHash?: string;
+}
+
+interface ScanLogRepository {
+  create(args: { data: ScanLogCreateData }): Promise<ScanLog>; // <-- liefert jetzt ScanLog, nicht Record
+}
+
+/**
+ * Erweiterte Payload mit Diagnosefeldern.
+ */
+type RichScanPayload = ScanPayload & {
+  reasonCode?: ScanBlockReason;
+  guardVerdict?: GuardVerdict;
+  cooldownMs?: number;
+  lockBusy?: boolean;
+};
+
+/**
+ * Kontext, der in JEDEM Log mitgegeben wird (strukturierte Logs).
+ */
+type LogCtx = {
+  ticketId?: string;
+  eventId?: string;
+  byUserId?: string | null;
+  direction?: PresenceState;
+  gate?: string;
+  deviceHash?: string;
+  verdict?: ScanVerdict;
+  reasonCode?: ScanBlockReason;
+  guardVerdict?: GuardVerdict;
+};
 
 @Injectable()
 export class ScanWriteService {
@@ -45,29 +115,94 @@ export class ScanWriteService {
     this.#tokenService = tokenService;
   }
 
-  /**
-   * Nimmt einen generierten Token entgegen und liefert das Ticket.
-   * Token-Regel minimalistisch, ohne externe Dependencies:
-   * - "ticket:<id>" → Ticket per ID
-   * - sonst: deviceBoundKey === token
-   */
-  async validateToken(token: string) {
-    if (!token) return null;
-    if (token.startsWith('ticket:')) {
-      const id = token.slice('ticket:'.length);
-      return await (this.#prismaService as any).ticket.findUnique({
-        where: { id },
-      });
-    }
-    return await (this.#prismaService as any).ticket.findFirst({
-      where: { deviceBoundKey: token },
-    });
+  // ---------------------------------------------------------------------------
+  // Hilfen
+  // ---------------------------------------------------------------------------
+
+  private prismaTicket(): TicketRepository {
+    return (this.#prismaService as unknown as { ticket: TicketRepository })
+      .ticket;
   }
 
-  // --- QR-TOKEN Support ------------------------------------------------------
+  private prismaScanLog(): ScanLogRepository {
+    return (this.#prismaService as unknown as { scanLog: ScanLogRepository })
+      .scanLog;
+  }
+
+  private log(
+    level: 'debug' | 'log' | 'warn' | 'error',
+    message: string,
+    ctx: LogCtx = {},
+  ) {
+    // als JSON-String ausgeben, damit strukturierte Logsammler es parsen können
+    const payload = JSON.stringify({ msg: message, ...ctx });
+    switch (level) {
+      case 'debug':
+        this.logger.debug(payload);
+        break;
+      case 'log':
+        this.logger.log(payload);
+        break;
+      case 'warn':
+        this.logger.warn(payload);
+        break;
+      case 'error':
+        this.logger.error(payload);
+        break;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Token → Ticket (plain & QR-JWT)
+  // ---------------------------------------------------------------------------
+
   /**
-   * Öffentliche Methode für Scanner, die ein QR-JWT liefern.
-   * Optional kann direction angegeben werden, sonst wird getoggelt.
+   * Validiert einen einfachen String-Token & lädt ggf. Ticket.
+   *
+   * @remarks
+   * Minimalistische Token-Regel (ohne externe Dependencies):
+   * - `ticket:<id>` → lädt Ticket per ID
+   * - sonst: `deviceBoundKey === token`
+   */
+  async validateToken(token: string): Promise<Ticket | null> {
+    if (!token) return null;
+    const ticketRepo = this.prismaTicket();
+
+    if (token.startsWith('ticket:')) {
+      const id = token.slice('ticket:'.length);
+      return await ticketRepo.findUnique({ where: { id } });
+    }
+
+    return await ticketRepo.findFirst({ where: { deviceBoundKey: token } });
+  }
+
+  /**
+   * Verifiziert ein QR-JWT (Signatur, `exp`, `jti`) und lädt das zugehörige Ticket.
+   *
+   * @throws UnauthorizedException wenn Token fehlt/ungültig
+   * @throws NotFoundException wenn Ticket nicht existiert
+   */
+  private async verifyQrTokenAndLoad(token: string): Promise<Ticket> {
+    if (!token) throw new UnauthorizedException('Missing token');
+
+    const payload = await this.#tokenService.verifyTicketJwt(token);
+    const id = (payload as Record<string, unknown>)['tid'];
+    if (typeof id !== 'string' || !id) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const ticket = await this.prismaTicket().findUnique({ where: { id } });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    return ticket;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Öffentliche API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * QR-JWT Scan-Entry-Point für Scanner. Optional `direction`, sonst Toggle.
    */
   async scanWithToken(
     token: string,
@@ -77,71 +212,122 @@ export class ScanWriteService {
       deviceHash?: string;
       byUserId?: string;
     } = {},
-  ) {
-    const ticket = await this.#verifyQrTokenAndLoad(token);
+  ): Promise<RichScanPayload> {
+    const ticket = await this.verifyQrTokenAndLoad(token);
     const direction =
       options.direction ??
       (ticket.currentState === PresenceState.OUTSIDE
         ? PresenceState.INSIDE
         : PresenceState.OUTSIDE);
-    return this.scan({
+
+    this.log('debug', 'scanWithToken: resolved direction', {
+      ticketId: ticket.id,
+      eventId: ticket.eventId,
+      direction,
+      gate: options.gate,
+      deviceHash: options.deviceHash,
+      byUserId: options.byUserId ?? null,
+    });
+
+    return await this.scan({
       ticketId: ticket.id,
       direction,
       gate: options.gate ?? 'GATE',
       deviceHash: options.deviceHash,
-      byUserId: options.byUserId,
+      byUserId: options.byUserId ?? undefined,
     });
   }
 
-  // --- Klassischer Scan mit Ticket-ID (beibehalten für Kompatibilität) ------
-
-  async scan(params: ScanInput): Promise<ScanPayload> {
+  /**
+   * Klassischer Scan mit Ticket-ID (Kompatibilitätspfad).
+   */
+  async scan(params: ScanInput): Promise<RichScanPayload> {
     const { ticketId, direction, gate, deviceHash, byUserId = null } = params;
 
-    const ticketRow = await this.#prismaService.ticket.findUnique({
-      where: { id: ticketId },
-    });
-    if (!ticketRow) throw new NotFoundException('Ticket not found');
-    const ticket = ticketRow as unknown as Ticket;
+    const ticketRepo = this.prismaTicket();
+    const scanLogRepo = this.prismaScanLog();
 
-    // Revoked?
+    const ticketRow = await ticketRepo.findUnique({ where: { id: ticketId } });
+    if (!ticketRow) {
+      this.log('warn', 'Ticket not found', { ticketId });
+      throw new NotFoundException('Ticket not found');
+    }
+    const ticket = ticketRow;
+
+    // 1) Revoked?
     if (ticket.revoked) {
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: ticket.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.REVOKED,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.REVOKED;
+      const reasonCode = ScanBlockReason.REVOKED;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
-        reason: ScanVerdict.REVOKED,
+        reason: verdict,
       });
-      return { verdict: ScanVerdict.REVOKED, ticket, log };
-    }
 
-    // Globale Blockade?
-    const { blocked } = await this.#shareGuardWriteService.isBlocked(ticketId);
-    if (blocked) {
-      const log = await this.#writeLog({
+      this.log('warn', 'Scan blocked: ticket revoked', {
         ticketId,
         eventId: ticket.eventId,
         byUserId,
         direction,
-        verdict: ScanVerdict.BLOCKED,
         gate,
         deviceHash,
+        verdict,
+        reasonCode,
       });
+
+      return { verdict, ticket, log, reasonCode };
+    }
+
+    // 2) Globale Blockade?
+    const { blocked } = await this.#shareGuardWriteService.isBlocked(ticketId);
+    if (blocked) {
+      const verdict = ScanVerdict.BLOCKED;
+      const reasonCode = ScanBlockReason.BLOCKED_GLOBAL;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
+      });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: ScanVerdict.BLOCKED,
       });
-      return { verdict: ScanVerdict.BLOCKED, ticket, log };
+
+      this.log('warn', 'Scan blocked: global block', {
+        ticketId,
+        eventId: ticket.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+        reasonCode,
+      });
+
+      return { verdict, ticket, log, reasonCode };
     }
 
-    // ShareGuard-Policy (Device-Mismatch, Doppel-Scan, Flip-Flop)
+    // 3) ShareGuard-Policy
     const guardVerdict: GuardVerdict =
       await this.#shareGuardWriteService.evaluate({
         ticketId,
@@ -150,112 +336,210 @@ export class ScanWriteService {
         gate,
         now: new Date(),
       });
+
     if (guardVerdict !== GuardVerdict.ALLOW) {
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: ticket.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.BLOCKED,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.BLOCKED;
+      const reasonCode = ScanBlockReason.GUARD_POLICY_BLOCK;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: guardVerdict,
       });
-      return { verdict: ScanVerdict.BLOCKED, ticket, log };
+
+      this.log('warn', 'Scan blocked: guard policy', {
+        ticketId,
+        eventId: ticket.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+        reasonCode,
+        guardVerdict,
+      });
+
+      return { verdict, ticket, log, reasonCode, guardVerdict };
     }
 
-    // Doppel-Scan gleicher Richtung?
+    // 4) Doppel-Scan gleicher Richtung?
     if (
       direction === PresenceState.INSIDE &&
       ticket.currentState === PresenceState.INSIDE
     ) {
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: ticket.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.ALREADY_INSIDE,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.ALREADY_INSIDE;
+      const reasonCode = ScanBlockReason.ALREADY_INSIDE;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: ScanVerdict.ALREADY_INSIDE,
       });
-      return { verdict: ScanVerdict.ALREADY_INSIDE, ticket, log };
+
+      this.log('debug', 'Scan blocked: already inside', {
+        ticketId,
+        eventId: ticket.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+        reasonCode,
+      });
+
+      return { verdict, ticket, log, reasonCode };
     }
+
     if (
       direction === PresenceState.OUTSIDE &&
       ticket.currentState === PresenceState.OUTSIDE
     ) {
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: ticket.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.ALREADY_OUTSIDE,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.ALREADY_OUTSIDE;
+      const reasonCode = ScanBlockReason.ALREADY_OUTSIDE;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: ScanVerdict.ALREADY_OUTSIDE,
       });
-      return { verdict: ScanVerdict.ALREADY_OUTSIDE, ticket, log };
-    }
 
-    // Cooldown prüfen (Bounce-Schutz)
-    const cdKey = SECURITY.redis.cooldownPrefix + ticketId;
-    const inCooldown = await this.#redisService.raw.get(cdKey);
-    if (inCooldown) {
-      const log = await this.#writeLog({
+      this.log('debug', 'Scan blocked: already outside', {
         ticketId,
         eventId: ticket.eventId,
         byUserId,
         direction,
-        verdict: ScanVerdict.BLOCKED,
         gate,
         deviceHash,
+        verdict,
+        reasonCode,
       });
+
+      return { verdict, ticket, log, reasonCode };
+    }
+
+    // 5) Cooldown (Bounce-Schutz)
+    const cdKey = SECURITY.redis.cooldownPrefix + ticketId;
+    const inCooldown = await this.#redisService.raw.get(cdKey);
+    if (inCooldown) {
+      const verdict = ScanVerdict.BLOCKED;
+      const reasonCode = ScanBlockReason.COOLDOWN;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
+      });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: 'COOLDOWN',
       });
-      return { verdict: ScanVerdict.BLOCKED, ticket, log };
+
+      this.log('warn', 'Scan blocked: cooldown active', {
+        ticketId,
+        eventId: ticket.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+        reasonCode,
+      });
+
+      return {
+        verdict,
+        ticket,
+        log,
+        reasonCode,
+        cooldownMs: SECURITY.toggleCooldownMs,
+      };
     }
 
-    // Lock holen (Race-Schutz)
+    // 6) Lock (Race-Schutz)
     const lockToken = await this.#redisLockService.acquireTicketLock(
       ticketId,
       2000,
     );
     if (!lockToken) {
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: ticket.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.BLOCKED,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.BLOCKED;
+      const reasonCode = ScanBlockReason.LOCK_BUSY;
+
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: ticket.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
+
       await this.#shareGuardWriteService.registerFail({
         ticketId,
         reason: 'LOCK_BUSY',
       });
-      return { verdict: ScanVerdict.BLOCKED, ticket, log };
+
+      this.log('warn', 'Scan blocked: ticket lock busy', {
+        ticketId,
+        eventId: ticket.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+        reasonCode,
+      });
+
+      return { verdict, ticket, log, reasonCode, lockBusy: true };
     }
 
+    // 7) State Toggle
     try {
-      // Zustand wechseln
-      const updatedRow = await this.#prismaService.ticket.update({
+      const updated = await ticketRepo.update({
         where: { id: ticketId },
         data: { currentState: direction },
       });
-      const updated = updatedRow as unknown as Ticket;
 
       // Cooldown setzen
       await this.#redisService.raw.set(
@@ -265,58 +549,34 @@ export class ScanWriteService {
         SECURITY.toggleCooldownMs,
       );
 
-      const log = await this.#writeLog({
-        ticketId,
-        eventId: updated.eventId,
-        byUserId,
-        direction,
-        verdict: ScanVerdict.OK,
-        gate,
-        deviceHash,
+      const verdict = ScanVerdict.OK;
+      const log = await scanLogRepo.create({
+        data: {
+          ticketId,
+          eventId: updated.eventId,
+          byUserId: byUserId ?? undefined,
+          direction,
+          verdict,
+          gate,
+          deviceHash: deviceHash ?? undefined,
+        },
       });
 
       await this.#shareGuardWriteService.reset(ticketId);
 
-      return { verdict: ScanVerdict.OK, ticket: updated, log };
+      this.log('log', 'Scan OK', {
+        ticketId,
+        eventId: updated.eventId,
+        byUserId,
+        direction,
+        gate,
+        deviceHash,
+        verdict,
+      });
+
+      return { verdict, ticket: updated, log };
     } finally {
       await this.#redisLockService.releaseTicketLock(ticketId, lockToken);
     }
-  }
-
-  /**
-   * Verifiziert QR-JWT (Signatur, exp, jti) & lädt Ticket.
-   */
-  async #verifyQrTokenAndLoad(token: string): Promise<Ticket> {
-    if (!token) throw new UnauthorizedException('Missing token');
-    const payload = await this.#tokenService.verifyTicketJwt(token);
-    const id = payload.tid;
-    if (!id) throw new UnauthorizedException('Invalid token');
-    const ticket = await this.#prismaService.ticket.findUnique({
-      where: { id },
-    });
-    if (!ticket) throw new NotFoundException('Ticket not found');
-    return ticket as Ticket;
-  }
-
-  async #writeLog(input: {
-    ticketId: string;
-    eventId: string;
-    byUserId: string | null;
-    direction: PresenceState;
-    verdict: ScanVerdict;
-    gate?: string;
-    deviceHash?: string;
-  }) {
-    return await (this.#prismaService as any).scanLog.create({
-      data: {
-        ticketId: input.ticketId,
-        eventId: input.eventId,
-        byUserId: input.byUserId ?? undefined,
-        direction: input.direction,
-        verdict: input.verdict,
-        gate: input.gate,
-        deviceHash: input.deviceHash ?? undefined,
-      },
-    });
   }
 }

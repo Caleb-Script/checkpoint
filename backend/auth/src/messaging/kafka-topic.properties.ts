@@ -4,15 +4,17 @@
  */
 
 export const KafkaTopics = {
-  user: {
-    create: 'auth.create.user',
-    delete: 'auth.delete.user',
+  invitation: {
     addUser: 'invitation.add.user',
-    addAttribute: 'auth.add-attribute.user',
-    setAttribute: 'auth.set-attribute.user',
   },
   notification: {
     sendCredentials: 'notification.notify.user',
+  },
+  auth: {
+    create: 'auth.create.user',
+    delete: 'auth.delete.user',
+    addAttribute: 'auth.add-attribute.user',
+    setAttribute: 'auth.set-attribute.user',
   },
 } as const;
 

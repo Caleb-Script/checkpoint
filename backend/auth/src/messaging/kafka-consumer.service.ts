@@ -1,8 +1,4 @@
 import { Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { Kafka, Consumer, ConsumerSubscribeTopics } from 'kafkajs';
-import { KafkaEventDispatcherService } from './kafka-event-dispatcher.service.js';
-import type { KafkaEventContext } from './interface/kafka-event.interface.js';
-import { TraceContextUtil } from '../trace/trace-context.util.js';
 import {
   context as otelContext,
   SpanContext,
@@ -11,9 +7,13 @@ import {
   trace,
   Tracer,
 } from '@opentelemetry/api';
-import { LoggerPlus } from '../logger/logger-plus.js';
+import { Consumer, ConsumerSubscribeTopics, Kafka } from 'kafkajs';
 import { groupId, kafkaBroker } from '../config/kafka.js';
+import { LoggerPlus } from '../logger/logger-plus.js';
 import { LoggerService } from '../logger/logger.service.js';
+import { TraceContextUtil } from '../trace/trace-context.util.js';
+import type { KafkaEventContext } from './interface/kafka-event.interface.js';
+import { KafkaEventDispatcherService } from './kafka-event-dispatcher.service.js';
 
 /**
  * Kafka Consumer zur Registrierung von Topic-Handlern.

@@ -2,14 +2,17 @@ import { gql } from '@apollo/client';
 
 export const LOGIN = gql`
   mutation Login($username: String!, $password: String!) {
-    login(username: $username, password: $password) {
-      access_token
-      expires_in
-      refresh_token
-      refresh_expires_in
-      id_token
+    login(
+      input: {
+        username: $username, 
+        password: $password
+        }) {
+      accessToken
+      expiresIn
+      refreshToken
+      refreshExpiresIn
+      idToken
       scope
-      roles
     }
   }
 `;
@@ -17,15 +20,15 @@ export const LOGIN = gql`
 export const ME = gql`
   query Me($token: String) {
     me(token: $token) {
-      sub
+      id
       username
-      name
-      givenName
-      familyName
+      firstName
+      lastName
       email
       roles
       ticketId
       invitationId
+      phoneNumber
     }
   }
 `;

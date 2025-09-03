@@ -9,15 +9,15 @@ export type Invitation = {
   rsvpChoice?: 'YES' | 'NO' | null;
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELED';
   approved: boolean;
-  plusOnes?: Invitation[];
-};
-
-export type InvitationsQueryResult = {
-  invitations: Invitation[];
-};
-
-export type InvitationQueryResult = {
-  invitation: Invitation | null;
+  plusOnes?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  rsvpAt?: Date;
+  approvedById?: string;
+  approvedAt?: Date
+  invitedById?: string;
+  phone?: string;
+  email?: string;
 };
 
 export type RSVPReply = {
@@ -26,6 +26,7 @@ export type RSVPReply = {
     firstName: string;
     lastName: string;
     email?: string;
+    phone?: string;
   };
 };
 

@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-import { CreateEventInput } from './create-event.input.js';
-import { Field, ID, InputType, Int, PartialType } from '@nestjs/graphql';
+import { Field, ID, InputType, Int } from '@nestjs/graphql';
 import {
   IsOptional,
   IsString,
@@ -11,7 +9,7 @@ import {
 } from 'class-validator';
 
 @InputType()
-export class UpdateEventInput extends PartialType(CreateEventInput) {
+export class UpdateEventInput {
   @Field(() => ID)
   id!: string;
 

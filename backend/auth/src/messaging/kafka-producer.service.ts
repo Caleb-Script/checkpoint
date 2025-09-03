@@ -123,7 +123,7 @@ export class KafkaProducerService
     service: string,
     trace?: TraceContext,
   ): Promise<void> {
-    const topic = KafkaTopics.user.addUser;
+    const topic = KafkaTopics.invitation.addUser;
     await this.sendEvent(topic, 'addUserId', payload, service, 'v1', trace);
   }
 

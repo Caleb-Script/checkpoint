@@ -13,6 +13,8 @@ export class KafkaBootstrap implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#consumer.consume({ topics: getKafkaTopicsBy(['ticket']) });
+    await this.#consumer.consume({
+      topics: getKafkaTopicsBy(['auth']),
+    });
   }
 }

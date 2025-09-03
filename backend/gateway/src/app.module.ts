@@ -8,6 +8,7 @@ import type { Request } from 'express';
 import { subgraph } from './config/subgraph.js';
 import { HealthModule } from './health/health.module.js';
 import { LoggerModule } from './logger/logger.module.js';
+import { SubscriptionServerModule } from './subscriptions/subscription.module.js';
 
 /**
  * Extrahiert Auth + Cookies aus dem eingehenden Gateway-Request.
@@ -75,10 +76,10 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     // 2) Login / Refresh: setze neue Cookies
     if (!authPayload) return; // nichts zu tun
 
-    const accessToken: string | undefined = authPayload?.access_token;
-    const token_expires_in = authPayload?.expires_in;
-    const refreshToken: string | undefined = authPayload?.refresh_token;
-    const refresh_expires_in = authPayload?.refresh_expires_in;
+    const accessToken: string | undefined = authPayload?.accessToken;
+    const tokenExpiresIn = authPayload?.expiresIn;
+    const refreshToken: string | undefined = authPayload?.refreshToken;
+    const refreshExpiresIn = authPayload?.refreshExpiresIn;
 
     if (!accessToken || !refreshToken) return;
 
@@ -90,8 +91,8 @@ function appendCookieHeaders(ctx: GraphQLRequestContextWillSendResponse<any>) {
     }`;
 
     const cookies: string[] = [
-        `kc_access_token=${accessToken}; Max-Age=${token_expires_in ?? 300}; ${cookieBase}`,
-        `kc_refresh_token=${refreshToken}; Max-Age=${refresh_expires_in ?? 1800}; ${cookieBase}`,
+        `kc_access_token=${accessToken}; Max-Age=${tokenExpiresIn ?? 300}; ${cookieBase}`,
+        `kc_refresh_token=${refreshToken}; Max-Age=${refreshExpiresIn ?? 1800}; ${cookieBase}`,
     ];
 
     http.headers.set('set-cookie', cookies);
@@ -118,6 +119,7 @@ function clearCookie(
         GraphQLModule.forRoot<ApolloGatewayDriverConfig>({
             driver: ApolloGatewayDriver,
             server: {
+
                 // Wichtig: Context baut die Infos, die in willSendRequest unten landen
                 context: handleAuth,
                 // Plugin: fange Auth-Antworten ab und setze Cookies auf Gateway-Origin
@@ -194,6 +196,7 @@ function clearCookie(
         }),
         LoggerModule,
         HealthModule,
+        SubscriptionServerModule,
     ],
 })
 export class AppModule {}

@@ -6,3 +6,6 @@ export type Seat = {
   number?: string;
   note?: string;
 };
+
+
+

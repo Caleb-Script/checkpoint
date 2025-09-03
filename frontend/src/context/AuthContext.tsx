@@ -12,10 +12,10 @@ import React, {
 import { LOGOUT } from '../graphql/auth/mutation';
 import getApolloClient from '../lib/apolloClient';
 import { fetchUserInfo } from '../lib/server/auth/auth';
-import { KeycloakUserInfo } from '../types/auth/auth.type';
+import { User } from '../types/auth/auth.type';
 
 type AuthContextType = {
-  user: KeycloakUserInfo | null;
+  user: User | null;
   isAdmin: boolean;
   isAuthenticated: boolean;
   loading: boolean;
@@ -26,7 +26,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<KeycloakUserInfo | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const client = getApolloClient(undefined);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);

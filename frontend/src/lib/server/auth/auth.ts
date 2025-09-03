@@ -2,9 +2,9 @@
 
 import { LOGIN, LOGOUT, ME } from '../../../graphql/auth/mutation';
 import {
-  KeycloakUserInfo,
   LoginInput,
   Token,
+  User,
 } from '../../../types/auth/auth.type';
 import { getCookies } from '../../../utils/getCookies';
 import { handleGraphQLError } from '../../../utils/graphqlHandler.error';
@@ -29,7 +29,7 @@ export async function fetchAllRoles({ username, password }: LoginInput) {
   }
 }
 
-export async function fetchUserInfo(): Promise<KeycloakUserInfo | null> {
+export async function fetchUserInfo(): Promise<User | null> {
   try {
     const client = getApolloClient(undefined);
     const { data } = await client.query({
@@ -39,7 +39,7 @@ export async function fetchUserInfo(): Promise<KeycloakUserInfo | null> {
       },
     });
 
-    const userInfo: KeycloakUserInfo = data.me;
+    const userInfo: User = data.me;
     return userInfo;
   } catch (error) {
     // handleGraphQLError(error, 'Fehler beim Abrufen der Benutzerdaten');

@@ -31,7 +31,7 @@ export class EventWriteService {
     });
   }
 
-  async update(id: string, patch: Partial<Prisma.EventUpdateInput>) {
+  async update(id: string, patch: any) {
     const exists = await this.prisma.event.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Event nicht gefunden');
     return this.prisma.event.update({

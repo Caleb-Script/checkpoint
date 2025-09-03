@@ -1,6 +1,7 @@
 // /src/invitation/service/invitation-write.service.ts
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -9,49 +10,41 @@ import { InvitationStatus } from "../models/enums/invitation-status.enum";
 import { InvitationUpdateInput } from "../models/input/update-invitation.input";
 import { InvitationCreateInput } from "../models/input/create-invitation.input";
 import { InvitationReadService } from "./invitation-read.service";
-import { KafkaConsumerService } from "../../messaging/kafka-consumer.service";
 import { KafkaProducerService } from "../../messaging/kafka-producer.service";
 import { LoggerService } from "../../logger/logger.service";
 import { LoggerPlus } from "../../logger/logger-plus";
-import { getKafkaTopicsBy } from "../../messaging/kafka-topic.properties";
 import { trace, Tracer, context as otelContext } from "@opentelemetry/api";
 import { TraceContextProvider } from "../../trace/trace-context.provider";
 import { handleSpanError } from "../utils/error.util";
 import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input";
 import { Invitation } from "../models/entity/invitation.entity";
 import { PrismaService } from "../../prisma/prisma.service";
+import { pubsub, TRIGGER } from '../utils/pubsub';
 
 @Injectable()
 export class InvitationWriteService {
   readonly #prismaService: PrismaService;
-  readonly #kafkaConsumerService: KafkaConsumerService;
   readonly #kafkaProducerService: KafkaProducerService;
   readonly #loggerService: LoggerService;
   readonly #logger: LoggerPlus;
   readonly #tracer: Tracer;
   readonly #traceContextProvider: TraceContextProvider;
+  readonly #invitationReadService: InvitationReadService;
 
   constructor(
     prismaService: PrismaService,
-    private readonly readService: InvitationReadService,
-    kafkaConsumerService: KafkaConsumerService,
+    invitationReadService: InvitationReadService,
     kafkaProducerService: KafkaProducerService,
     loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
   ) {
     this.#prismaService = prismaService;
-    this.#kafkaConsumerService = kafkaConsumerService;
+    this.#invitationReadService = invitationReadService;
     this.#loggerService = loggerService;
     this.#logger = this.#loggerService.getLogger(InvitationWriteService.name);
     this.#kafkaProducerService = kafkaProducerService;
     this.#tracer = trace.getTracer(InvitationWriteService.name);
     this.#traceContextProvider = traceContextProvider;
-  }
-
-  async onModuleInit(): Promise<void> {
-    await this.#kafkaConsumerService.consume({
-      topics: getKafkaTopicsBy(["user"]),
-    });
   }
 
   async addUserId({
@@ -78,6 +71,12 @@ export class InvitationWriteService {
                   guestProfileId: userId,
                 },
               });
+
+              await pubsub.publish(TRIGGER.INVITATION_UPDATED, {
+                invitationUpdated: updated,
+              });
+
+              this.#logger.debug('wurde gepusht')
 
               // Wichtig: Subscription-Event
               // this.#pubsub?.publish('invitationUpdated', { invitationUpdated: updated });
@@ -118,7 +117,7 @@ export class InvitationWriteService {
    */
   async accept({ id, input }: { id: string; input: AcceptRSVPInput }) {
     const { lastName, firstName, email, phone } = input;
-    const Invitation = await this.readService.findOne(id);
+    const Invitation = await this.#invitationReadService.findOne(id);
 
     if (Invitation.rsvpChoice === RsvpChoice.YES)
       throw new Error("already Accepted");

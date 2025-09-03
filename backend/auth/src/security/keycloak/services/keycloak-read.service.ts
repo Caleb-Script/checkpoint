@@ -39,9 +39,7 @@ export class KeycloakReadService
   async findAllUsers(): Promise<User[]> {
     this.logger.debug('finde alle User');
     const raw = await this.kcRequest<KeycloakUser[]>('get', paths.users);
-    this.logger.debug('findAllUsers: usersRaw=%o', raw);
     const users = toUsers(raw);
-    this.logger.debug('findAllUsers: users=%o', users);
     return users;
   }
 

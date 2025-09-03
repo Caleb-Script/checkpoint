@@ -13,7 +13,7 @@ import { KeycloakReadService } from './services/keycloak-read.service.js';
 import { KeycloakWriteService } from './services/keycloak-write.service.js';
 
 @Module({
-  imports: [forwardRef(() => KafkaModule)],
+  imports: [KafkaModule],
   providers: [KeycloakReadService, KeycloakWriteService],
   exports: [KeycloakReadService, KeycloakWriteService],
 })
@@ -43,6 +43,6 @@ class ConfigModule {}
       useClass: RoleGuard,
     },
   ],
-  exports: [KeycloakConnectModule, KeycloakReadService],
+  exports: [KeycloakConnectModule, KeycloakReadService, KeycloakWriteService],
 })
 export class KeycloakModule {}

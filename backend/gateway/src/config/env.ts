@@ -1,16 +1,13 @@
-import dotenv from 'dotenv';
-import process from 'node:process';
-
-// TODO: node --env-file .env
-dotenv.config();
-
-const { NODE_ENV, LOG_DEFAULT, KEYS_PATH, HTTPS } = process.env;
+const { NODE_ENV, LOG_DEFAULT, KEYS_PATH, HTTPS, SUBGRAPH_INVITATION_URL, SUBGRAPH_AUTH_URL, PORT } = process.env;
 
 export const env = {
     NODE_ENV,
     LOG_DEFAULT,
     KEYS_PATH,
     HTTPS,
+    SUBGRAPH_INVITATION_URL,
+    SUBGRAPH_AUTH_URL,
+    PORT
 } as const;
 
 console.debug('NODE_ENV = %s', NODE_ENV);

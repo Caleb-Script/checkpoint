@@ -15,40 +15,39 @@ import { KafkaTopics } from "../messaging/kafka-topic.properties.js";
 @KafkaHandler("user")
 @Injectable()
 export class UserHandler implements KafkaEventHandler {
-  readonly invitationWriteService: InvitationWriteService;
-  readonly #logger = getLogger(UserHandler.name);
+  // readonly #logger = getLogger(UserHandler.name);
 
-  constructor(InvitationWriteService: InvitationWriteService) {
-    this.invitationWriteService = InvitationWriteService;
+  constructor(private readonly invitationWriteService: InvitationWriteService) {
+    console.debug(
+      "🔧 Injection Check – invitationWriteService:",
+      !!invitationWriteService,
+    );
   }
 
-  @KafkaEvent(KafkaTopics.auth.addUser)
+  @KafkaEvent(KafkaTopics.invitation.addUser)
   async handle(
     topic: string,
     data: any,
     context: KafkaEventContext,
   ): Promise<void> {
-    this.#logger.info(`Person-Kommando empfangen: ${topic}`);
+    // this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
-      case KafkaTopics.auth.addUser:
-        await this.#create(data);
+      case KafkaTopics.invitation.addUser:
+        await this.create(data);
         break;
     }
   }
 
-  async #create({
+  // ✅ Statt private class field → einfach TS-private Methode
+  private async create({
     userId,
     invitationId,
   }: {
     userId: string;
     invitationId: string;
   }) {
-    this.#logger.debug("CreateInvitationHandler: data=%o", {
-      userId,
-      invitationId,
-    });
-
+    console.debug("🔎 Empfangenes Payload:", { userId, invitationId }); // 👈 hinzufügen!
     await this.invitationWriteService.addUserId({ userId, invitationId });
   }
 }
