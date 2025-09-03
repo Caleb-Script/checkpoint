@@ -9,7 +9,12 @@
 
 'use client';
 
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import {
+  useApolloClient,
+  useLazyQuery,
+  useMutation,
+  useQuery,
+} from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -66,7 +71,10 @@ import {
   CREATE_PLUS_ONES_INVITATION,
   UPDATE_INVITATION,
 } from '../../../../../graphql/invitation/mutation';
-import { INVITATIONS } from '../../../../../graphql/invitation/query';
+import {
+  INVITATION,
+  INVITATIONS,
+} from '../../../../../graphql/invitation/query';
 import { CREATE_TICKET } from '../../../../../graphql/ticket/mutation';
 import { GET_TICKETS } from '../../../../../graphql/ticket/query';
 import {
@@ -79,6 +87,41 @@ import {
   Invitation,
   InvitationsQueryResult,
 } from '../../../../../types/invitation/invitation.type';
+import { INVITATION_UPDATED_SUB } from '../../../../../graphql/invitation/subscription';
+
+function waitForInvitationBySub(
+  client: ReturnType<typeof useApolloClient>,
+  id: string,
+  { timeoutMs = 20000 }: { timeoutMs?: number } = {},
+): Promise<{ id: string; guestProfileId?: string | null } | null> {
+  return new Promise((resolve, reject) => {
+    const obs = client.subscribe({
+      query: INVITATION_UPDATED_SUB,
+      variables: { id },
+    });
+
+    const timer = setTimeout(() => {
+      sub?.unsubscribe();
+      resolve(null);
+    }, timeoutMs);
+
+    const sub = obs.subscribe({
+      next: ({ data }) => {
+        const inv = data?.invitationUpdated;
+        if (inv?.id === id && inv?.guestProfileId) {
+          clearTimeout(timer);
+          sub.unsubscribe();
+          resolve(inv);
+        }
+      },
+      error: (e) => {
+        clearTimeout(timer);
+        sub.unsubscribe();
+        reject(e);
+      },
+    });
+  });
+}
 
 /* ---------- Zusätzliche Typen ---------- */
 type SeatRow = {
@@ -132,10 +175,45 @@ function toLocal(dt?: string): string {
   }
 }
 
+// --- Polling-Helper (NEU) ---
+function sleep(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
+/**
+ * Pollt die Invitation via network-only bis guestProfileId gesetzt ist
+ */
+async function waitForGuestProfileId(
+  client: ReturnType<typeof useApolloClient>,
+  invitationId: string,
+  {
+    timeoutMs = 20000,
+    intervalMs = 600,
+  }: { timeoutMs?: number; intervalMs?: number } = {},
+): Promise<string | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const { data } = await client.query({
+        query: INVITATION,
+        variables: { id: invitationId },
+        fetchPolicy: 'network-only',
+      });
+      const gp: string | null = data?.invitation?.guestProfileId ?? null;
+      if (gp) return gp;
+    } catch {
+      // ignorieren und weiter versuchen
+    }
+    await sleep(intervalMs);
+  }
+  return null;
+}
+
 /* ---------- Komponente ---------- */
 export default function InvitationsPage() {
   const { id: eventId } = useParams<{ id: string }>();
   const router = useRouter();
+  const client = useApolloClient();
 
   /* Eventdaten */
   const {
@@ -258,51 +336,56 @@ export default function InvitationsPage() {
     setOpenAssignDlg(true);
   }
 
-  // Approve & sofort Ticket erzeugen (guestProfile erforderlich)
+  // Approve & Ticket erzeugen – mit Polling auf guestProfileId
   async function approveWithSeat() {
     if (!currentInv) return;
     setErr(null);
     setMsg(null);
 
-    // 1) Approven -> guestProfileId kommt im Response
-    const res = await approveInvitation({
-      variables: { id: currentInv.id, approved: true },
-    });
-    const approved = (res.data as any)?.approveInvitation as
-      | Invitation
-      | undefined;
-
-    const guestProfileId =
-      approved?.guestProfileId ?? currentInv.guestProfileId ?? null;
-
-    if (!guestProfileId) {
-      setErr('Gastprofil nicht vorhanden. Ticket kann nicht erstellt werden.');
-      await refetchInvs();
-      setOpenAssignDlg(false);
-      return;
-    }
-
-    // 2) Ticket erzeugen (mit guestProfileId)
+    // 1) Approven -> Kafka triggert Keycloak-Provisioning
     try {
+      // 1) Subscription VOR dem Approve starten (Race vermeiden)
+      const waitPromise = waitForInvitationBySub(client, currentInv.id, {
+        timeoutMs: 20000,
+      });
+
+      await approveInvitation({
+        variables: { id: currentInv.id, approved: true },
+      });
+
+      // 3) Auf Subscription warten (guestProfileId muss drin sein)
+      const invAfter = await waitPromise;
+      const guestProfileId = invAfter?.guestProfileId ?? null;
+
+      if (!guestProfileId) {
+        setErr(
+          'Es kam kein Subscription-Event mit guestProfileId an. Bitte erneut versuchen.',
+        );
+        return;
+      }
+
+      // 4) Ticket erstellen – jetzt sicher mit guestProfileId
       const tRes = await createTicket({
         variables: {
           eventId,
           invitationId: currentInv.id,
-          seatId: seatId ? seatId : null,
+          seatId: seatId || null,
           guestProfileId,
         },
       });
-      setCreatedTicketInvIds((prev) => new Set(prev).add(currentInv.id));
-      if (tRes.errors?.length)
-        throw new Error('Ticket-Erstellung fehlgeschlagen');
-      setMsg('Freigegeben und Ticket erstellt.');
-    } catch (e: any) {
-      setErr(`Ticket konnte nicht erstellt werden: ${String(e.message || e)}`);
+
+        if ((tRes as any)?.errors?.length) {
+      throw new Error('Ticket-Erstellung fehlgeschlagen');
     }
 
+    setCreatedTicketInvIds((prev) => new Set(prev).add(currentInv.id));
+    setMsg('Freigegeben und Ticket erstellt.');
     setOpenAssignDlg(false);
     await Promise.all([refetchInvs(), refetchTickets?.()]);
+  } catch (e: any) {
+    setErr(`Fehler: ${String(e?.message || e)}`);
   }
+}
 
   /* RSVP-Shortcuts */
   async function rsvpYes(id: string) {
@@ -693,7 +776,7 @@ export default function InvitationsPage() {
               ? (allInvs.find((x) => x.id === parentId) ?? null)
               : null;
             const parentName = parent ? displayName(parent) : null;
-            const isPlusOne = Boolean(parentId || inv.invitedById);
+            const isPlusOne = Boolean(parentId || (inv as any).invitedById);
 
             const parentHref = parentId
               ? `/admin/invitations/${parentId}`

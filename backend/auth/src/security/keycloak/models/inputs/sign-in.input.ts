@@ -15,5 +15,5 @@ export class SignInInput {
   readonly invitationId!: string;
 
   @Field(() => String, { nullable: true })
-  readonly phone?: string;
+  readonly phoneNumber?: string;
 }

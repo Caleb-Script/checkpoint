@@ -37,6 +37,7 @@ export abstract class KeycloakBaseService {
   protected readonly loginHeaders: RawAxiosRequestHeaders;
 
   protected readonly tracer: Tracer;
+  protected readonly loggerService: LoggerService;
   protected readonly logger: LoggerPlus;
   protected readonly traceContext: TraceContextProvider;
 
@@ -46,7 +47,7 @@ export abstract class KeycloakBaseService {
   #adminToken?: { token: string; expiresAt: number };
 
   protected constructor(
-    protected readonly loggerService: LoggerService,
+    loggerService: LoggerService,
     traceContextProvider: TraceContextProvider,
   ) {
     const { authServerUrl, clientId, secret } = keycloakConnectOptions;
@@ -63,6 +64,7 @@ export abstract class KeycloakBaseService {
     this.kc = axios.create({ baseURL: authServerUrl });
 
     this.tracer = trace.getTracer(this.constructor.name);
+    this.loggerService = loggerService;
     this.logger = this.loggerService.getLogger(this.constructor.name);
     this.traceContext = traceContextProvider;
   }

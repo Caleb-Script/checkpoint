@@ -1,5 +1,5 @@
 import { Span } from '@opentelemetry/api';
-import { LoggerPlus } from '../../../logger/logger-plus';
+import { LoggerPlus } from '../../../logger/logger-plus.js';
 /**
  * Das Modul besteht aus den Klassen für die Fehlerbehandlung bei GraphQL.
  * @packageDocumentation

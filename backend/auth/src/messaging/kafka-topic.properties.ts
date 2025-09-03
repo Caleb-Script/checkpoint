@@ -39,10 +39,12 @@ export function getAllKafkaTopics(): string[] {
  * Gibt alle Kafka-Topics zurück, optional gefiltert nach Top-Level-Kategorien.
  * @param keys z.B. ['Invitation', 'Notification']
  */
-export function getKafkaTopicsBy(keys: string[]): string[] {
+export function getKafkaTopicsBy<K extends keyof KafkaTopicsType>(
+  keys: K[],
+): string[] {
   const result: string[] = [];
   for (const key of keys) {
-    const section = (KafkaTopics as Record<string, any>)[key];
+    const section = KafkaTopics[key];
     if (section && typeof section === 'object') {
       for (const topic of Object.values(section)) {
         if (typeof topic === 'string') {

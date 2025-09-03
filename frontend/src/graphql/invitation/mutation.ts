@@ -80,18 +80,28 @@ export const UPDATE_INVITATION = gql /* GraphQL */ `
   }
 `;
 
-/** generisches Update (approved, rsvpChoice, maxInvitees ...) */
 export const APPROVE_INVITATION = gql /* GraphQL */ `
-  mutation UpdateInvitation($id: ID!, $approved: Boolean) {
-    updateInvitation(id: $id, input: { approved: $approved }) {
-      approved
+  mutation Approve($id: ID!, $approved: Boolean!) {
+    approveInvitation(id: $id, approve: $approved) {
+      id
+      firstName
+      lastName
       eventId
       guestProfileId
-      id
-      invitedByInvitationId
-      maxInvitees
-      rsvpChoice
       status
+      createdAt
+      updatedAt
+      rsvpChoice
+      rsvpAt
+      approved
+      approvedById
+      approvedAt
+      maxInvitees
+      invitedByInvitationId
+      invitedById
+      plusOnes
+      phone
+      email
     }
   }
 `;

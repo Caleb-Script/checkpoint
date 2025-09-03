@@ -39,7 +39,6 @@ export class UserHandler implements KafkaEventHandler {
     }
   }
 
-  // ✅ Statt private class field → einfach TS-private Methode
   private async create({
     userId,
     invitationId,

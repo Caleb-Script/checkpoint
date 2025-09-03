@@ -1,5 +1,5 @@
-import { KeycloakToken } from '../dtos/kc-token.dto';
-import { TokenPayload } from '../payloads/token.payload';
+import { KeycloakToken } from '../dtos/kc-token.dto.js';
+import { TokenPayload } from '../payloads/token.payload.js';
 
 export function toToken(tokenPayload: KeycloakToken) {
   const token: TokenPayload = {

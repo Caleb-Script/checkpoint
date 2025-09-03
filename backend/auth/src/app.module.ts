@@ -10,12 +10,14 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { HealthModule } from './health/health.module.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HandlerModule } from './handlers/handler.module.js';
+import { KafkaModule } from './messaging/kafka.module.js';
 
 @Module({
   imports: [
     HealthModule,
     KeycloakModule,
     LoggerModule,
+    KafkaModule,
     HandlerModule,
     // GraphQLModule.forRoot<ApolloDriverConfig>(graphQlModuleOptions),
     ConfigModule.forRoot({ isGlobal: true }),

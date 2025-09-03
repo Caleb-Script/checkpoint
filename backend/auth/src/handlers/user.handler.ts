@@ -1,54 +1,43 @@
 // src/messaging/handlers/user.handler.ts
-import { Injectable } from '@nestjs/common';
-import { getLogger } from '../logger/logger.js';
+import { SignInInput } from '../security/keycloak/models/inputs/sign-in.input.js';
+import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service.js';
+
+import { Injectable, Logger } from "@nestjs/common";
 import {
   KafkaEvent,
   KafkaHandler,
-} from '../messaging/decorators/kafka-event.decorator.js';
-import { KafkaEventHandler } from '../messaging/interface/kafka-event.interface.js';
-import { KafkaTopics } from '../messaging/kafka-topic.properties.js';
-import { SignInInput } from '../security/keycloak/models/inputs/sign-in.input.js';
-import { KeycloakWriteService } from '../security/keycloak/services/keycloak-write.service.js';
+} from "../messaging/decorators/kafka-event.decorator.js";
+import {
+  KafkaEventContext,
+  KafkaEventHandler,
+} from "../messaging/interface/kafka-event.interface.js";
+import { KafkaTopics } from "../messaging/kafka-topic.properties.js";
 
 @KafkaHandler('user')
 @Injectable()
 export class UserHandler implements KafkaEventHandler {
-  readonly keycloakWriteService: KeycloakWriteService;
-  readonly #logger = getLogger(UserHandler.name);
+  private readonly logger = new Logger(UserHandler.name);
 
-  constructor(KeycloakService: KeycloakWriteService) {
-    this.keycloakWriteService = KeycloakService;
-  }
+  constructor(
+    private readonly keycloakService: KeycloakWriteService,
+  ) { }
 
   @KafkaEvent(KafkaTopics.auth.create, KafkaTopics.auth.delete)
-  async handle(topic: string, data: any): Promise<void> {
-    this.#logger.info(`Person-Kommando empfangen: ${topic}`);
+  async handle(topic: string, data: any, context: KafkaEventContext): Promise<void> {
+    console.debug(`Person-Kommando empfangen: ${topic}`);
+    console.debug('Kontext: %o',context)
 
     switch (topic) {
       case KafkaTopics.auth.create:
-        await this.#create(data);
-        break;
-      case KafkaTopics.auth.delete:
-        await this.#delete(data);
+        await this.create(data);
         break;
     }
   }
 
-  async #create(data: { payload: SignInInput }): Promise<void> {
-    this.#logger.debug('CreateUserHandler: data=%o', data);
+  private async create(data: { payload: SignInInput }) {
+    this.logger.debug('CreateUserHandler: data=%o', data);
 
-    const { firstName, lastName, emailData, invitationId } = data.payload;
-    await this.keycloakWriteService.signUp({
-      firstName,
-      lastName,
-      emailData,
-      invitationId,
-    });
-  }
-
-  async #delete(username: string): Promise<void> {
-    this.#logger.debug('DeleteUserHandler: username=%s', username);
-
-    await this.keycloakWriteService.deleteUser(username);
+    const input = data.payload;
+    await this.keycloakService.signUp(input);
   }
 }

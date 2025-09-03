@@ -1,8 +1,8 @@
 // /backend/auth/src/security/keycloak/mappers/user.mapper.ts
 
-import type { KeycloakTokenPayload } from '../dtos/kc-token.dto';
-import type { KeycloakUser } from '../dtos/kc-user.dto';
-import type { User } from '../entitys/user.entity';
+import type { KeycloakTokenPayload } from '../dtos/kc-token.dto.js';
+import type { KeycloakUser } from '../dtos/kc-user.dto.js';
+import type { User } from '../entitys/user.entity.js';
 
 /**
  * @file User-Mapper zwischen externen Keycloak-Modellen (Admin-API & JWT)

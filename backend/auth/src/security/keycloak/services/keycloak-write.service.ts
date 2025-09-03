@@ -2,17 +2,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { keycloakConnectOptions, paths } from '../../../config/keycloak.js';
 import { LoggerService } from '../../../logger/logger.service.js';
+import { KafkaProducerService } from '../../../messaging/kafka-producer.service.js';
 import { TraceContextProvider } from '../../../trace/trace-context.provider.js';
-import { KeycloakBaseService } from './keycloak-base.service.js';
+import type { KeycloakToken } from '../models/dtos/kc-token.dto.js';
+import type { KeycloakUser } from '../models/dtos/kc-user.dto.js';
+import type { Role } from '../models/enums/role.enum.js';
 import type { LogInInput } from '../models/inputs/log-in.input.js';
 import type { SignInInput } from '../models/inputs/sign-in.input.js';
 import type { UpdateUserInput } from '../models/inputs/update-user.input.js';
-import type { TokenPayload } from '../models/payloads/token.payload.js';
-import type { KeycloakToken } from '../models/dtos/kc-token.dto.js';
-import type { KeycloakUser } from '../models/dtos/kc-user.dto.js';
 import { toToken } from '../models/mappers/token.mapper.js';
-import type { Role } from '../models/enums/role.enum.js';
-import { KafkaProducerService } from '../../../messaging/kafka-producer.service.js';
+import type { TokenPayload } from '../models/payloads/token.payload.js';
+import { KeycloakBaseService } from './keycloak-base.service.js';
 
 /**
  * @file Mutierende Operationen gegen Keycloak (Auth-Flows & User-Mutationen).
@@ -109,7 +109,7 @@ export class KeycloakWriteService extends KeycloakBaseService {
     firstName,
     lastName,
     emailData,
-    phone,
+    phoneNumber,
   }: SignInInput): Promise<{
     userId: string;
     username: string;
@@ -120,7 +120,7 @@ export class KeycloakWriteService extends KeycloakBaseService {
       const attrs: Record<string, string[]> = {};
       if (invitationId)
         attrs['invitationId'] = this.normalizeAttr(invitationId);
-      if (phone) attrs['phoneNumber'] = this.normalizeAttr(phone);
+      if (phoneNumber) attrs['phoneNumber'] = this.normalizeAttr(phoneNumber);
 
       const { username, email, password } =
         await this.createUsernameAndEmailAndPassword({
@@ -158,7 +158,7 @@ export class KeycloakWriteService extends KeycloakBaseService {
       const traceCtx = this.traceContext.getContext();
       this.kafka.addUser({ userId, invitationId }, 'auth.signUp', traceCtx);
       this.kafka.sendUserCredentials(
-        { userId, firstName, username, password, phone },
+        { userId, firstName, username, password, phoneNumber },
         'auth.signUp',
         traceCtx,
       );

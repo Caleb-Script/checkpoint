@@ -5,7 +5,7 @@
 // - kein hook in map
 // - Create invitation button zu /admin/event/[id]/invite
 // - Badges für „Plus-Ones vorhanden“ & „Ticket existiert“
-// - Willst du zusätzlich eine „Alle gefilterten sofort freigeben & Tickets zufällig setzen“-Aktion? Dann baue ich dir einen separaten Bulk-Dialog mit optionalem „Nur freie Plätze“ + Zufallszuweisung pro Einladung.
+// - Plus-One-Kennzeichnung bei Kind-Einladungen (visuell + Link zum Parent)
 
 'use client';
 
@@ -16,9 +16,11 @@ import * as React from 'react';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Diversity1Icon from '@mui/icons-material/Diversity1';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import GroupsIcon from '@mui/icons-material/Groups';
+import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/PersonAddAlt1';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -92,7 +94,6 @@ type TicketRow = {
   id: string;
   eventId: string;
   seatId?: string | null;
-  // Viele Backends geben invitationId mit zurück – wenn nicht vorhanden, wird der Badge via Fallback gesetzt.
   invitationId?: string | null;
 };
 
@@ -160,7 +161,7 @@ export default function InvitationsPage() {
   const allInvs = invData?.invitations ?? [];
   const eventInvs = allInvs.filter((i) => i.eventId === eventId);
 
-  /* Mutations getrennt: */
+  /* Mutations */
   const [approveInvitation, { loading: approving }] =
     useMutation(APPROVE_INVITATION);
   const [updateInvitation, { loading: updating }] =
@@ -191,7 +192,7 @@ export default function InvitationsPage() {
   const allFilteredSelected = (ids: string[]) =>
     ids.length > 0 && ids.every((id) => selectedIds.has(id));
 
-  // Fallback für „Ticket existiert“-Badge, wenn der Ticket-Query keine invitationId liefert
+  // Fallback für „Ticket existiert“-Badge
   const [createdTicketInvIds, setCreatedTicketInvIds] = React.useState<
     Set<string>
   >(new Set());
@@ -257,7 +258,7 @@ export default function InvitationsPage() {
     setOpenAssignDlg(true);
   }
 
-  // Approve & sofort Ticket erzeugen (gastprofil nötig)
+  // Approve & sofort Ticket erzeugen (guestProfile erforderlich)
   async function approveWithSeat() {
     if (!currentInv) return;
     setErr(null);
@@ -267,6 +268,7 @@ export default function InvitationsPage() {
     const res = await approveInvitation({
       variables: { id: currentInv.id, approved: true },
     });
+
     const approved = (res.data as any)?.approveInvitation as
       | Invitation
       | undefined;
@@ -291,7 +293,6 @@ export default function InvitationsPage() {
           guestProfileId,
         },
       });
-      // Fallback-Badge setzen
       setCreatedTicketInvIds((prev) => new Set(prev).add(currentInv.id));
       if (tRes.errors?.length)
         throw new Error('Ticket-Erstellung fehlgeschlagen');
@@ -550,7 +551,6 @@ export default function InvitationsPage() {
 
             {/* Massenaktionen */}
             {(() => {
-              // dieselbe Filter-/Sortierlogik wie unten, aber nur IDs für "alle auswählen"
               const term = search.trim().toLowerCase();
               let ids = eventInvs.slice();
               if (term)
@@ -669,6 +669,7 @@ export default function InvitationsPage() {
             const url = rsvpLinkForInvitationId(inv.id);
             const name = displayName(inv);
             const initials = initialsOf(name);
+
             const rsvpColor =
               inv.rsvpChoice === 'YES'
                 ? 'success'
@@ -687,11 +688,28 @@ export default function InvitationsPage() {
               invitationIdsWithTicket.has(inv.id) ||
               createdTicketInvIds.has(inv.id);
 
+            // PLUS-ONE: Eltern-Einladung auflösen (nur clientseitig aus vorhandenen Daten)
+            const parentId = inv.invitedByInvitationId ?? null;
+            const parent = parentId
+              ? (allInvs.find((x) => x.id === parentId) ?? null)
+              : null;
+            const parentName = parent ? displayName(parent) : null;
+            const isPlusOne = Boolean(parentId || inv.invitedById);
+
+            const parentHref = parentId
+              ? `/admin/invitations/${parentId}`
+              : undefined;
+
             return (
               <Card
                 key={inv.id}
                 variant="outlined"
-                sx={{ borderRadius: 3, overflow: 'hidden' }}
+                sx={{
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  borderLeft: isPlusOne ? '4px solid' : undefined,
+                  borderLeftColor: isPlusOne ? 'info.main' : undefined,
+                }}
               >
                 {/* Header */}
                 <Stack
@@ -710,9 +728,23 @@ export default function InvitationsPage() {
                     onChange={(e) => toggleSelect(inv.id, e.target.checked)}
                     sx={{ mr: 0.5 }}
                   />
+
+                  {/* Plus-One Badge */}
+                  {isPlusOne && (
+                    <Chip
+                      size="small"
+                      color="info"
+                      variant="outlined"
+                      icon={<Diversity1Icon />}
+                      label="Plus-One"
+                      sx={{ mr: 0.5 }}
+                    />
+                  )}
+
                   <Avatar sx={{ width: 32, height: 32 }}>
                     {initials || 'NA'}
                   </Avatar>
+
                   <Box
                     sx={{ minWidth: 0, flex: 1 }}
                     onClick={() => setExpandedId(expanded ? null : inv.id)}
@@ -729,6 +761,48 @@ export default function InvitationsPage() {
                     >
                       {name}
                     </Typography>
+
+                    {/* Kontext: „von <Eltern>“ mit Link */}
+                    {isPlusOne && (
+                      <Stack direction="row" spacing={0.75} alignItems="center">
+                        <LinkIcon fontSize="inherit" color="info" />
+                        {parentHref ? (
+                          <Tooltip
+                            title={`Zur übergeordneten Einladung (${parentId.slice(
+                              0,
+                              8,
+                            )}…)`}
+                          >
+                            <Button
+                              size="small"
+                              color="info"
+                              variant="text"
+                              sx={{
+                                p: 0,
+                                minWidth: 0,
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(parentHref);
+                              }}
+                            >
+                              {parentName || `ID ${parentId.slice(0, 8)}…`}
+                            </Button>
+                          </Tooltip>
+                        ) : (
+                          <Typography
+                            variant="caption"
+                            color="info.main"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            (Übergeordnete Einladung)
+                          </Typography>
+                        )}
+                      </Stack>
+                    )}
+
                     <Typography variant="caption" color="text.secondary">
                       ID: {inv.id.slice(0, 8)}…
                     </Typography>
@@ -804,6 +878,31 @@ export default function InvitationsPage() {
                           variant={inv.approved ? 'filled' : 'outlined'}
                         />
                       </Stack>
+
+                      {/* Wenn Plus-One: nochmals Kontext im Detailbereich */}
+                      {isPlusOne && (
+                        <Alert
+                          severity="info"
+                          variant="outlined"
+                          sx={{ py: 0.5 }}
+                        >
+                          Diese Einladung ist ein <strong>Plus-One</strong>
+                          {parentName ? (
+                            <>
+                              {' '}
+                              von <strong>{parentName}</strong>
+                            </>
+                          ) : parentId ? (
+                            <>
+                              {' '}
+                              von <strong>ID {parentId.slice(0, 8)}…</strong>
+                            </>
+                          ) : null}
+                          . Du kannst oben auf den Namen klicken, um die Details
+                          aufzuklappen; der Link führt direkt zur übergeordneten
+                          Einladung.
+                        </Alert>
+                      )}
 
                       <TextField
                         value={url}
