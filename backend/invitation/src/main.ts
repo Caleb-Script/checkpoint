@@ -2,7 +2,7 @@ import { AppModule } from "./app.module.js";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import "reflect-metadata";
-import { registerWarningTrace } from "./bootstrap/warnings";
+import { registerWarningTrace } from "./bootstrap/warnings.js";
 registerWarningTrace();
 
 async function bootstrap() {

@@ -1,7 +1,6 @@
 // src/messaging/handlers/user.handler.ts
 import { Injectable } from "@nestjs/common";
 import { InvitationWriteService } from "../invitation/service/invitation-write.service.js";
-import { getLogger } from "../logger/logger.js";
 import {
   KafkaEvent,
   KafkaHandler,
@@ -28,7 +27,7 @@ export class UserHandler implements KafkaEventHandler {
   async handle(
     topic: string,
     data: any,
-    context: KafkaEventContext,
+    _context: KafkaEventContext,
   ): Promise<void> {
     // this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 

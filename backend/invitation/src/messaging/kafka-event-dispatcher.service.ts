@@ -1,13 +1,13 @@
 // src/messaging/kafka-event-dispatcher.service.ts
 
-import { Injectable, Logger, OnModuleInit, Type } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { DiscoveryService, MetadataScanner, Reflector } from "@nestjs/core";
 
 import {
   KAFKA_EVENT_METADATA,
   KAFKA_HANDLER,
-} from "./decorators/kafka-event.decorator";
-import type { KafkaEventHandler } from "./interface/kafka-event.interface";
+} from "./decorators/kafka-event.decorator.js";
+import type { KafkaEventHandler } from "./interface/kafka-event.interface.js";
 
 @Injectable()
 export class KafkaEventDispatcherService implements OnModuleInit {

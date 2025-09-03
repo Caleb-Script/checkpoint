@@ -1,6 +1,6 @@
 // checkpoint/services/invitation/src/graphql/inputs/create-invitation.input.ts
-import { Field, ID, InputType, Int } from "@nestjs/graphql";
-import { RsvpChoice } from "../enums/rsvp-choice.enum";
+import { Field, InputType } from "@nestjs/graphql";
+import { RsvpChoice } from "../enums/rsvp-choice.enum.js";
 
 @InputType({
   description: "",

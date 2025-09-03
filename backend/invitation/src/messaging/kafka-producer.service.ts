@@ -8,10 +8,10 @@ import {
   OnModuleInit,
 } from "@nestjs/common";
 import { Producer } from "kafkajs";
-import { CreateUserDTO } from "../invitation/models/dto/create-user.dto";
-import { TraceContext } from "../trace/trace-context.util";
-import { KafkaTopics } from "./kafka-topic.properties";
-import { KafkaEnvelope } from "./decorators/kafka-envelope.type";
+import { CreateUserDTO } from "../invitation/models/dto/create-user.dto.js";
+import { TraceContext } from "../trace/trace-context.util.js";
+import { KafkaTopics } from "./kafka-topic.properties.js";
+import { KafkaEnvelope } from "./decorators/kafka-envelope.type.js";
 
 /**
  * KafkaProducerService

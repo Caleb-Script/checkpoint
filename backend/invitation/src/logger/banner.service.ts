@@ -10,7 +10,7 @@
 import { nodeConfig } from "../config/node.js";
 import { getLogger } from "./logger.js";
 import { Injectable, type OnApplicationBootstrap } from "@nestjs/common";
-import { say } from "cfonts";
+import cfonts from "cfonts";
 import chalk from "chalk";
 import { release, type, userInfo } from "node:os";
 
@@ -58,7 +58,7 @@ export class BannerService implements OnApplicationBootstrap {
    * @description Banner generieren und ausgeben.
    */
   #generateBanner(service: string) {
-    say(service, {
+    cfonts.say(service, {
       font: "block", // Schriftart des Banners
       align: "left", // Ausrichtung des Textes
       gradient: ["white", "black"], // Farbverlauf für das Banner

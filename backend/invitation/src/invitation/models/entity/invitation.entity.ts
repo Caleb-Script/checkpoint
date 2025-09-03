@@ -6,9 +6,9 @@ import {
   Int,
   ObjectType,
 } from "@nestjs/graphql";
-import { InvitationStatus } from "../enums/invitation-status.enum";
-import { RsvpChoice } from "../enums/rsvp-choice.enum";
-import { IsBoolean, IsOptional } from "class-validator";
+import { InvitationStatus } from "../enums/invitation-status.enum.js";
+import { RsvpChoice } from "../enums/rsvp-choice.enum.js";
+import { IsOptional } from "class-validator";
 
 @ObjectType({
   description:

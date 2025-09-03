@@ -2,11 +2,11 @@
 
 // TODO Disaprove
 import { Resolver, Mutation, Args, ID } from "@nestjs/graphql";
-import { Invitation } from "../models/entity/invitation.entity";
-import { InvitationWriteService } from "../service/invitation-write.service";
-import { InvitationCreateInput } from "../models/input/create-invitation.input";
-import { InvitationUpdateInput } from "../models/input/update-invitation.input";
-import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input";
+import { Invitation } from "../models/entity/invitation.entity.js";
+import { InvitationWriteService } from "../service/invitation-write.service.js";
+import { InvitationCreateInput } from "../models/input/create-invitation.input.js";
+import { InvitationUpdateInput } from "../models/input/update-invitation.input.js";
+import { RSVPReply } from "../models/input/accept-rsvp.input.js";
 
 @Resolver(() => Invitation)
 export class InvitationMutationResolver {

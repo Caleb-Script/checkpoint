@@ -1,7 +1,7 @@
 // kafka-bootstrap.provider.ts
 
 import { Provider } from "@nestjs/common";
-import { kafkaProducer, kafka } from "../config/kafka.config";
+import { kafkaProducer, kafka } from "../config/kafka.config.js";
 
 export const KAFKA_INSTANCE = "KAFKA_INSTANCE";
 export const KAFKA_PRODUCER = "KAFKA_PRODUCER";

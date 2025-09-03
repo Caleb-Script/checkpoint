@@ -1,7 +1,7 @@
 // checkpoint/services/invitation/src/invitation-query.resolver.ts
 import { Resolver, Query, Args, ID } from "@nestjs/graphql";
-import { Invitation } from "../models/entity/invitation.entity";
-import { InvitationReadService } from "../service/invitation-read.service";
+import { Invitation } from "../models/entity/invitation.entity.js";
+import { InvitationReadService } from "../service/invitation-read.service.js";
 
 @Resolver(() => Invitation)
 export class InvitationQueryResolver {

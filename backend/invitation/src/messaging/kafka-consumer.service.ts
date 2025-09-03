@@ -7,8 +7,8 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
-import { KafkaEventDispatcherService } from "./kafka-event-dispatcher.service";
-import { createKafkaConsumer } from "../config/kafka.config";
+import { KafkaEventDispatcherService } from "./kafka-event-dispatcher.service.js";
+import { createKafkaConsumer } from "../config/kafka.config.js";
 
 /**
  * KafkaConsumerService

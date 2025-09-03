@@ -1,16 +1,16 @@
 import { Module } from "@nestjs/common";
-import { InvitationModule } from "./invitation/invitation.module";
+import { InvitationModule } from "./invitation/invitation.module.js";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { LoggerModule } from "./logger/logger.module";
+import { LoggerModule } from "./logger/logger.module.js";
 import { GraphQLModule } from "@nestjs/graphql";
 import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
 } from "@nestjs/apollo";
-import { TraceModule } from "./trace/trace.module";
-import { PrismaModule } from "./prisma/prisma.module";
-import { KafkaModule } from "./messaging/kafka.module";
-import { HandlerModule } from "./handlers/handler.module";
+import { TraceModule } from "./trace/trace.module.js";
+import { PrismaModule } from "./prisma/prisma.module.js";
+import { KafkaModule } from "./messaging/kafka.module.js";
+import { HandlerModule } from "./handlers/handler.module.js";
 
 @Module({
   imports: [

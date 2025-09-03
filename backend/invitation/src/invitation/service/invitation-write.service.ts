@@ -1,25 +1,24 @@
 // /src/invitation/service/invitation-write.service.ts
 import {
   BadRequestException,
-  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { RsvpChoice } from "../models/enums/rsvp-choice.enum";
-import { InvitationStatus } from "../models/enums/invitation-status.enum";
-import { InvitationUpdateInput } from "../models/input/update-invitation.input";
-import { InvitationCreateInput } from "../models/input/create-invitation.input";
-import { InvitationReadService } from "./invitation-read.service";
-import { KafkaProducerService } from "../../messaging/kafka-producer.service";
-import { LoggerService } from "../../logger/logger.service";
-import { LoggerPlus } from "../../logger/logger-plus";
+import { RsvpChoice } from "../models/enums/rsvp-choice.enum.js";
+import { InvitationStatus } from "../models/enums/invitation-status.enum.js";
+import { InvitationUpdateInput } from "../models/input/update-invitation.input.js";
+import { InvitationCreateInput } from "../models/input/create-invitation.input.js";
+import { InvitationReadService } from "./invitation-read.service.js";
+import { KafkaProducerService } from "../../messaging/kafka-producer.service.js";
+import { LoggerService } from "../../logger/logger.service.js";
+import { LoggerPlus } from "../../logger/logger-plus.js";
 import { trace, Tracer, context as otelContext } from "@opentelemetry/api";
-import { TraceContextProvider } from "../../trace/trace-context.provider";
-import { handleSpanError } from "../utils/error.util";
-import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input";
-import { Invitation } from "../models/entity/invitation.entity";
-import { PrismaService } from "../../prisma/prisma.service";
-import { pubsub, TRIGGER } from '../utils/pubsub';
+import { TraceContextProvider } from "../../trace/trace-context.provider.js";
+import { handleSpanError } from "../utils/error.util.js";
+import { AcceptRSVPInput, RSVPReply } from "../models/input/accept-rsvp.input.js";
+import { Invitation } from "../models/entity/invitation.entity.js";
+import { PrismaService } from "../../prisma/prisma.service.js";
+import { pubsub, TRIGGER } from '../utils/pubsub.js';
 
 @Injectable()
 export class InvitationWriteService {
@@ -139,6 +138,7 @@ export class InvitationWriteService {
                   status: InvitationStatus.ACCEPTED,
                   lastName,
                   firstName,
+                  email,
                   phone,
                 },
               });
