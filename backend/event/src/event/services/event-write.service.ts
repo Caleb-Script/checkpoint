@@ -5,7 +5,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class EventWriteService {

@@ -1,5 +1,7 @@
 import { EventModule } from './event/event.module.js';
+import { HandlerModule } from './handlers/handler.module.js';
 import { LoggerModule } from './logger/logger.module.js';
+import { KafkaModule } from './messaging/kafka.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SeatModule } from './seat/seat.module.js';
 import { TraceModule } from './trace/trace.module.js';
@@ -35,10 +37,12 @@ import { GraphQLModule } from '@nestjs/graphql';
     LoggerModule,
     PrismaModule,
     TraceModule,
+    KafkaModule,
 
     // Feature-Module
     EventModule,
     SeatModule,
+    HandlerModule,
   ],
 })
 export class AppModule {}

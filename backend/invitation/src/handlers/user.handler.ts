@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/messaging/handlers/user.handler.ts
 import { Injectable } from "@nestjs/common";
 import { InvitationWriteService } from "../invitation/service/invitation-write.service.js";

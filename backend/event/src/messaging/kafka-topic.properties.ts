@@ -6,6 +6,8 @@
 export const KafkaTopics = {
   ticket: {
     addSeat: 'ticket.add.seat',
+  },
+  event: {
     updateSeat: 'event.update.seat',
   },
 } as const;
@@ -17,12 +19,12 @@ export const KafkaTopics = {
 export type KafkaTopicsType = typeof KafkaTopics;
 
 /**
- * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z.B. für Subscriptions).
+ * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z. B. für Subscriptions).
  */
 export function getAllKafkaTopics(): string[] {
   const flatten = (obj: any): string[] =>
     Object.values(obj).flatMap((value) =>
-      typeof value === 'string' ? [value] : flatten(value),
+      typeof value === "string" ? [value] : flatten(value),
     );
   return flatten(KafkaTopics);
 }
@@ -35,9 +37,9 @@ export function getKafkaTopicsBy(keys: string[]): string[] {
   const result: string[] = [];
   for (const key of keys) {
     const section = (KafkaTopics as Record<string, any>)[key];
-    if (section && typeof section === 'object') {
+    if (section && typeof section === "object") {
       for (const topic of Object.values(section)) {
-        if (typeof topic === 'string') {
+        if (typeof topic === "string") {
           result.push(topic);
         }
       }
@@ -45,3 +47,4 @@ export function getKafkaTopicsBy(keys: string[]): string[] {
   }
   return result;
 }
+

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // kafka-topic.properties.ts
 // ✅ Einheitliche Definition der verwendeten Kafka-Topics
 
@@ -30,7 +32,7 @@ export type KafkaTopicsType = typeof KafkaTopics;
 /**
 
 /**
- * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z. B. für Subscriptions).
+ * Hilfsfunktion zur Auflistung aller konfigurierten Topic-Namen (z.B. für Subscriptions).
  */
 export function getAllKafkaTopics(): string[] {
   const flatten = (obj: any): string[] =>

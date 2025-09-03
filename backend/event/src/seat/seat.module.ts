@@ -4,7 +4,7 @@ import { SeatMutationResolver } from './resolver/seat-mutation.resolver.js';
 import { SeatQueryResolver } from './resolver/seat-query.resolver.js';
 import { SeatReadService } from './service/seat-read.service.js';
 import { SeatWriteService } from './service/seat-write.service.js';
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 @Module({
   imports: [PrismaModule, KafkaModule],

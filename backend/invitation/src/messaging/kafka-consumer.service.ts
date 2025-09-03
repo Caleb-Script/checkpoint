@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // kafka-consumer.service.ts
 // ✅ Kafka Consumer Service mit Lifecycle-Management und Dispatcher-Aufruf
 
@@ -9,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { KafkaEventDispatcherService } from "./kafka-event-dispatcher.service.js";
 import { createKafkaConsumer } from "../config/kafka.config.js";
+import { getKafkaTopicsBy } from "./kafka-topic.properties.js";
 
 /**
  * KafkaConsumerService
@@ -28,7 +30,7 @@ export class KafkaConsumerService implements OnModuleInit, OnModuleDestroy {
     await this.consumer.connect();
 
     await this.consumer.subscribe({
-      topic: "invitation.add.user",
+      topics: getKafkaTopicsBy(["invitation"]),
       fromBeginning: false,
     });
 

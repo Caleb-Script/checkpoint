@@ -1,43 +1,44 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/messaging/handlers/user.handler.ts
-import { getLogger } from '../logger/logger.js';
+import { Injectable } from "@nestjs/common";
 import {
   KafkaEvent,
   KafkaHandler,
-} from '../messaging/decorators/kafka-event.decorator.js';
+} from "../messaging/decorators/kafka-event.decorator.js";
 import {
   KafkaEventContext,
   KafkaEventHandler,
-} from '../messaging/interface/kafka-event.interface.js';
-import { KafkaTopics } from '../messaging/kafka-topic.properties.js';
-import { SeatWriteService } from '../seat/service/seat-write.service.js';
-import { Injectable } from '@nestjs/common';
+} from "../messaging/interface/kafka-event.interface.js";
+import { KafkaTopics } from "../messaging/kafka-topic.properties.js";
+import { SeatWriteService } from "../seat/service/seat-write.service.js";
 
-@KafkaHandler('user')
+@KafkaHandler("ticket")
 @Injectable()
 export class TicketHandler implements KafkaEventHandler {
-  readonly #seatWriteService: SeatWriteService;
-  readonly #logger = getLogger(TicketHandler.name);
+  // readonly #logger = getLogger(UserHandler.name);
 
-  constructor(SeatWriteService: SeatWriteService) {
-    this.#seatWriteService = SeatWriteService;
+  constructor(private readonly seatWriteService: SeatWriteService) {
+    console.debug(
+      "🔧 Injection Check – invitationWriteService:",
+      !!seatWriteService,
+    );
   }
 
-  @KafkaEvent(KafkaTopics.ticket.updateSeat)
+  @KafkaEvent(KafkaTopics.event.updateSeat)
   async handle(
     topic: string,
     data: any,
-    context: KafkaEventContext,
+    _context: KafkaEventContext,
   ): Promise<void> {
-    this.#logger.info(`Person-Kommando empfangen: ${topic}`);
+    // this.#logger.info(`Person-Kommando empfangen: ${topic}`);
 
     switch (topic) {
-      case KafkaTopics.ticket.updateSeat:
+      case KafkaTopics.event.updateSeat:
         await this.#update(data);
         break;
     }
   }
+
 
   async #update({
     id,
@@ -48,12 +49,12 @@ export class TicketHandler implements KafkaEventHandler {
     guestId: string;
     eventId: string;
   }) {
-    this.#logger.debug('UpdateSeatHandler: data=%o', {
+    console.debug('UpdateSeatHandler: data=%o', {
       id,
       guestId,
       eventId,
     });
 
-    await this.#seatWriteService.reserveSeat({ id, eventId, guestId });
+    await this.seatWriteService.reserveSeat({ id, eventId, guestId });
   }
 }
